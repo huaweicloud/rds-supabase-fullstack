@@ -44,7 +44,8 @@ the components listed below, which carry their own licenses.
    licenses) and are consumed separately; upgrading one does not affect the
    other.
 
-3. skills/rds-supabase and skills/rds-supabase-postgres-best-practices
+3. skills/huaweicloud-supabase/rds-supabase-usage and
+   skills/huaweicloud-supabase/rds-supabase-postgres-best-practices
    Derived from supabase/agent-skills
    (https://github.com/supabase/agent-skills), MIT License,
    Copyright (c) 2026 Supabase. Each skill bundles the upstream MIT license

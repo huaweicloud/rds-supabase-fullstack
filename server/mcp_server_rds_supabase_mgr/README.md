@@ -1,100 +1,270 @@
-> 首次使用请阅读[用户指南](docs/USER_GUIDE.md)：跨平台 uvx 安装、Claude 接入与验证。
+# RDS Supabase 管控 MCP Server（管理面）
 
-> Directory integration and source installation: [MIGRATION.md](docs/MIGRATION.md). This is the cloud control-plane MCP; the existing sibling server remains separate.
+> **语言切换：** [English](./README_en.md) | 中文
 
-# Supabase management MCP — 0.3.8a2
+## 版本
 
-Local stdio MCP with a real HTTP transport, not a mock-success adapter. No cloud validation has been performed.
+0.3.8a2（开发预发行版，未完成六场景全量生产验收）
 
-## Implemented tools
-- `list_supabase_applications`, `show_supabase_application`
-- `list_supabase_api_keys` (metadata only), `show_supabase_auth_config`
-- `show_supabase_job`, `wait_supabase_job` (task status only; resource/business verification remains pending)
-- `change_supabase_ssl`, `change_supabase_eip`
-- `delete_supabase_application` (retains PG), `reset_supabase_api_key`
-- `update_supabase_auth_flags` (explicit registration/anonymous booleans only)
-- Three existing capability/planning tools remain available; creation planning is not creation execution.
+## 概述
 
-## Configure and run
+华为云 RDS Supabase（自建 Supabase on RDS PostgreSQL）**全托管生命周期管理**的
+MCP Server，属管理面（control plane）：应用创建、配置、安全访问、删除。通过原生
+RDS 管理接口操作 Supabase 应用。SQL 与数据操作属独立数据面能力，见
+`server/mcp_server_rds_supabase`；两台服务器分开交付，互不替换。
 
-uvx 运行（推荐，跨平台，无需检出源码）：
+配套专项 Skill：`skills/huaweicloud-supabase/rds-supabase-mgr-mcp`（意图理解、
+信息补齐、影响展示与确认指导）。深入使用说明见[用户指南](docs/USER_GUIDE.md)。
+
+## 分类
+
+数据库 / RDS Supabase 全托管生命周期（管理面）
+
+## 功能
+
+**应用查询**
+
+- 查询当前项目的 Supabase 应用列表与详情
+- 查询 MCP 自身能力子集与缺失项（cloud_verified=false，不探测云状态）
+
+**应用创建**
+
+- 发现创建候选：可托管 PG 实例、Supabase 规格查询
+- Single 模式创建提交（关联已有 PG 或按需新建 PG），两阶段确认
+
+**应用删除**
+
+- 删除 Supabase 应用（保留 PG，可能继续计费）；不级联删 PG
+
+**访问控制**
+
+- SSL 开关（开启需已核验的证书 ID）
+- EIP 绑定/解绑
+- 应用账号改密（经本地受保护请求引用，不收集明文）
+
+**安全组（独立 VPC 入口）**
+
+- 安全组与规则查询、创建组、指定 TCP 端口规则增删
+
+**ApiKey**
+
+- 元数据查询（六字段白名单，不含明文）
+- 重置（强提示下游失效风险）
+- 指定 Key 交付到受保护本地文件（不在对话输出明文）
+
+**业务配置**
+
+- 注册/匿名开关、Auth 提供方（GitHub/SMTP）、URL 与确认邮件模板、OBS 存储配置
+
+**任务与执行账本**
+
+- 任务状态查询与有界只读观察
+- 本地执行计划检查/取消/对账；未知结果持久记录，禁止重放
+
+**通用能力**
+
+- 两阶段确认（confirm + plan_id 绑定参数、目标与凭据摘要）
+- 云写开关默认关闭；共享核心只读拦截、保护名单、结构化审计与输出脱敏
+
+## 工具清单
+
+| 工具 | 场景 | 风险级别 | 说明 |
+|---|---|---|---|
+| `get_supabase_capabilities` | 查询 MCP 能力与缺失项 | READ | cloud_verified=false |
+| `list_supabase_applications` | 应用列表（分页） | READ | 列表可能含其他类型，须核验 type=supabase |
+| `show_supabase_application` | 应用详情与状态 | READ | 状态非完成证明 |
+| `list_supabase_api_keys` | ApiKey 元数据查询 | READ | 白名单输出，不含明文 |
+| `reset_supabase_api_key` | ApiKey 重置（需确认） | DANGEROUS | 提交前按 ID 校验唯一 normal 记录 |
+| `deliver_supabase_api_key` | 指定 Key 交付到本地文件（需确认） | DANGEROUS | 经 delivery_ref 别名 |
+| `show_supabase_auth_config` | Auth 配置查询 | READ | 秘密排除 |
+| `update_supabase_auth_flags` | 注册/匿名开关（需确认） | WRITE | 仅更新明确指定的布尔项 |
+| `update_supabase_auth_config` | Auth 提供方/URL/模板（需确认） | WRITE | 经本地 request_ref |
+| `update_supabase_storage` | OBS 存储配置（需确认） | WRITE | 首次启用需完整凭据 |
+| `plan_supabase_creation` | 创建规划 | READ | planning_only，非执行方案 |
+| `list_supabase_flavors` | Supabase 规格候选 | READ | creation_ready=false，非报价 |
+| `list_supabase_manageable_instances` | 可托管 PG 查询 | READ | 同上 |
+| `create_supabase_application` | Single 创建提交（需确认） | DANGEROUS | 经本地 request_ref；仅 Single 模式 |
+| `delete_supabase_application` | 删除应用保留 PG（需确认） | DANGEROUS | 无级联删 PG |
+| `change_supabase_ssl` | SSL 开关（需确认） | WRITE | 开启需证书 ID，关闭传 null |
+| `plan_supabase_ssl` | SSL 切换规划 | READ | 证书步骤与缺口，无提交 |
+| `change_supabase_eip` | EIP 绑定/解绑（需确认） | WRITE | 绑定需 ID+IPv4；解绑须省略绑定参数 |
+| `change_supabase_application_password` | 应用改密（需确认） | DANGEROUS | 经本地 request_ref，不收集明文 |
+| `list_supabase_security_groups` | 安全组列表 | READ | 独立 VPC 入口 |
+| `show_supabase_security_group` | 安全组详情 | READ | |
+| `create_supabase_security_group` | 创建安全组（需确认） | WRITE | 创建组不等于应用已可访问 |
+| `add_supabase_security_group_rule` | 添加入站规则（需确认） | DANGEROUS | 指定 TCP 端口（默认 8443） |
+| `delete_supabase_security_group_rule` | 删除规则（需确认） | DANGEROUS | |
+| `show_supabase_job` | 任务状态查询 | READ | completion_verified=false |
+| `wait_supabase_job` | 有界只读观察 | READ | 默认 3 次、最多 10 次 |
+| `inspect_supabase_plan` | 本地计划检查 | READ | 不调用云 |
+| `cancel_supabase_plan` | 取消未提交计划 | WRITE | 仅本地账本，幂等 |
+| `reconcile_supabase_auth_plan` | Auth 计划对账 | WRITE | 云读 + 本地写，仅 Auth 开关场景 |
+
+## 使用指引
+
+### 前置条件
+
+- Python 3.10+
+- UV
+
+**Linux/macOS:**
 
 ```bash
-uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr" \
-  mcp-huaweicloud-rds-supabase-mgr
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-`mcp-huaweicloud-rds-supabase-mgr` 为规范入口；旧入口 `mcp_server_supabase` 保留过渡，两者等价。MCP 客户端配置模板见 [examples/](examples/) 与[用户指南](docs/USER_GUIDE.md)。
+**Windows:**
 
-源码安装（开发）：
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+### 安装
 
 ```bash
+git clone https://github.com/huaweicloud/rds-supabase-fullstack.git
+cd rds-supabase-fullstack/server/mcp_server_rds_supabase_mgr
 uv sync
-uv run mcp_server_supabase
+uv run mcp-huaweicloud-rds-supabase-mgr          # stdio（默认）
+uv run mcp-huaweicloud-rds-supabase-mgr -t streamable-http
 ```
 
-Supply environment variables through the trusted MCP host configuration, never through tool arguments:
-- `SUPABASE_RDS_ENDPOINT`: verified HTTPS service origin, without path, query or user information. Console proxy endpoints are not accepted as a substitute for a verified service endpoint.
-- `HUAWEICLOUD_PROJECT_ID`: target project.
-- `HUAWEICLOUD_AUTH_TOKEN`: externally provisioned service token; read on each request. No browser cookie login or token exchange is implemented.
-- `SUPABASE_ENABLE_WRITES=true`: explicit server-side write opt-in, off by default.
-- `HUAWEICLOUD_MCP_READ_ONLY=true`: blocks writes regardless of opt-in.
-- Shared core protection/audit configuration applies. Logs go to stderr.
+`mcp-huaweicloud-rds-supabase-mgr` 为规范入口；旧入口 `mcp_server_supabase`
+保留过渡，两者等价。
 
-Default `confirm=false` persists a ten-minute plan and returns `plan_id`. Confirm the reviewed intent and call again with the same parameters, `confirm=true` and that plan ID. Binding covers endpoint, project, credential digest, resource path, method and normalized payload. The service re-reads target state/protection before atomically claiming the plan. A plan can submit only once.
+### 验证
 
-`SUPABASE_STATE_FILE` selects the SQLite ledger (default user-local state directory). It stores digests, plan IDs, status and job IDs, never request bodies or tokens. Protect this directory with user-only permissions, including Windows ACLs. Keep the same ledger across restarts and local processes. `inspect_supabase_plan` reads records without cloud calls.
+```bash
+uv run pytest                       # 80% 覆盖率门槛
+uv run python tests/smoke_stdio.py
+```
 
-Accepted/unknown/submitted equivalent intents remain blocked even under a new plan. There is currently no automated resolution/release operation: reconcile with an operator before any future repeated change; do not delete the ledger to bypass protection. Credential rotation changes plan binding; this mechanism is not cloud-side idempotency or protection across independent state databases. A crash after claim but before send conservatively leaves submitted state. The MCP cannot prove a human saw a confirmation; the host must enforce its approval UX.
+### 诊断 CLI
 
-REST HTTP client rejects non-HTTPS endpoints (loopback is only an explicit test constructor option), never follows redirects, caps response bytes, uses a 30s timeout and never retries. Unknown write results require reconciliation. 202 is accepted, not completed. Target responses not matching the verified top-level id/status shape fail closed for writes pending endpoint validation.
+```bash
+uv run python -m mcp_server_supabase.diagnostics check       # 只检查配置格式与依赖
+uv run python -m mcp_server_supabase.diagnostics offline     # 离线 stdio 自检
+# 仅在已授权测试环境执行真实只读检查：
+uv run python -m mcp_server_supabase.diagnostics readonly --allow-cloud-read
+```
 
-`show_supabase_job` is a single request; `wait_supabase_job` provides bounded read-only observations using the public RDS single-job schema. Supabase live compatibility remains unverified. Public responses are filtered for secret fields, capped and additionally masked by core middleware. Data contract/schema compatibility must be verified before real usage.
+诊断 CLI 不提交云写操作，摘要不含资源值与凭据。
 
-## Verification
-`uv run pytest`（80% 覆盖率门槛）
+## 配置
 
-`uv run python tests/smoke_stdio.py`
+### 环境变量
 
-Tests exercise a local HTTP server (not cloud API), request bodies, pagination, secret filtering, readonly behavior, preview, state rejection and no redirect/retry. Skill host behavior is not covered by these unit tests.
+凭据模式二选一：**REST token 模式**（默认，`HUAWEICLOUD_AUTH_TOKEN`）或
+**sdk_core 模式**（`SUPABASE_TRANSPORT=sdk_core` + AK/SK）。凭据经可信宿主环境
+注入，不作为工具参数。
 
-See `BLOCKERS.md` for unimplemented scope. This is a development release, not six-scene production acceptance.
+| 变量 | 必填 | 说明 | 默认值 |
+|---|---|---|---|
+| `SUPABASE_RDS_ENDPOINT` | 是 | 原生 RDS HTTPS 服务入口（不含路径/查询/用户信息；非 Console 或 /rest 代理） | - |
+| `HUAWEICLOUD_PROJECT_ID` | 是 | 目标项目 ID（与局点一致） | - |
+| `HUAWEICLOUD_AUTH_TOKEN` | REST 模式必填 | 外部预置的服务 Token，每次请求读取 | - |
+| `SUPABASE_TRANSPORT` | 否 | 设为 `sdk_core` 启用华为 SDK Core 签名模式 | REST token |
+| `HUAWEICLOUD_ACCESS_KEY` | sdk_core 模式必填 | 账号 AK | - |
+| `HUAWEICLOUD_SECRET_KEY` | sdk_core 模式必填 | 账号 SK | - |
+| `HUAWEICLOUD_SECURITY_TOKEN` | 否 | STS 临时凭据 token | - |
+| `SUPABASE_VPC_ENDPOINT` | 否 | 安全组场景独立原生 VPC 入口 | - |
+| `SUPABASE_ENABLE_WRITES` | 否 | 云写开关；`true` 才能执行云侧写操作 | `false` |
+| `HUAWEICLOUD_MCP_READ_ONLY` | 否 | `true` 拦截所有 WRITE/DANGEROUS 工具 | `false` |
+| `SUPABASE_STATE_FILE` | 否 | 本地执行账本（SQLite）路径；跨重启保持同一账本 | 用户本地状态目录 |
+| `SUPABASE_REQUESTS_FILE` | 否 | 敏感请求本地引用注册表（操作方预置） | - |
+| `REQUESTS_CA_BUNDLE` | 否 | 自定义可信 CA（PEM 文件） | - |
+| `HUAWEICLOUD_MCP_PROTECTED_IDS` | 否 | 护栏：受保护资源 ID（逗号分隔，命中即 block） | 空 |
+| `HUAWEICLOUD_MCP_PROTECTED_NAMES` | 否 | 护栏：受保护资源名称（逗号分隔，命中即 block） | 空 |
+| `HUAWEICLOUD_MCP_PROTECTED_TAGS` | 否 | 护栏：受保护标签（逗号分隔 `k` 或 `k=v`） | 空 |
+| `HUAWEICLOUD_MCP_GUARDRAILS_CONFIG` | 否 | 复杂规则文件 `guardrails.yaml` 路径 | 空 |
+| `HUAWEICLOUD_MCP_AUDIT_FILE` | 否 | 审计 JSONL 文件路径（审计始终开启，默认写 stderr） | 空 |
+| `MCP_SERVER_PORT` | 否 | streamable-http 端口 | `8000` |
+| `MCP_SERVER_HOST` | 否 | streamable-http 绑定地址 | `0.0.0.0` |
 
-## Input and cancellation contract (0.3.7a1)
-Unknown top-level tool arguments are rejected before invocation, without echoing supplied names/values. Tools/list advertises additionalProperties=false. Invalid types/field constraints still use the existing SDK/service validation; this is not a complete input coercion redesign.
+### 安全机制
 
-`cancel_supabase_plan(plan_id)` atomically revokes a prepared local plan, including after process restart. Repeated cancellation is idempotent. Once submission starts, cancellation is refused: it does not cancel or roll back a cloud job. Cancellation is a local WRITE tool and obeys shared read-only/guardrail policy, but does not require the cloud-write opt-in. An expired plan cannot submit even if its stored state still says prepared.
+- **两阶段确认**：写工具默认 `confirm=false` 持久化十分钟计划并返回 `plan_id`；
+  确认后以**相同参数** `confirm=true` + `plan_id` 提交。参数、项目、服务地址或
+  凭据变更须重新预览确认。
+- **执行账本**：SQLite 本地账本记录计划、任务与状态。提交超时或结果未知时先
+  `inspect_supabase_plan`；`submitted`/`accepted`/`unknown` 均不得自行重放，
+  禁止删除账本绕过保护。
+- **敏感请求本地引用**：改密、SMTP、GitHub、OBS 凭据经操作方预置的本地注册表
+  （`SUPABASE_REQUESTS_FILE`）以别名提供；工具不接受明文，不读取交付文件内容。
+- **202 只表示受理**：任务 `completed` 不等于业务验证完成，须回查资源。
+- **写权限分层**：云写开关（`SUPABASE_ENABLE_WRITES`，默认关闭）与共享核心
+  只读拦截（`HUAWEICLOUD_MCP_READ_ONLY`）独立生效，均不可由 Agent 自行修改。
 
-EIP unbind rejects non-null binding IDs/addresses rather than silently discarding them. `get_supabase_capabilities` reports cloud_verified=false and separates available operations from remaining scope.
+**护栏已知局限（参数级匹配）：** 保护规则匹配工具参数中的资源 ID、名称类参数。
+仅云侧配置而参数中未出现的保护属性无法命中；建议通过环境变量或 `guardrails.yaml`
+主动配置保护名单。
 
-See [tool contract](docs/TOOL_CONTRACTS.md) and [recovery rules](docs/RECOVERY.md). These distinguish target requirements from current capabilities. Live IAM validation and generated SDK integration, live task reconciliation and six-scene acceptance remain pending.
+`guardrails.yaml` 示例：
 
-Requirement target: [MCP requirements](docs/REQUIREMENTS.md), [acceptance matrix](docs/ACCEPTANCE.md), [open questions](docs/OPEN_QUESTIONS.md). Product documents are synchronized from the local requirement baseline; target scope does not imply implementation.
+```yaml
+version: 1
+rules:
+  - id: protect-prod-supabase
+    match:
+      tools: ["delete_supabase_application"]
+      risks: [DANGEROUS]
+      resources:
+        name_patterns: ["^prod-"]
+    action: block
+    message: 生产 Supabase 应用受保护，请联系运维。
+```
 
-## Workstation integration before CodeArts (0.3.7a1)
-Run `uv run python -m mcp_server_supabase.diagnostics offline` for isolated stdio checks without cloud credentials or calls. Run `uv run python -m mcp_server_supabase.diagnostics check` to validate configuration syntax without network access. Only an operator in an authorized test environment should run `uv run python -m mcp_server_supabase.diagnostics readonly --allow-cloud-read`; optional `--application-id` and `--job-id` add scoped reads. This CLI never submits cloud writes and reports summary checks only, not raw resource values or credentials. See [workstation guide](docs/legacy/WORKSTATION.md).
+### uvx 运行（git 仓库版本）
 
-Key metadata supports status/type/ID/sorting filters and uses a six-field output whitelist. Reset now performs an application-scoped exact-ID metadata lookup immediately before claiming the plan, requiring exactly one normal record. Failed preflight leaves the plan prepared with no cloud write. Backend authorization/state validation remains essential because the cloud may change after local checks. Key name/time filters and new-key correlation remain pending.
+```json
+{
+    "mcpServers": {
+        "rds-supabase-mgr-mcp": {
+            "command": "uvx",
+            "args": [
+                "--from",
+                "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr",
+                "mcp-huaweicloud-rds-supabase-mgr"
+            ],
+            "env": {
+                "SUPABASE_RDS_ENDPOINT": "",
+                "HUAWEICLOUD_PROJECT_ID": "",
+                "HUAWEICLOUD_AUTH_TOKEN": "",
+                "HUAWEICLOUD_MCP_READ_ONLY": "true",
+                "SUPABASE_ENABLE_WRITES": "false"
+            }
+        }
+    }
+}
+```
 
-## Recovery metadata (0.3.7a1)
-HTTP failures expose error.recovery with category, next_action and automatic_retry=false. Submitted writes override transport categories with submission_unknown and plan_id; no HTTP code alone proves a write had no side effects. Raw backend error bodies are not returned. This is recovery guidance, not automatic reconciliation or unlocking. Existing errors without recovery remain compatible.
+sdk_core 模式（AK/SK）示例见 [examples/mcp-sdk.example.json](examples/mcp-sdk.example.json)。
 
-## Platform delivery
-The primary delivery path is the repository-standard, cross-platform uvx template (see Configure and run). The earlier Windows x64 offline-bundle workflow is archived under [docs/legacy/](docs/legacy/) and is no longer the main installation path; its installer remains in scripts/ for workstation reproduction only.
+## 示例
 
-## SDK transport (0.3.7a1)
-Use `SUPABASE_TRANSPORT=sdk_core` for Huawei SDK Core signed requests. See [SDK setup and migration](docs/SDK.md). Existing REST token mode remains the default for compatibility; no automatic credential fallback. This is not a generated Supabase SDK.
+### Cursor / Claude Desktop / Trae
 
-## 0.3.7a1 supplemental contract review
-See [implemented changes, conflicting evidence and acceptance](docs/SUPPLEMENT_REVIEW.md). Job output now uses whitelisted normalized task status instead of arbitrary raw response fields.
+将上述 JSON 配置填入 MCP 客户端并填入凭证（首次接入保持只读），然后自然语言使用：
 
-## Auth reconciliation (0.3.7a1)
-`reconcile_supabase_auth_plan` verifies the recorded job and fresh Auth values before ending an accepted local execution. Only matching Auth flag plans are supported. It performs cloud reads and a local ledger write; requires local WRITE permission but no cloud-write opt-in. See [contract and limitations](docs/RECONCILIATION.md) and [workstation prompt](docs/legacy/NEXT_WORKSTATION_PROMPT.md).
+- "查询当前 MCP 支持哪些 Supabase 场景" → `get_supabase_capabilities()`
+- "列出当前项目的 Supabase 应用" → `list_supabase_applications()`
+- "查应用 app-123 的详细状态" → `show_supabase_application(application_id="app-123")`
+- "列出应用 app-123 的 ApiKey 类型和状态，不看值" → `list_supabase_api_keys(application_id="app-123")`
+- "预览为应用 app-123 关闭 SSL，暂不执行" → `change_supabase_ssl(application_id="app-123", enable_ssl=false)`（`confirm=false` 返回计划与 `plan_id`）
+- "确认执行刚才预览的 SSL 变更" → 相同参数 `confirm=true` + `plan_id`
+- "列出可托管的 PG 实例" → `list_supabase_manageable_instances()`
+- "删除应用 app-123，先说明影响" → `delete_supabase_application(...)`（先预览确认；仅删应用保留 PG）
+- "查任务 job-456 的状态" → `show_supabase_job(job_id="job-456")`
 
-## 0.3.8a1：六场景增量交付
+## 深入文档
 
-本版增加12个工具（总计29个）：应用改密、Auth提供方/模板/URL、OBS配置、VPC组查询/创建/规则增删、创建候选发现、Single创建提交及ApiKey本地交付。敏感请求通过操作方受保护的本地别名提供，详见[配置说明](docs/LOCAL_REQUESTS.md)。
+- [用户指南](docs/USER_GUIDE.md)——安装、验证与自然语言操作全流程
+- [工具契约](docs/TOOL_CONTRACTS.md)——输入输出与确认语义的权威定义
+- [恢复规则](docs/RECOVERY.md)、[对账契约](docs/RECONCILIATION.md)——异常分流与 Auth 对账
+- [本地秘密输入输出](docs/LOCAL_REQUESTS.md)——敏感请求引用机制
+- [SDK 模式](docs/SDK.md)、[迁移说明](docs/MIGRATION.md)
+- [docs/legacy/](docs/legacy/)——已归档的 Windows 离线交付流程
 
-请从[子场景验收矩阵](docs/SIX_SCENARIO_MATRIX.md)核对已实现、未实现及待真实验证项。包周期创建、PG级联、证书原生发现/购买、宿主级秘密保险库仍未完成；此版不能称六场景全量生产验收通过。Windows联调使用[执行Prompt](docs/legacy/NEXT_WORKSTATION_PROMPT.md)，码道仍在最后。
+## 许可证
 
-0.3.8a2修复Windows旧账本测试夹具连接未关闭，并增加跨平台关闭断言；业务代码/29工具不变。详见docs/legacy/RELEASE_0.3.8a2.md。
+MIT

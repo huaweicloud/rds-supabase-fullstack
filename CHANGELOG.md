@@ -40,6 +40,14 @@ semantic versioning.
 
 ### Changed
 
+- Restructured the control-plane server README to the repository-standard
+  template (mcp_server_rc / mcp_server_rfs conventions): bilingual
+  README.md + README_en.md with the standard sections (version, overview,
+  category, features, tool list with risk levels, usage guide with per-OS uv
+  install, environment-variable table, safety mechanisms, guardrails,
+  uvx config, natural-language examples, docs index). The dense contract
+  notes previously living in the README remain authoritative under docs/
+  (TOOL_CONTRACTS, RECOVERY, LOCAL_REQUESTS, RECONCILIATION).
 - Aligned the control-plane server delivery (`server/mcp_server_rds_supabase_mgr`)
   with the repository-wide uvx template: added the canonical console-script
   alias `mcp-huaweicloud-rds-supabase-mgr` (`mcp_server_supabase` retained

@@ -7,6 +7,21 @@ semantic versioning.
 
 ### Added
 
+- Skill `rds-supabase-web-build` v0.1.0: full-stack development orchestrator for
+  RDS Supabase — a one-sentence triggered end-to-end pipeline (requirements →
+  resource preparation with dynamic control-plane MCP bring-up and OBS bucket
+  creation → data-plane MCP dynamic install → backend init.sql generation and
+  five-step deployment behind the best-practices mandatory gate → frontend
+  generation behind the usage mandatory gate → OBS+CDN build, hosting and the
+  auth-callback loop → three-layer launch verification), plus lifecycle
+  workflows (update / rollback / decommission / key rotation). Thick-workflow
+  orchestrator: stage state machine with gates, resumability via
+  .hwsupabase/webapp.json, routing-only integration with the five specialist
+  skills. Credentials never touch the agent (devkit-first injection with a
+  semi-automatic fallback). v1 backend boundary: data layer only; complex
+  business logic (payments / third-party calls / long tasks) is out of scope;
+  FunctionGraph routing deferred to v2.
+
 - Skill `rds-supabase-frontend` v0.1.0 (renamed from `huawei-supabase-frontend`):
   private OBS + CDN static frontend
   deployment, integration with existing Huawei Cloud RDS Supabase applications,

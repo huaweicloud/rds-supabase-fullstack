@@ -31,6 +31,7 @@ EXPECTED_SKILLS = {
     "rds-supabase-usage",
     "rds-supabase-postgres-best-practices",
     "rds-supabase-frontend",
+    "rds-supabase-web-build",
 }
 # Skills present in this repository that are not authored against the A1-A7
 # contract (tolerated; A2-A7 skipped).

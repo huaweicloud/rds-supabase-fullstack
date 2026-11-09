@@ -1,5 +1,5 @@
 ---
-name: rds-supabase-mgr
+name: rds-supabase-mgr-mcp
 description: RDS Supabase 全托管生命周期管理技能：使用华为云 RDS Supabase 管控 MCP，覆盖应用创建、配置、安全访问、删除的生命周期管理——查询应用、ApiKey 元数据与认证配置，规划创建并执行已开放的 SSL、EIP、应用删除、密钥重置和注册开关变更。不用于 SQL 或数据操作。
 ---
 

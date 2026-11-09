@@ -55,7 +55,7 @@ uv run mcp_server_rfs
 
 - **[rds-supabase-mcp](skills/rds-supabase-mcp/SKILL.md)**：RDS Supabase MCP 服务器使用技能——
   安装配置、38 工具用法、init.sql 五步部署流程与验证方法。
-- **[rds-supabase](skills/rds-supabase/SKILL.md)**：RDS Supabase 平台应用开发技能——客户端集成、
+- **[rds-supabase-usage](skills/rds-supabase-usage/SKILL.md)**：RDS Supabase 平台应用开发技能——客户端集成、
   认证、schema 变更、RLS 调试速查与服务端计算路由。
 - **[rds-supabase-postgres-best-practices](skills/rds-supabase-postgres-best-practices/SKILL.md)**：
   Postgres 最佳实践规则库——按症状直达规则文件，含华为云 RDS 部署专属规则。
@@ -68,4 +68,4 @@ MIT
 
 ## Supabase 管控面 MCP（开发版）
 
-新增 [server/mcp_server_rds_supabase_mgr](server/mcp_server_rds_supabase_mgr)（管理面：RDS Supabase 实例生命周期管理——应用创建、配置、安全访问、删除）与独立 [rds-supabase-mgr Skill](skills/rds-supabase-mgr)。提供云管控查询、部分写操作及执行记录保护；与现有实例内/数据面 MCP（[server/mcp_server_rds_supabase](server/mcp_server_rds_supabase)，运行面）分开交付，不替换现有工具。参见[迁移说明](server/mcp_server_rds_supabase_mgr/docs/MIGRATION.md)了解目录、共享依赖及未完成验收边界。
+新增 [server/mcp_server_rds_supabase_mgr](server/mcp_server_rds_supabase_mgr)（管理面：RDS Supabase 实例生命周期管理——应用创建、配置、安全访问、删除）与独立 [rds-supabase-mgr-mcp Skill](skills/rds-supabase-mgr-mcp)。提供云管控查询、部分写操作及执行记录保护；与现有实例内/数据面 MCP（[server/mcp_server_rds_supabase](server/mcp_server_rds_supabase)，运行面）分开交付，不替换现有工具。参见[迁移说明](server/mcp_server_rds_supabase_mgr/docs/MIGRATION.md)了解目录、共享依赖及未完成验收边界。

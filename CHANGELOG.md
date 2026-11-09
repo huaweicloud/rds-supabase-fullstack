@@ -29,11 +29,17 @@ semantic versioning.
 
 ### Changed
 
-- Repositioned the `rds-supabase-mgr` skill as "RDS Supabase 全托管生命周期管理"
+- Repositioned the `rds-supabase-mgr-mcp` skill as "RDS Supabase 全托管生命周期管理"
   (fully-managed lifecycle management): the SKILL.md title and description now
   state the creation / configuration / secure-access / deletion lifecycle
   scope explicitly; operational content is unchanged.
-- Renamed the control-plane skill `huaweicloud-supabase` to `rds-supabase-mgr`
+- Renamed the platform development skill `rds-supabase` to `rds-supabase-usage`
+  (v0.2.2): directory, SKILL.md name field, both READMEs, the
+  validate_skills EXPECTED_SKILLS entry and the unreleased CHANGELOG name
+  mentions. Routing references in the `rds-supabase-mcp` and
+  `rds-supabase-postgres-best-practices` descriptions now point at
+  `rds-supabase-usage`; skill content is otherwise unchanged.
+- Renamed the control-plane skill `huaweicloud-supabase` to `rds-supabase-mgr-mcp`
   (directory and SKILL.md name) to align with the renamed mgr server
   `mcp_server_rds_supabase_mgr`. Skill content is unchanged; README, the mgr
   server docs (USER_GUIDE, MIGRATION, RELEASE_0.3.8a1), MCP config example
@@ -56,7 +62,7 @@ semantic versioning.
   of the general workflow and wired install.md into the prerequisites,
   triggers, boundary table and reference routing.
 - Skills v0.2.0: professional skill-authoring pass (superpowers
-  writing-skills + Anthropic best practices). `rds-supabase`: removed
+  writing-skills + Anthropic best practices). `rds-supabase-usage`: removed
   workflow summary from the description (SDO shortcut trap), added
   overview and a skill-routing table, tightened RLS checklist items via
   cross-references to rule files, added a symptom-first debugging quick
@@ -69,7 +75,7 @@ semantic versioning.
 ### Fixed
 
 - Scheduled-task routing corrected: pg_cron is a platform capability (only
-  the current test instance lacks it). `rds-supabase` v0.2.1 routes
+  the current test instance lacks it). `rds-supabase-usage` v0.2.1 routes
   scheduled jobs to pg_cron; FunctionGraph now covers serverless compute
   and webhooks only. `rds-supabase-postgres-best-practices` v0.3.0 adds
   the `rds-scheduled-jobs` rule (UTC scheduling, parameter-template
@@ -79,7 +85,7 @@ semantic versioning.
 
 ### Added
 
-- Skill `rds-supabase` v0.1.0: platform development skill adapted from
+- Skill `rds-supabase-usage` v0.1.0: platform development skill adapted from
   supabase/agent-skills `supabase` (MIT, baseline c9be0e9) - agent discipline
   principles and security checklist adapted to the deployment, MCP-first
   workflows (execute_sql single-transaction batches), FunctionGraph routing

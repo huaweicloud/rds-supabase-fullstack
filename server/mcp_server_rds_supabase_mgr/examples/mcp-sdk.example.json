@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "rds-supabase-mgr": {
+    "rds-supabase-mgr-mcp": {
       "command": "REPLACE_WITH_ABSOLUTE_VENV_PYTHON",
       "args": [
         "-m",

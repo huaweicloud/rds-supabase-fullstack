@@ -1,8 +1,13 @@
+# Build from the repository root:
+#   docker build -f server/mcp_server_rds_supabase/Dockerfile .
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
-WORKDIR /app
+WORKDIR /app/server/mcp_server_rds_supabase
 
-COPY . .
+COPY libs/huaweicloud_mcp_core /app/libs/huaweicloud_mcp_core
+COPY server/mcp_server_rds_supabase/pyproject.toml server/mcp_server_rds_supabase/uv.lock ./
+COPY server/mcp_server_rds_supabase/README.md ./
+COPY server/mcp_server_rds_supabase/src ./src
 
 RUN uv sync --frozen --no-dev
 

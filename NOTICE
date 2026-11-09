@@ -33,16 +33,13 @@ the components listed below, which carry their own licenses.
    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
    SOFTWARE.
 
-2. server/mcp_server_rds_supabase/vendor/huaweicloud_mcp_core
-   Vendored from the huaweicloud-gaussdb-mcp repository
+2. server/mcp_server_rds_supabase
+   The server derives its layered architecture and shared-core integration
+   patterns from the huaweicloud-gaussdb-mcp repository
    (https://github.com/jarrenL/huaweicloud-gaussdb-mcp), Apache License 2.0,
-   Copyright (c) 2026 Huawei Technologies Co., Ltd. and contributors.
-
-   Note: this vendored core (1.2.0) is independent of the shared library at
-   libs/huaweicloud_mcp_core (1.0.0) used by server/mcp_server_rc and
-   server/mcp_server_rfs. The two cores have diverged (different designs and
-   licenses) and are consumed separately; upgrading one does not affect the
-   other.
+   Copyright (c) 2026 Huawei Technologies Co., Ltd. and contributors. It
+   consumes the repository-shared core library at libs/huaweicloud_mcp_core
+   (MIT).
 
 3. skills/huaweicloud-supabase/rds-supabase-usage and
    skills/huaweicloud-supabase/rds-supabase-postgres-best-practices

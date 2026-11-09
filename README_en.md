@@ -13,7 +13,7 @@ Huawei Cloud MCP Server shared repository: provides MCP tools for each Huawei Cl
 
 ### Database
 
-- **[RDS Supabase MCP](server/mcp_server_rds_supabase/README.md)**: Self-hosted Supabase (BaaS) on Huawei Cloud RDS PostgreSQL — schema and data inspection, RLS policies, SQL execution (init.sql migration deployment), GoTrue user management, storage bucket configuration, advisor diagnostics. Ships a vendored core library (1.2.0) with a standalone uv lock and Docker deployment.
+- **[RDS Supabase MCP](server/mcp_server_rds_supabase/README.md)**: Self-hosted Supabase (BaaS) on Huawei Cloud RDS PostgreSQL — schema and data inspection, RLS policies, SQL execution (init.sql migration deployment), GoTrue user management, storage bucket configuration, advisor diagnostics. Consumes the repository-shared core library (libs/huaweicloud_mcp_core) with a standalone uv lock and Docker deployment.
 
 ## Developer Documentation
 

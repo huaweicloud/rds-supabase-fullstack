@@ -139,8 +139,11 @@ async def test_read_only_mode_blocks_write_and_allows_read() -> None:
     assert result.structured_content == {  # type: ignore[comparison-overlap]
         "error": {
             "code": "MCP_READ_ONLY",
-            "message": "Tool 'execute_sql' is blocked in read-only mode.",
-            "hint": "Unset HUAWEICLOUD_MCP_READ_ONLY only in an approved write environment.",
+            "message": (
+                "Tool 'execute_sql' (WRITE) is blocked: read-only mode is "
+                "enabled (HUAWEICLOUD_MCP_READ_ONLY=true)."
+            ),
+            "hint": "Unset HUAWEICLOUD_MCP_READ_ONLY to allow write operations.",
         }
     }
 

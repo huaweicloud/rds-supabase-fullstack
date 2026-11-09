@@ -2,9 +2,7 @@
 
 from huaweicloud_mcp_core import build_server
 
-from . import __version__
-
-mcp = build_server("rds-supabase", version=__version__)
+mcp = build_server("rds-supabase")
 
 # Bottom-up registration. The import order below is the upstream TypeScript
 # tool registration order (database, project, auth_users, storage, platform,

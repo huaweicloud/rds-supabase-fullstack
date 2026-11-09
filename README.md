@@ -18,8 +18,8 @@
 
 - **[RDS Supabase MCP](server/mcp_server_rds_supabase/README_zh.md)**：华为云 RDS PostgreSQL 上的
   自建 Supabase（BaaS）平台管理——库表结构与数据查询、RLS 安全策略、SQL 执行（init.sql 迁移
-  部署）、GoTrue 用户管理、存储桶配置、advisors 诊断。自带 vendored 核心库（1.2.0）与独立
-  uv 锁，支持 Docker 部署。
+  部署）、GoTrue 用户管理、存储桶配置、advisors 诊断。复用仓库共享核心库
+  （libs/huaweicloud_mcp_core）与独立 uv 锁，支持 Docker 部署。
 
 ## 开发者文档
 

@@ -9,6 +9,13 @@ resolution-markers = [
     "python_full_version < '3.11'",
 ]
 
+[manifest]
+constraints = [
+    { name = "huaweicloudsdkcore", specifier = "==3.1.220" },
+    { name = "huaweicloudsdkiam", specifier = "==3.1.220" },
+    { name = "typing-inspection", specifier = "==0.4.4" },
+]
+
 [[package]]
 name = "annotated-types"
 version = "0.8.0"
@@ -877,8 +884,8 @@ wheels = [
 
 [[package]]
 name = "huaweicloud-mcp-core"
-version = "1.2.0"
-source = { directory = "vendor/huaweicloud_mcp_core" }
+version = "1.0.0"
+source = { directory = "../../libs/huaweicloud_mcp_core" }
 dependencies = [
     { name = "huaweicloudsdkcore" },
     { name = "huaweicloudsdkiam" },
@@ -888,20 +895,20 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "huaweicloudsdkcore", specifier = ">=3.1.216,<4" },
-    { name = "huaweicloudsdkiam", specifier = ">=3.1.216,<4" },
-    { name = "mcp", specifier = ">=2.0,<3" },
-    { name = "pyyaml", specifier = ">=6.0,<7" },
+    { name = "huaweicloudsdkcore", specifier = ">=3.1" },
+    { name = "huaweicloudsdkiam", specifier = ">=3.1" },
+    { name = "mcp", specifier = ">=2.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "mypy", specifier = ">=1.10,<2" },
-    { name = "pytest", specifier = ">=8.0,<10" },
-    { name = "pytest-asyncio", specifier = ">=0.23,<2" },
-    { name = "pytest-cov", specifier = ">=5.0,<8" },
-    { name = "ruff", specifier = ">=0.6,<1" },
-    { name = "types-pyyaml", specifier = ">=6.0,<7" },
+    { name = "mypy", specifier = ">=1.13" },
+    { name = "pytest", specifier = ">=8.0" },
+    { name = "pytest-asyncio", specifier = ">=0.23" },
+    { name = "pytest-cov", specifier = ">=5.0" },
+    { name = "ruff", specifier = ">=0.8" },
+    { name = "types-pyyaml", specifier = ">=6.0" },
 ]
 
 [[package]]
@@ -1173,7 +1180,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "httpx", specifier = ">=0.27,<1" },
-    { name = "huaweicloud-mcp-core", directory = "vendor/huaweicloud_mcp_core" },
+    { name = "huaweicloud-mcp-core", directory = "../../libs/huaweicloud_mcp_core" },
 ]
 
 [package.metadata.requires-dev]

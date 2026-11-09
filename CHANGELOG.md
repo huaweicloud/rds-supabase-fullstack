@@ -20,15 +20,28 @@ semantic versioning.
   the stdio / streamable-http templates, and verify; the skill description now
   also triggers on installation requests.
 - Integrated the rds-supabase capability into `huaweicloud/rds-supabase-fullstack`:
-  the MCP server now lives at `server/mcp_server_rds_supabase` with its shared
-  core vendored at `vendor/huaweicloud_mcp_core` (path dependency, standalone
-  `uv.lock`, server-local `Dockerfile`); the three skills, validation docs,
-  examples and the skills contract validator moved with it, and install URLs
-  now point at the new repository home
+  the MCP server now lives at `server/mcp_server_rds_supabase` consuming the
+  repository-shared core at `libs/huaweicloud_mcp_core` (path dependency,
+  standalone `uv.lock`, server-local `Dockerfile`); the three skills, validation
+  docs, examples and the skills contract validator moved with it, and install
+  URLs now point at the new repository home
   (`git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase`).
 
 ### Changed
 
+- Switched `mcp_server_rds_supabase` from the vendored 1.2.0 core to the
+  repository-shared `libs/huaweicloud_mcp_core` (1.0.0) and deleted the
+  vendor tree: the path dependency now points at ../../libs, `build_server`
+  is called without the 1.2.0-only `version` kwarg, and the read-only
+  interception test was adapted to the 1.0.0 wording. Re-validated: 241 tests
+  at 93.92% coverage, ruff/mypy clean, stdio smoke (38 tools, MCP_READ_ONLY
+  guard) passing. The Dockerfile now builds from the repository root
+  (selective COPY of libs + server sources; root .dockerignore added,
+  server-local .dockerignore removed). Known behavior change: boolean env
+  vars (e.g. HUAWEICLOUD_MCP_READ_ONLY) are parsed leniently by the 1.0.0
+  core — invalid values no longer fail fast at startup. SDK baseline pinned
+  via constraint-dependencies (huaweicloudsdkcore/iam==3.1.220,
+  typing-inspection==0.4.4) for reproducible offline resolution.
 - Grouped the five rds-supabase-* skills under `skills/huaweicloud-supabase/`
   (`rds-supabase-usage`, `rds-supabase-frontend`, `rds-supabase-mcp`,
   `rds-supabase-mgr-mcp`, `rds-supabase-postgres-best-practices`); the

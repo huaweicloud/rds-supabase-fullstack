@@ -4,8 +4,9 @@
 Validates every skill under skills/ against the Agent Skills open-standard
 format contract and repository conventions:
 
-A1  expected rds-supabase skills present, no unexpected skills (pre-existing
-    foreign skills are tolerated but exempt from the contract checks)
+A1  expected rds-supabase skills present, no unexpected skills (skills may be
+    grouped in subdirectories — discovery is recursive; pre-existing foreign
+    skills are tolerated but exempt from the contract checks)
 A2  frontmatter fields: allowed set, name rules, description length, semver version
 A3  SKILL.md body under 500 lines
 A4  no README.md / INSTALLATION_GUIDE.md / QUICK_REFERENCE.md inside skills
@@ -13,7 +14,8 @@ A5  reference file prefixes match references/_sections.md sections
 A6  metadata.version appears in the root CHANGELOG.md (version-drift tripwire)
 A7  description carries a trigger signal and is at least 80 characters
 
-Complements the per-skill validator (skills/rds-supabase-mcp/scripts/validate-skill.py).
+Complements the per-skill validator
+(skills/huaweicloud-supabase/rds-supabase-mcp/scripts/validate-skill.py).
 """
 from __future__ import annotations
 
@@ -80,7 +82,9 @@ def main() -> int:
         print(f"FAIL: {SKILLS_DIR} not found")
         return 1
 
-    found = {p.name for p in SKILLS_DIR.iterdir() if (p / "SKILL.md").is_file()}
+    # Skills may be grouped in subdirectories (e.g. skills/huaweicloud-supabase/);
+    # discovery is recursive, skill identity is the SKILL.md parent directory name.
+    found = {skill_md.parent.name for skill_md in SKILLS_DIR.rglob("SKILL.md")}
     missing = EXPECTED_SKILLS - found
     unknown = found - EXPECTED_SKILLS - FOREIGN_SKILLS
     if missing or unknown:
@@ -91,10 +95,10 @@ def main() -> int:
     changelog = REPO_ROOT / "CHANGELOG.md"
     changelog_text = changelog.read_text(encoding="utf-8") if changelog.exists() else ""
 
-    for skill_dir in sorted(SKILLS_DIR.iterdir()):
+    for skill_md in sorted(SKILLS_DIR.rglob("SKILL.md")):
+        skill_dir = skill_md.parent
         skill = skill_dir.name
-        skill_md = skill_dir / "SKILL.md"
-        if not skill_md.is_file() or skill not in EXPECTED_SKILLS:
+        if skill not in EXPECTED_SKILLS:
             continue
         text = skill_md.read_text(encoding="utf-8")
         fm = parse_frontmatter(text)

@@ -29,6 +29,13 @@ semantic versioning.
 
 ### Changed
 
+- Grouped the five rds-supabase-* skills under `skills/huaweicloud-supabase/`
+  (`rds-supabase-usage`, `rds-supabase-frontend`, `rds-supabase-mcp`,
+  `rds-supabase-mgr-mcp`, `rds-supabase-postgres-best-practices`); the
+  `huaweicloud-mcp-dev` skill stays at the top level. Repo organization only:
+  `scripts/validate_skills.py` now discovers skills recursively so grouped
+  skills remain contract-checked, and README / README_en / UPSTREAM / mgr
+  server doc paths were updated.
 - Repositioned the `rds-supabase-mgr-mcp` skill as "RDS Supabase 全托管生命周期管理"
   (fully-managed lifecycle management): the SKILL.md title and description now
   state the creation / configuration / secure-access / deletion lifecycle

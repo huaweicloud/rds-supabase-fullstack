@@ -1,5 +1,5 @@
 ---
-name: huawei-supabase-frontend
+name: rds-supabase-frontend
 description: 触发场景：创建并部署、更新、回退和维护华为云私有 OBS＋CDN 静态前端，接入已有华为云 RDS Supabase，或为这些任务准备构建环境。不用于其他托管平台、普通 UI/前端创建、通用 Node 环境准备、SSR 后端部署或数据库采购。
 license: MIT
 metadata:

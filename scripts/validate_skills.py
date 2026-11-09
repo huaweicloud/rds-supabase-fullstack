@@ -28,7 +28,7 @@ EXPECTED_SKILLS = {
     "rds-supabase-mcp",
     "rds-supabase",
     "rds-supabase-postgres-best-practices",
-    "huawei-supabase-frontend",
+    "rds-supabase-frontend",
 }
 # Skills present in this repository that are not authored against the A1-A7
 # contract (tolerated; A2-A7 skipped).

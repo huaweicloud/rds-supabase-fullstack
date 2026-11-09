@@ -7,7 +7,8 @@ semantic versioning.
 
 ### Added
 
-- Skill `huawei-supabase-frontend` v0.1.0: private OBS + CDN static frontend
+- Skill `rds-supabase-frontend` v0.1.0 (renamed from `huawei-supabase-frontend`):
+  private OBS + CDN static frontend
   deployment, integration with existing Huawei Cloud RDS Supabase applications,
   build environment preparation, versioned updates and rollbacks. Includes
   self-contained operation references, the v2 release record contract, four

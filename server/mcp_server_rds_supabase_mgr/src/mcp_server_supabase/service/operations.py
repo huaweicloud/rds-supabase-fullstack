@@ -164,7 +164,7 @@ class Operations:
             attempts += 1
             try:
                 result = await asyncio.wait_for(self.job(job_id), timeout=remaining)
-            except asyncio.TimeoutError:
+            except (asyncio.TimeoutError, TimeoutError):
                 exhausted = True
                 break
             if result['task_status'] != 'running':

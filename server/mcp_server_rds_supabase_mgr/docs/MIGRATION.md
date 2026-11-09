@@ -11,9 +11,9 @@ This directory imports the 0.3.7a1 control-plane MCP from personal development b
 
 Development prerelease: partial six-scene implementation; generated product SDK, complete scenario delivery, trusted TLS/network and dependency security policy remain open. Do not infer production readiness from import or tests. No original internal handoff materials, environment files, credentials, execution databases, dependency binaries or release ZIPs are imported.
 
-The repository name does not change the installed entry point. Existing mcp_server_supabase clients remain compatible. Release bundles are maintained separately; the PowerShell bundle installer expects bundled wheels and is not a source-checkout installer.
+The repository name does not change the installed entry point. Existing mcp_server_supabase clients remain compatible; the canonical uvx entry is mcp-huaweicloud-rds-supabase-mgr (both scripts are equivalent). Release bundles are maintained separately (workflow docs archived under docs/legacy/); the PowerShell bundle installer expects bundled wheels and is not a source-checkout installer.
 
-Source checkout: create a virtual environment, install ../../libs/huaweicloud_mcp_core then this package; install pytest and pytest-cov for the repository 80% coverage gate. Run pytest from this directory and python -m mcp_server_supabase.diagnostics offline. Never run real cloud calls in CI.
+Source checkout: uv sync (resolves ../../libs/huaweicloud_mcp_core and the dev group), then uv run pytest for the 80% coverage gate and uv run python -m mcp_server_supabase.diagnostics offline. Never run real cloud calls in CI.
 
 Migration validation: 97 tests passed with 92.02% line coverage, including stdio subprocesses (coverage subprocess patch). The repository 80% threshold is retained. Test dependencies require coverage>=7.10 and pytest-cov>=7 for this collection mode. This is local validation, not cloud or target CI acceptance.
 

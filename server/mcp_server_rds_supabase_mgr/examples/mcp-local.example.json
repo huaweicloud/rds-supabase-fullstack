@@ -1,9 +1,16 @@
 {
   "mcpServers": {
     "rds-supabase-mgr-mcp": {
-      "command": "REPLACE_WITH_ABSOLUTE_VENV_PYTHON",
-      "args": ["-m", "mcp_server_supabase.main"],
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr",
+        "mcp-huaweicloud-rds-supabase-mgr"
+      ],
       "env": {
+        "SUPABASE_RDS_ENDPOINT": "REPLACE_WITH_NATIVE_RDS_HTTPS_ENDPOINT",
+        "HUAWEICLOUD_PROJECT_ID": "REPLACE_WITH_PROJECT_ID",
+        "HUAWEICLOUD_AUTH_TOKEN": "REPLACE_WITH_SERVICE_TOKEN",
         "HUAWEICLOUD_MCP_READ_ONLY": "true",
         "SUPABASE_ENABLE_WRITES": "false"
       }

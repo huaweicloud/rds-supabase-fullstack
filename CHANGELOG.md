@@ -27,8 +27,29 @@ semantic versioning.
   URLs now point at the new repository home
   (`git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase`).
 
+### Fixed
+
+- `mcp_server_rds_supabase_mgr` `wait_supabase_job` timeout handling on Python
+  3.10: `asyncio.TimeoutError` and the builtin `TimeoutError` are distinct
+  classes before Python 3.11, so a transport-level builtin TimeoutError
+  escaped the `except asyncio.TimeoutError` clause and the "retain
+  uncertainty" contract of `test_poll_timeout_retains_uncertainty` broke on
+  3.10 (the tested baseline was Python 3.12, where the two classes are
+  unified). The handler now catches both; the declared
+  `requires-python >= 3.10` is honored.
+
 ### Changed
 
+- Aligned the control-plane server delivery (`server/mcp_server_rds_supabase_mgr`)
+  with the repository-wide uvx template: added the canonical console-script
+  alias `mcp-huaweicloud-rds-supabase-mgr` (`mcp_server_supabase` retained
+  for transition), rewrote USER_GUIDE.md around the cross-platform uvx
+  install path, converted the MCP config examples to uvx form, and archived
+  the Windows offline-bundle workflow docs (WORKSTATION*,
+  NEXT_WORKSTATION_PROMPT, RELEASE_*, COMPATIBILITY) under docs/legacy/
+  with an explanatory README. Personal-fork release download links were
+  removed from organization docs; server README install/verification
+  sections now use uv-based commands.
 - Switched `mcp_server_rds_supabase` from the vendored 1.2.0 core to the
   repository-shared `libs/huaweicloud_mcp_core` (1.0.0) and deleted the
   vendor tree: the path dependency now points at ../../libs, `build_server`

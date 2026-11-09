@@ -1,4 +1,4 @@
-> 首次使用请阅读[从下载到自然语言操作的用户指南](docs/USER_GUIDE.md)，包含Windows单行安装、Claude接入和测试背景。
+> 首次使用请阅读[用户指南](docs/USER_GUIDE.md)：跨平台 uvx 安装、Claude 接入与验证。
 
 > Directory integration and source installation: [MIGRATION.md](docs/MIGRATION.md). This is the cloud control-plane MCP; the existing sibling server remains separate.
 
@@ -16,7 +16,22 @@ Local stdio MCP with a real HTTP transport, not a mock-success adapter. No cloud
 - Three existing capability/planning tools remain available; creation planning is not creation execution.
 
 ## Configure and run
-Install this package and `../../libs/huaweicloud_mcp_core` into a project virtual environment. Run `mcp_server_supabase` for stdio.
+
+uvx 运行（推荐，跨平台，无需检出源码）：
+
+```bash
+uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr" \
+  mcp-huaweicloud-rds-supabase-mgr
+```
+
+`mcp-huaweicloud-rds-supabase-mgr` 为规范入口；旧入口 `mcp_server_supabase` 保留过渡，两者等价。MCP 客户端配置模板见 [examples/](examples/) 与[用户指南](docs/USER_GUIDE.md)。
+
+源码安装（开发）：
+
+```bash
+uv sync
+uv run mcp_server_supabase
+```
 
 Supply environment variables through the trusted MCP host configuration, never through tool arguments:
 - `SUPABASE_RDS_ENDPOINT`: verified HTTPS service origin, without path, query or user information. Console proxy endpoints are not accepted as a substitute for a verified service endpoint.
@@ -37,9 +52,9 @@ REST HTTP client rejects non-HTTPS endpoints (loopback is only an explicit test 
 `show_supabase_job` is a single request; `wait_supabase_job` provides bounded read-only observations using the public RDS single-job schema. Supabase live compatibility remains unverified. Public responses are filtered for secret fields, capped and additionally masked by core middleware. Data contract/schema compatibility must be verified before real usage.
 
 ## Verification
-`python -m unittest discover -s tests -v`
+`uv run pytest`（80% 覆盖率门槛）
 
-`python tests/smoke_stdio.py`
+`uv run python tests/smoke_stdio.py`
 
 Tests exercise a local HTTP server (not cloud API), request bodies, pagination, secret filtering, readonly behavior, preview, state rejection and no redirect/retry. Skill host behavior is not covered by these unit tests.
 
@@ -57,7 +72,7 @@ See [tool contract](docs/TOOL_CONTRACTS.md) and [recovery rules](docs/RECOVERY.m
 Requirement target: [MCP requirements](docs/REQUIREMENTS.md), [acceptance matrix](docs/ACCEPTANCE.md), [open questions](docs/OPEN_QUESTIONS.md). Product documents are synchronized from the local requirement baseline; target scope does not imply implementation.
 
 ## Workstation integration before CodeArts (0.3.7a1)
-Run `python -m mcp_server_supabase.diagnostics offline` for isolated stdio checks without cloud credentials or calls. Run `python -m mcp_server_supabase.diagnostics check` to validate configuration syntax without network access. Only an operator in an authorized test environment should run `python -m mcp_server_supabase.diagnostics readonly --allow-cloud-read`; optional `--application-id` and `--job-id` add scoped reads. This CLI never submits cloud writes and reports summary checks only, not raw resource values or credentials. See [workstation guide](docs/WORKSTATION.md).
+Run `uv run python -m mcp_server_supabase.diagnostics offline` for isolated stdio checks without cloud credentials or calls. Run `uv run python -m mcp_server_supabase.diagnostics check` to validate configuration syntax without network access. Only an operator in an authorized test environment should run `uv run python -m mcp_server_supabase.diagnostics readonly --allow-cloud-read`; optional `--application-id` and `--job-id` add scoped reads. This CLI never submits cloud writes and reports summary checks only, not raw resource values or credentials. See [workstation guide](docs/legacy/WORKSTATION.md).
 
 Key metadata supports status/type/ID/sorting filters and uses a six-field output whitelist. Reset now performs an application-scoped exact-ID metadata lookup immediately before claiming the plan, requiring exactly one normal record. Failed preflight leaves the plan prepared with no cloud write. Backend authorization/state validation remains essential because the cloud may change after local checks. Key name/time filters and new-key correlation remain pending.
 
@@ -65,7 +80,7 @@ Key metadata supports status/type/ID/sorting filters and uses a six-field output
 HTTP failures expose error.recovery with category, next_action and automatic_retry=false. Submitted writes override transport categories with submission_unknown and plan_id; no HTTP code alone proves a write had no side effects. Raw backend error bodies are not returned. This is recovery guidance, not automatic reconciliation or unlocking. Existing errors without recovery remain compatible.
 
 ## Platform delivery
-Windows x64 / 64-bit CPython 3.12 is the first delivery target, not yet a Windows-accepted release. See [compatibility matrix and Windows checklist](docs/COMPATIBILITY.md). The installer verifies target architecture and all manifest files before creating its environment. macOS development tests are recorded separately from Windows acceptance.
+The primary delivery path is the repository-standard, cross-platform uvx template (see Configure and run). The earlier Windows x64 offline-bundle workflow is archived under [docs/legacy/](docs/legacy/) and is no longer the main installation path; its installer remains in scripts/ for workstation reproduction only.
 
 ## SDK transport (0.3.7a1)
 Use `SUPABASE_TRANSPORT=sdk_core` for Huawei SDK Core signed requests. See [SDK setup and migration](docs/SDK.md). Existing REST token mode remains the default for compatibility; no automatic credential fallback. This is not a generated Supabase SDK.
@@ -74,12 +89,12 @@ Use `SUPABASE_TRANSPORT=sdk_core` for Huawei SDK Core signed requests. See [SDK 
 See [implemented changes, conflicting evidence and acceptance](docs/SUPPLEMENT_REVIEW.md). Job output now uses whitelisted normalized task status instead of arbitrary raw response fields.
 
 ## Auth reconciliation (0.3.7a1)
-`reconcile_supabase_auth_plan` verifies the recorded job and fresh Auth values before ending an accepted local execution. Only matching Auth flag plans are supported. It performs cloud reads and a local ledger write; requires local WRITE permission but no cloud-write opt-in. See [contract and limitations](docs/RECONCILIATION.md) and [workstation prompt](docs/NEXT_WORKSTATION_PROMPT.md).
+`reconcile_supabase_auth_plan` verifies the recorded job and fresh Auth values before ending an accepted local execution. Only matching Auth flag plans are supported. It performs cloud reads and a local ledger write; requires local WRITE permission but no cloud-write opt-in. See [contract and limitations](docs/RECONCILIATION.md) and [workstation prompt](docs/legacy/NEXT_WORKSTATION_PROMPT.md).
 
 ## 0.3.8a1：六场景增量交付
 
 本版增加12个工具（总计29个）：应用改密、Auth提供方/模板/URL、OBS配置、VPC组查询/创建/规则增删、创建候选发现、Single创建提交及ApiKey本地交付。敏感请求通过操作方受保护的本地别名提供，详见[配置说明](docs/LOCAL_REQUESTS.md)。
 
-请从[子场景验收矩阵](docs/SIX_SCENARIO_MATRIX.md)核对已实现、未实现及待真实验证项。包周期创建、PG级联、证书原生发现/购买、宿主级秘密保险库仍未完成；此版不能称六场景全量生产验收通过。Windows联调使用[执行Prompt](docs/NEXT_WORKSTATION_PROMPT.md)，码道仍在最后。
+请从[子场景验收矩阵](docs/SIX_SCENARIO_MATRIX.md)核对已实现、未实现及待真实验证项。包周期创建、PG级联、证书原生发现/购买、宿主级秘密保险库仍未完成；此版不能称六场景全量生产验收通过。Windows联调使用[执行Prompt](docs/legacy/NEXT_WORKSTATION_PROMPT.md)，码道仍在最后。
 
-0.3.8a2修复Windows旧账本测试夹具连接未关闭，并增加跨平台关闭断言；业务代码/29工具不变。详见docs/RELEASE_0.3.8a2.md。
+0.3.8a2修复Windows旧账本测试夹具连接未关闭，并增加跨平台关闭断言；业务代码/29工具不变。详见docs/legacy/RELEASE_0.3.8a2.md。

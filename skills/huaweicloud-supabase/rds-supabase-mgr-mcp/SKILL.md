@@ -4,7 +4,7 @@ description: RDS Supabase 全托管生命周期管理技能：使用华为云 RD
 ---
 
 # RDS Supabase 全托管生命周期管理 Skill
-版本0.3.8a2；兼容mcp_server_supabase 0.3.8a1/0.3.8a2。工具存在不代表服务Endpoint已联调。
+版本0.3.8a2；兼容mcp_server_supabase 0.3.8a1/0.3.8a2（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务Endpoint已联调。
 
 ## 共同流程
 1. 调用get_supabase_capabilities并检查宿主实际工具列表。区分规划与可执行工具。

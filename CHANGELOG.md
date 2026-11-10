@@ -210,6 +210,13 @@ semantic versioning.
   MCP servers are loaded only when a scenario triggers the skill and are
   installed automatically inside the workflow steps (control plane → stage 3,
   data plane → stage 4, repo sources only), never with the skill package.
+- Skill `rds-supabase-web-build` v0.6.3: the progress board becomes
+  dual-track and always visible in chat. On top of the host todo-list
+  integration, the skill must render a fixed-format full step overview
+  table (all eight steps with breakpoints and status markers) in its
+  first reply, and re-render the complete table at the head of every
+  step report (current step ✅, next step 🔄), giving the user a direct,
+  always-current perception of the whole flow.
 
 - Skill `rds-supabase-frontend` v0.1.0 (renamed from `huawei-supabase-frontend`):
   private OBS + CDN static frontend

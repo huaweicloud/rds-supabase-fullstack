@@ -29,7 +29,7 @@
 - 配额、库存或账户条件限制：如实提示对应原因，不能升级规格或更换站点绕过。
 - 网络超时或查询不完整：说明暂时无法核实，不标记永久不支持。
 
-分别核实 OBS 桶区域、已有 RDS Supabase 应用可用性及 CDN 回源/加速范围；跨区访问还要评估延迟和费用。仅在对应 API 需要时解析账号项目 ID。账号站点影响报价而无法从上下文确定时再询问。依据：[中国站与国际站差异](https://support.huaweicloud.com/usermanual-account/account_id_015.html)。
+分别核实 OBS 桶区域、已有 RDS Supabase 应用可用性，以及 `obs-cdn` 路线的加速范围；跨区访问还要评估延迟和费用。仅在对应 API 需要时解析账号项目 ID。账号站点影响报价而无法从上下文确定时再询问。依据：[中国站与国际站差异](https://support.huaweicloud.com/usermanual-account/account_id_015.html)。
 
 ## 通用区域名称映射（不代表具体服务支持）
 

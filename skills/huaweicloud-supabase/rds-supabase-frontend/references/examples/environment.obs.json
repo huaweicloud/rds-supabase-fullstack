@@ -21,11 +21,13 @@
     "rds_region": "cn-north-4",
     "project_id": null,
     "bucket": "example-static-frontend",
+    "entry_domain": "app.example.com",
+    "website_hosting": "disabled",
     "cdn_id": "cdn-example",
-    "cdn_cname": "cdn.example.com",
+    "cdn_cname": "app.example.com.c.cdnhwc1.com",
     "dns_record_id": "dns-example",
     "certificate_id": "cert-example",
     "certificate_expires_at": "2027-11-07T08:00:00Z",
-    "delegation_scope": "example-scope"
+    "certificate_level": "cdn"
   }
 }

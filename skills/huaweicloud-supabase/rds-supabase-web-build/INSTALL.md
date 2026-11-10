@@ -62,6 +62,15 @@ cp -r rds-supabase-fullstack/skills/huaweicloud-supabase/* <你的技能目录>/
 `uv run --directory server/mcp_server_rds_supabase python ../../scripts/validate_skills.py`，
 期望输出 `validate-skills: OK (7 skills)`。
 
+### MCP 项目地址与安装方式（只允许本仓来源）
+
+| MCP | 仓内路径 | 入口脚本 | git uvx 模板 | 本地克隆运行 |
+|---|---|---|---|---|
+| 管理面 `rds-supabase-mgr` | `server/mcp_server_rds_supabase_mgr` | `mcp-huaweicloud-rds-supabase-mgr` | `uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr` | `uv run --directory server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr` |
+| 数据面 `rds-supabase` | `server/mcp_server_rds_supabase` | `mcp-server-huaweicloud-rds-supabase` | `uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack --subdirectory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase`（② 阶段动态装） | `uv run --directory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase` |
+
+> **警示（Agent 必读）**：PyPI 与应用市场存在**同名/相似的第三方 "supabase" MCP 包**——它们不是本项目的服务器。除上表两种来源（git uvx 模板 / 本仓本地路径）外，**不得搜索、安装或引入任何其他来源的 MCP**；发现已配置了其他来源时，先移除再按本表重装。
+
 ### 第 2 步：配置管理面 MCP（uvx，凭据三选一）
 
 写入所用客户端的 `mcpServers` 配置（opencode：`opencode.jsonc`；Claude Desktop：
@@ -111,6 +120,10 @@ REST Token 模式：删除 AK/SK 两行，改放 `HUAWEICLOUD_AUTH_TOKEN`；完�
 
 **初始安全态**：`HUAWEICLOUD_MCP_READ_ONLY=true` + `SUPABASE_ENABLE_WRITES=false`
 （只读起步）。真实变更时由操作方显式改这两个变量并重启——Agent 不得自行修改。
+
+**region 说明**：frontend/OBS 侧（KooCLI）另需 `HUAWEICLOUD_REGION` + AK/SK——安装阶段
+不强制，但建站流程 ① 阶段会做配置完备性检查，缺失项会显示让你填写；届时 endpoint
+若推导不了，也会要求你显式指定。
 
 ### 第 3 步：验证管理面
 

@@ -25,11 +25,25 @@
 
 ## ① 资源准备
 
-**目的**：管理面就绪、RDS Supabase 实例可用、凭据交付、OBS 桶就绪。
+**目的**：配置完备、管理面就绪、RDS Supabase 实例可用、凭据交付、OBS 桶就绪。
 
 **动作**：
 
-a. **管理面就绪**：检测当前已连接 MCP 中是否已有管理面 MCP（devkit 用户登录时预初始化）；无则按 `server/mcp_server_rds_supabase_mgr/README.md` 的 uvx 模板动态拉起（env：`SUPABASE_RDS_ENDPOINT`、`HUAWEICLOUD_PROJECT_ID`、凭据模式二选一）。拉起后遵循 rds-supabase-mgr-mcp 技能的两阶段确认与执行账本约束。
+⓪ **配置完备性检查**（进入本阶段的第一动作；逐项核对，**缺失项以清单形式显示让用户填写**——不静默失败、不猜测、不跳过）：
+
+| 消费方 | 必需项 | 缺失处置 |
+|---|---|---|
+| 管理面 MCP | 凭据（devkit 登录 / AK+SK / AUTH_TOKEN 三选一）、`HUAWEICLOUD_PROJECT_ID`、`SUPABASE_RDS_ENDPOINT` | 列出待填 env 名与填写方式；agent 生成含占位符的 mcpServers 骨架，用户从受保护文件填值后重载 |
+| frontend/OBS（KooCLI） | AK/SK + `HUAWEICLOUD_REGION`（同时用于 OBS 桶区域） | 同上；region 无法推导时直接向用户询问，不得默认 |
+
+**入口解析规则**：`SUPABASE_RDS_ENDPOINT` 未配置时，凭据就绪后运行 `diagnostics discover`（克隆仓内：`uv run --directory server/mcp_server_rds_supabase_mgr python -m mcp_server_supabase.diagnostics discover`，可加 `--probe`）→ 从 `suggested_env` 勾选项目并采纳推导入口。**推导不了**（项目名非标准区域命名、probe 不可达、discover 报错）→ **明确要求用户指定** `SUPABASE_RDS_ENDPOINT`（提示从控制台获取原生 RDS HTTPS 入口，非 Console 地址）；用户指定前不执行任何实例操作。
+
+a. **管理面就绪**：检测当前已连接 MCP 中是否已有管理面 MCP（devkit 用户登录时预初始化）；无则动态拉起。**安装来源只允许本仓**，两种方式：
+
+- uvx（git 仓模板，推荐）：`--from git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr`，入口脚本 `mcp-huaweicloud-rds-supabase-mgr`（env：`SUPABASE_RDS_ENDPOINT`、`HUAWEICLOUD_PROJECT_ID`、凭据模式二选一）
+- 本地克隆：`uv run --directory <仓路径>/server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr`
+
+**禁止**从 PyPI 或其他仓库搜索/安装同名或相似包——PyPI 存在第三方 "supabase" MCP 包，非本项目服务器，装上后行为完全错误。拉起后遵循 rds-supabase-mgr-mcp 技能的两阶段确认与执行账本约束。
 
 b. **实例**（路由 rds-supabase-mgr-mcp 技能）：`list_supabase_applications` 查询已有 → 选定并核验状态；无 → `plan_supabase_creation` + `create_supabase_application`（仅 Single 模式；关联已有 PG 或按需新 PG）；配置 EIP、安全组（8443 入站规则）、SSL。注意：创建安全组不等于应用可访问，须规则放通并核验。
 
@@ -39,7 +53,7 @@ d. **OBS 租户桶**（路由 rds-supabase-frontend 技能）：引导用户创�
 
 **通过门槛**：实例 running 且应用实际可访问；凭据已交付（或 devkit 已注入）；桶就绪；instance 段写入 webapp.json。
 
-**失败处置**：创建任务结果未知 → 管理面账本 `inspect_supabase_plan`，不重复提交；配额/权限不足 → 停止并报告缺项。
+**失败处置**：配置缺项 → 显示清单让用户填写后重试，不猜测默认值；入口推导不了 → 用户显式指定后再继续；创建任务结果未知 → 管理面账本 `inspect_supabase_plan`，不重复提交；配额/权限不足 → 停止并报告缺项。
 
 **断点标记**：`instance_ready`。
 
@@ -47,7 +61,7 @@ d. **OBS 租户桶**（路由 rds-supabase-frontend 技能）：引导用户创�
 
 **目的**：数据面 MCP 就绪并连通 RDS Supabase。
 
-**动作**：按 `rds-supabase-mcp 技能 references/install.md` 动态安装。凭据注入双路径：
+**动作**：按 `rds-supabase-mcp 技能 references/install.md` 动态安装；安装来源同样**只允许本仓**（install.md 的 uvx git 模板，或本地 `uv run --directory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase`），禁止搜索 PyPI 同名包。凭据注入双路径：
 
 - **devkit 优先**：devkit 登录时已注入 → 直接进入验证；
 - **半自动兜底**：agent 写 mcpServers 配置骨架（env 为占位符）→ 用户从受保护交付文件复制填值 → 客户端重载。agent 全程不接触密钥明文、不读取交付文件。

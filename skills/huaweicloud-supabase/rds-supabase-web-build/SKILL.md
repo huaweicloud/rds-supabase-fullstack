@@ -3,7 +3,7 @@ name: rds-supabase-web-build
 description: 'RDS Supabase 全栈开发编排技能：AI Agent 通过自然语言创建并托管 Web 应用网站的端到端工作流——前端代码生成、后端 init.sql（DDL/GRANT/RLS/RPC）生成与部署、前端静态资源 OBS+CDN 全托管、端到端上线与生命周期管理（更新/回滚/下线）。Use when：创建 Web 网站、搭建 AI 应用、全栈应用从零到上线、已有 RDS Supabase 应用的迭代更新与托管维护。编排管理面 MCP（实例生命周期）与数据面 MCP（动态安装）及 rds-supabase-mgr-mcp / rds-supabase-mcp / rds-supabase-usage / rds-supabase-frontend / rds-supabase-postgres-best-practices 五个专项技能。v1 后端边界为数据层；复杂业务逻辑（支付/第三方调用/长任务）不在 v1 范围，SSR 后端部署不支持。'
 license: MIT
 metadata:
-  version: "0.1.0"
+  version: "0.1.1"
 ---
 
 # RDS Supabase 全栈开发编排（web-build）
@@ -60,7 +60,7 @@ RDS Supabase 全栈开发的**总指挥技能**：用户以一句话（"建一�
 ## 前置条件
 
 1. uv（含 uvx）已安装；MCP 客户端（Claude Code 等）可用
-2. ① 起点：devkit 已在用户登录时初始化管理面 MCP 与凭据；或可经 uvx 动态拉起管理面 MCP（凭据由用户提供或经受保护文件交付）
+2. ① 起点：devkit 已在用户登录时初始化管理面 MCP 与凭据；或可经本仓 uvx 模板动态拉起管理面 MCP（凭据由用户提供或经受保护文件交付）；frontend/OBS 侧需 AK/SK 与 `HUAWEICLOUD_REGION`（① 逐一检查，缺失由用户补填）
 3. 云侧付费资源（实例/OBS 桶/CDN）创建前须用户显式确认（费用预估在 ⓪ 输出）
 
 ## 工作流
@@ -75,7 +75,7 @@ requirements_confirmed → instance_ready → mcp_connected → backend_deployed
 | 阶段 | 动作（路由） | 通过门槛 |
 |---|---|---|
 | ⓪ 需求澄清 | 网站/页面/数据模型/认证澄清；AI 能力识别（pgvector 检索/Realtime/文件上传为可选扩展）；费用预估清单 | 用户确认需求摘要 + 数据模型草案 |
-| ① 资源准备 | a. 管理面就绪（devkit 检测→uvx 动态拉起）；b. 实例创建/选定+配置（EIP/安全组 8443/SSL）；c. 凭据获取（网关 URL + Anon/Service Role Key 两种都要）；d. OBS 租户桶创建（frontend 技能引导） | 实例 running 且实际可访问；凭据就绪（只记 env 名）；桶就绪 |
+| ① 资源准备 | ⓪ 配置完备性检查（region/AK/SK/项目/入口缺项→**显示让用户填写**；入口推导不了→用户显式指定）；a. 管理面就绪（devkit 检测→**仅本仓** uvx/本地路径拉起）；b. 实例创建/选定+配置（EIP/安全组 8443/SSL）；c. 凭据获取（网关 URL + Anon/Service Role Key 两种都要）；d. OBS 租户桶创建（frontend 技能引导，需 AK/SK+region） | 配置无缺项；实例 running 且实际可访问；凭据就绪（只记 env 名）；桶就绪 |
 | ② 数据面接入 | rds-supabase-mcp 技能 install.md 动态安装；凭据注入 devkit 优先、半自动兜底（agent 写配置骨架 + 用户从受保护文件填值） | `get_project_url` 与网关一致 + `list_tables` 应答 |
 | ③ 后端生成部署 | **强制门**：生成 init.sql 前必读 best-practices（逐条对照）+ usage 客户端消费视角；数据面 MCP 五步部署 | 结构确认 + advisors 无新增安全项 + REST 200 |
 | ④ 前端生成 | **强制门**：生成前必读 usage（SDK 正确用法，避免运行时报错）；默认 React+Vite+TS | 本地构建成功 + 本地功能验证 |
@@ -122,6 +122,8 @@ requirements_confirmed → instance_ready → mcp_connected → backend_deployed
 ## 注意事项
 
 - **凭据红线**：密钥永不写入 webapp.json/聊天/工具返回；agent 不读取交付文件；devkit 注入优先、半自动兜底；anon key 进入前端产物属预期，Service Role Key 绝不进入
+- **MCP 安装来源锁定**：两台 MCP 服务器只从**本仓**安装（uvx git 模板 `git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=...`，或本地 `uv run --directory server/... <入口脚本>`）；禁止从 PyPI/第三方仓库搜索安装——存在同名第三方 "supabase" MCP 包，会导致连接到完全错误的服务器
+- **配置完备性检查**（① 第一动作）：管理面需凭据 + `HUAWEICLOUD_PROJECT_ID` + `SUPABASE_RDS_ENDPOINT`；frontend/OBS 需 AK/SK + `HUAWEICLOUD_REGION`。缺失项以清单**显示让用户填写**（不猜测不跳过）；endpoint 推导不了（discover 失败/非标准区域）→ 用户显式指定
 - **边界外处置**：复杂业务逻辑（支付/第三方调用/长任务）超出 v1 数据层边界——明确告知用户并停止，不擅自以 RPC 模拟
 - 文件上传（Storage）v1 默认不含：⓪ 识别并说明（可选扩展路径：管理面 `update_supabase_storage` 配 OBS 凭据）
 - v1 单环境（webapp.json 字段预留多环境扩展）

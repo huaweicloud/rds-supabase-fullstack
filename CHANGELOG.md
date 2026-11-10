@@ -39,6 +39,15 @@ semantic versioning.
   launch). v1 backend boundary: data layer only; complex
   business logic (payments / third-party calls / long tasks) is out of scope;
   FunctionGraph routing deferred to v2.
+- Skill `rds-supabase-web-build` v0.1.1: field-tested fixes from a Claude Code
+  run — stage-1 configuration completeness check (control-plane credentials,
+  project ID and endpoint; frontend/OBS AK/SK and region) with an explicit
+  fill-in checklist instead of silent failure, endpoint fallback to explicit
+  user specification when discovery cannot derive it, and hard MCP install
+  source locking (repo-only uvx git template or local `uv run --directory`;
+  never search PyPI or third-party registries for same-named packages). The
+  install guide gains a per-MCP address and install-method table with the
+  anti-drift warning; negative routing and stage playbooks updated to match.
 
 - Skill `rds-supabase-frontend` v0.1.0 (renamed from `huawei-supabase-frontend`):
   private OBS + CDN static frontend

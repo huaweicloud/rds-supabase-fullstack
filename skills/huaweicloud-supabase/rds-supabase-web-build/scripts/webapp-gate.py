@@ -59,9 +59,8 @@ def check_contract(data, missing):
     for key in ("project", "stages"):
         if not isinstance(data.get(key), dict):
             missing.append(f"{key} must be an object")
-    if isinstance(data.get("project"), dict):
-        if not isinstance(data["project"].get("name"), str) or not data["project"].get("name"):
-            missing.append("project.name must be a non-empty string")
+    if isinstance(data.get("project"), dict) and not data["project"].get("name"):
+        missing.append("project.name must be a non-empty string")
     instance = data.get("instance")
     if instance is not None:
         if not isinstance(instance, dict):
@@ -139,12 +138,10 @@ def check_stage(data, stage, missing):
                for e in history):
         missing.append(f"no passed history event for '{stage}'")
     if stage in ("instance_ready", "mcp_connected", "backend_deployed", "frontend_built",
-                 "hosting_published", "launched"):
-        if not isinstance(data.get("instance"), dict):
-            missing.append("instance section missing for a post-① stage")
-    if stage in ("frontend_built", "hosting_published", "launched"):
-        if not isinstance(data.get("frontend"), dict):
-            missing.append("frontend section missing for a post-④ stage")
+                 "hosting_published", "launched") and not isinstance(data.get("instance"), dict):
+        missing.append("instance section missing for a post-① stage")
+    if stage in ("frontend_built", "hosting_published", "launched") and not isinstance(data.get("frontend"), dict):
+        missing.append("frontend section missing for a post-④ stage")
     if stage in ("backend_deployed", "frontend_built", "hosting_published", "launched"):
         deployments = (data.get("backend") or {}).get("deployments") or []
         if not deployments:

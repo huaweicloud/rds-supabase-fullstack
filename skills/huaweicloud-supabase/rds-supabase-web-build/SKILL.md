@@ -3,7 +3,7 @@ name: rds-supabase-web-build
 description: 'RDS Supabase 全栈开发编排技能：AI Agent 通过自然语言创建并托管 Web 应用网站的端到端工作流——前端代码生成、后端 init.sql（DDL/GRANT/RLS/RPC）生成与部署、前端静态资源 OBS+CDN 全托管、端到端上线与生命周期管理（更新/回滚/下线）。Use when：创建 Web 网站、搭建 AI 应用、全栈应用从零到上线、已有 RDS Supabase 应用的迭代更新与托管维护。编排管理面 MCP（实例生命周期）与数据面 MCP（动态安装）及 rds-supabase-mgr-mcp / rds-supabase-mcp / rds-supabase-usage / rds-supabase-frontend / rds-supabase-postgres-best-practices 五个专项技能。v1 后端边界为数据层；复杂业务逻辑（支付/第三方调用/长任务）不在 v1 范围，SSR 后端部署不支持。'
 license: MIT
 metadata:
-  version: "0.2.0"
+  version: "0.2.1"
 ---
 
 # RDS Supabase 全栈开发编排（web-build）
@@ -77,10 +77,10 @@ requirements_confirmed → instance_ready → mcp_connected → backend_deployed
 | ⓪ 需求澄清 | 网站/页面/数据模型/认证澄清；AI 能力识别（pgvector 检索/Realtime/文件上传为可选扩展）；费用预估清单 | 用户确认需求摘要 + 数据模型草案 |
 | ① 资源准备 | ⓪ 配置完备性检查（region/AK/SK/项目/入口缺项→**显示让用户填写**；入口推导不了→用户显式指定）；a. 管理面就绪（devkit 检测→**仅本仓** uvx/本地路径拉起）；b. 实例**先问新建/已有**（已有→管理面 `list_supabase_applications` 列表勾选+状态核验；新建→创建+配置 EIP/安全组 8443/SSL）；c. 凭据获取（**两路径必经、不可漏**：网关 URL + Anon/Service Role Key——② 数据面安装必需）；d. OBS 租户桶创建（frontend 技能引导，需 AK/SK+region） | 配置无缺项；实例 running 且实际可访问；凭据就绪（只记 env 名）；桶就绪 |
 | ② 数据面接入 | rds-supabase-mcp 技能 install.md 动态安装；凭据注入 devkit 优先、半自动兜底（agent 写配置骨架 + 用户从受保护文件填值） | `get_project_url` 与网关一致 + `list_tables` 应答 |
-| ③ 后端生成部署 | **强制门**：生成 init.sql 前必读 best-practices（逐条对照）+ usage 客户端消费视角；数据面 MCP 五步部署 | 结构确认 + advisors 无新增安全项 + REST 200 |
+| ③ 后端生成部署 | **强制门**：生成 init.sql 前必读 best-practices（逐条对照，产出规则对照表 gate 校验）+ usage 客户端消费视角；数据面 MCP 五步部署 | 结构确认 + advisors 无新增安全项 + REST 200 且 anon 可见性符合设计 |
 | ④ 前端生成 | **强制门**：生成前必读 usage（SDK 正确用法，避免运行时报错）；默认 React+Vite+TS | 本地构建成功 + 本地功能验证 |
 | ⑤ 构建与托管 | frontend 技能：build → 上传①预建桶 → CDN；↻ 域名确定后回调配置（管理面 `update_supabase_auth_config`）→ 前端重建 | frontend checks 通过 + stable_url |
-| ⑥ 端到端上线 | launch-checklist 三层验证（后端/前端/连通） | 全必需项 passed → 标记 launched + 上线报告 |
+| ⑥ 端到端上线 | launch-checklist 三层验证（后端/前端/连通含**多用户隔离抽检**） | 全必需项 passed → 标记 launched + 上线报告 |
 
 每阶段的完整 playbook（输入/动作/门槛/失败处置/断点）见 references/workflow-stages.md。
 

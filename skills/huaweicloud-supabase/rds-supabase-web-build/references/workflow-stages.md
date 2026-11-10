@@ -57,7 +57,7 @@
    | frontend/OBS（KooCLI） | AK/SK + `HUAWEICLOUD_REGION`（同时用于 OBS 桶区域） |
 
 3. **入口解析**：`SUPABASE_RDS_ENDPOINT` 未配置 → 凭据就绪后运行 `diagnostics discover`（`uv run --directory server/mcp_server_rds_supabase_mgr python -m mcp_server_supabase.diagnostics discover`，可加 `--probe`）→ 从 `suggested_env` 勾选项目并采纳入口；**推导不了**（非标准区域命名 / probe 不可达 / 报错）→ **要求用户显式指定** `SUPABASE_RDS_ENDPOINT`，指定前不执行任何实例操作
-4. **管理面就绪**：检测已连接 MCP（devkit 预初始化）；无则动态拉起——**安装来源只允许本仓**：uvx 模板 `git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr`（入口 `mcp-huaweicloud-rds-supabase-mgr`）或本地 `uv run --directory <仓>/server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr`；**禁止**从 PyPI/第三方仓搜索安装（存在同名第三方包）。拉起后遵循 mgr-mcp 技能两阶段确认与执行账本
+4. **管理面就绪**：检测已连接 MCP（devkit 预初始化）；无则动态拉起——**安装来源只允许本仓**：uvx 模板 `git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr`（入口 `mcp-huaweicloud-rds-supabase-mgr`；**生产建议 pin `@<commit>` 锁定版本，避免默认分支变更引入未验证行为**）或本地 `uv run --directory <仓>/server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr`；**禁止**从 PyPI/第三方仓搜索安装（存在同名第三方包）。拉起后遵循 mgr-mcp 技能两阶段确认与执行账本
 5. **实例——先问后做**：**询问用户：新建实例，还是使用已有 RDS Supabase 应用**（不替用户默认）：
    - **已有**：`list_supabase_applications` → 列表展示（application_id/名称/状态/规格）让用户选 → `show_supabase_application` 核验（normal/running、无进行中任务、网关可达）
    - **新建**：`plan_supabase_creation` + `create_supabase_application`（仅 Single；关联已有 PG 或新 PG）→ 配置 EIP、安全组（8443 入站）、SSL → 等待协议轮询 job；创建安全组 ≠ 可访问，须规则放通并核验
@@ -123,7 +123,7 @@
 5. 部署（数据面五步）：预检 → 审查（可重复执行/破坏性语句逐条确认/RLS 覆盖/最小授权）→ `execute_sql` 单一事务 → 授权暴露（GRANT + `NOTIFY pgrst, 'reload schema'`）→ 查询确认
 6. 部署批次写入 webapp.json（batch_id/对象清单/init.sql sha256）→ 跑 `check-gate --number 3` + `check-stage --stage backend_deployed` → 阶段报告
 
-**输出断言**：🔍 结构确认（`list_tables`/`list_constraints`）+ RLS 生效（`get_rls_status`）+ `get_advisors(security)` 无新增 + REST 200（anon `GET /rest/v1/<表>`）｜🤖 gate PASS（对照表 ≥5 映射 + deployments 契约 + sha256）
+**输出断言**：🔍 结构确认（`list_tables`/`list_constraints`）+ RLS 生效（`get_rls_status`）+ `get_advisors(security)` 无新增 + REST 200 且 anon 可见性符合设计（公开表返回数据；受保护表返回空集——RLS 拒绝表现为受限结果，不是 4xx）｜🤖 gate PASS（对照表 ≥5 映射 + deployments 契约 + sha256）
 
 **工具白名单**：允许：数据面全部只读 + `execute_sql`；禁止：管理面写工具（auth 配置属⑤）、前端构建
 
@@ -204,18 +204,18 @@
 **动作序列**：
 
 1. 宣言⑥
-2. 按 references/launch-checklist.md 执行三层验证：后端项（结构/RLS/advisors/REST 200）/ 前端项（checks 契约）/ 连通项（站点渲染、前端→API 数据查询或登录流、auth 回调跳转）
+2. 按 references/launch-checklist.md 执行三层验证：后端项（结构/RLS/advisors/REST 200 + anon 可见性）/ 前端项（checks 契约）/ 连通项（站点渲染、前端→API 数据可见性、**多用户隔离抽检**——两个测试账号经数据面 MCP 用户管理创建后互访对方数据行断言不可见、auth 回调跳转）
 3. 输出上线报告（三级交付语义 + stable_url + 版本引用）
 4. 写 webapp.json（launched）→ gate → 完成交付
 
-**输出断言**：🔍 三层全必需项 passed｜🤖 gate PASS（launched 终态 + 全链 history）
+**输出断言**：🔍 三层全必需项 passed（含多用户隔离抽检不可见）｜🤖 gate PASS（launched 终态 + 全链 history）
 
-**工具白名单**：允许：数据面只读、frontend checks；禁止：**一切写工具**（上线验证纯只读）
+**工具白名单**：允许：数据面只读与用户管理（测试账号创建）、frontend checks；禁止：**一切写工具**（上线验证除测试账号外纯只读；测试账号在报告后提示用户可清理）
 
 **黄金路径**：
 ```
-宣言⑥ → 后端项（get_rls_status / get_advisors / REST 200）→ 前端项（checks 契约复核）
-→ 连通项（浏览器打开 stable_url 渲染 ✓ / 站点内数据查询 ✓ / auth 回调 ✓）
+宣言⑥ → 后端项（get_rls_status / get_advisors / REST 200 + anon 可见性）→ 前端项（checks 契约复核）
+→ 连通项（stable_url 渲染 ✓ / 站点内查询可见性正确 ✓ / 隔离抽检：账号 A↔B 互访均空集 ✓ / auth 回调 ✓）
 → 上线报告（本地已验证 / 环境已准备 / 线上验收通过）→ 写 webapp.json(launched)
 → gate PASS → 交付
 ```

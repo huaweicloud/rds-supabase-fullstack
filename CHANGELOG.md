@@ -72,6 +72,15 @@ semantic versioning.
   materialized as rule→location mapping checklists
   (.hwsupabase/gates/3-rules-checklist.md, 4-sdk-contract-checklist.md) that
   the gate script enforces.
+- Skill `rds-supabase-web-build` v0.2.1: RLS verification semantics made
+  precise — REST acceptance now requires anon data visibility to match the
+  design (public tables return rows, protected tables return an empty set;
+  RLS rejection is a restricted result, never a 4xx/5xx status code), and a
+  mandatory multi-user isolation spot check joins the stage-6 connectivity
+  layer (two test accounts created via data-plane user management must see
+  none of each other's rows). The uvx install templates now carry a
+  production pin recommendation (`@<commit>` on the `--from` git URL) in
+  both the install guide and the stage-1 playbook.
 
 - Skill `rds-supabase-frontend` v0.1.0 (renamed from `huawei-supabase-frontend`):
   private OBS + CDN static frontend

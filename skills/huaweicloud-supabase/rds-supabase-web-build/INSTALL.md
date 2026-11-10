@@ -102,6 +102,10 @@ cp -r rds-supabase-fullstack/skills/huaweicloud-supabase/* <你的技能目录>/
 REST Token 模式：删除 AK/SK 两行，改放 `HUAWEICLOUD_AUTH_TOKEN`；完整变量表见
 [管理面 README](../../../server/mcp_server_rds_supabase_mgr/README.md)。
 
+**版本锁定（生产推荐）**：`--from` 值改为
+`git+https://github.com/huaweicloud/rds-supabase-fullstack@<commit 或 tag>#subdirectory=...`，
+避免默认分支变更引入未验证行为；数据面 MCP 的 uvx 模板同理。
+
 **凭据注入三选一**（Agent 按此顺序尝试）：
 
 1. **devkit（推荐）**：宿主已装华为云 devkit 并登录 → 凭据由 devkit 注入，Agent 全程

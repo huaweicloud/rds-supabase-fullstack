@@ -46,7 +46,7 @@ The `skills/` directory provides skills authored to the Agent Skills open standa
 - **[rds-supabase-mcp](skills/huaweicloud-supabase/rds-supabase-mcp/SKILL.md)**: RDS Supabase MCP server usage skill — installation and configuration, all 38 tools, the five-step init.sql deployment workflow, and verification methods.
 - **[rds-supabase-usage](skills/huaweicloud-supabase/rds-supabase-usage/SKILL.md)**: RDS Supabase platform application development skill — client integration, auth, schema changes, an RLS debugging quick reference, and serverless compute routing.
 - **[rds-supabase-postgres-best-practices](skills/huaweicloud-supabase/rds-supabase-postgres-best-practices/SKILL.md)**: Postgres best-practice rule library — symptom-to-rule-file index, including rules specific to the Huawei Cloud RDS deployment.
-- **[rds-supabase-frontend](skills/huaweicloud-supabase/rds-supabase-frontend/SKILL.md)**: Private OBS + CDN static frontend deployment skill — build environment preparation, integration with an existing Huawei Cloud RDS Supabase application, versioned releases, updates, rollbacks, and production URL verification.
+- **[rds-supabase-frontend](skills/huaweicloud-supabase/rds-supabase-frontend/SKILL.md)**: Public-read OBS static frontend deployment skill (direct domain or CDN origin) — build environment preparation, integration with an existing Huawei Cloud RDS Supabase application, versioned releases, updates, rollbacks, and production URL verification.
 - **[huaweicloud-mcp-dev](skills/huaweicloud-mcp-dev/SKILL.md)**: development guide skill for MCP servers in this repository.
 
 ## License

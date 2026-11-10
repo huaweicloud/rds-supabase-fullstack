@@ -1,0 +1,33 @@
+{
+  "schema_version": 2,
+  "environment": "preview",
+  "hosting_kind": "obs-domain",
+  "provider": "huawei-cloud",
+  "service": "OBS",
+  "account_id": "example-account",
+  "stable_url": "http://www.example.com",
+  "supabase_application_id": "supabase-example",
+  "supabase_https_url": "https://supabase.example.com",
+  "current_service_version": "release-1",
+  "current_success_version": null,
+  "previous_success_version": null,
+  "remote_release_status": "published",
+  "last_completed_stage": "production_switched",
+  "updated_at": "2026-11-07T08:00:00Z",
+  "build": null,
+  "obs_cdn": {
+    "profile": "example-profile",
+    "obs_region": "cn-north-4",
+    "rds_region": null,
+    "project_id": null,
+    "bucket": "example-domain-frontend",
+    "entry_domain": "www.example.com",
+    "website_hosting": "enabled",
+    "cdn_id": null,
+    "cdn_cname": "example-domain-frontend.obs.cn-north-4.myhuaweicloud.com",
+    "dns_record_id": "dns-example",
+    "certificate_id": null,
+    "certificate_expires_at": null,
+    "certificate_level": null
+  }
+}

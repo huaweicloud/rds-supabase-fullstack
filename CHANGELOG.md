@@ -5,6 +5,16 @@ semantic versioning.
 
 ## [Unreleased]
 
+### Changed
+
+- Skill `rds-supabase-frontend` v0.2.0: support public-read OBS with direct-domain
+  or CDN hosting; add internal-cloud discovery, repeat-release fast path,
+  policy coverage preflight and single-pass MIME/cache metadata uploads.
+  Batch GET evidence collection and v3 acceptance records reduce baseline
+  checks to entry/assets plus Supabase when required, retaining conditional
+  route/cache/update/rollback checks and v2 history compatibility.
+
+
 ### Added
 
 - `mcp_server_rds_supabase_mgr` v0.4.0a1: `diagnostics discover` — credential-driven

@@ -3,7 +3,7 @@ name: rds-supabase-web-build
 description: 'RDS Supabase 全栈开发编排技能：AI Agent 通过自然语言创建并托管 Web 应用网站的端到端工作流——前端代码生成、后端 init.sql（DDL/GRANT/RLS/RPC）生成与部署、前端静态资源 OBS+CDN 全托管、端到端上线与生命周期管理（更新/回滚/下线）。Use when：创建 Web 网站、搭建 AI 应用、全栈应用从零到上线、已有 RDS Supabase 应用的迭代更新与托管维护。编排管理面与数据面两台 MCP（均由工作流步骤动态安装：管理面→步骤三、数据面→步骤四）及 rds-supabase-mgr-mcp / rds-supabase-mcp / rds-supabase-usage / rds-supabase-frontend / rds-supabase-postgres-best-practices 五个专项技能。v1 后端边界为数据层；复杂业务逻辑（支付/第三方调用/长任务）不在 v1 范围，SSR 后端部署不支持。'
 license: MIT
 metadata:
-  version: "0.7.0"
+  version: "0.7.1"
 ---
 
 # RDS Supabase 全栈开发编排（web-build）
@@ -60,7 +60,7 @@ RDS Supabase 全栈开发的**顶层编排技能**：用户以单句自然语言
 
 1. 技能包（全部技能）已按 [README](README.md)/[INSTALL.md](INSTALL.md) 完整安装进项目技能目录——安装阶段不含 MCP 与凭据
 2. uv（含 uvx）可用——步骤三/四动态安装 MCP 所需，步骤一环境检查核对，缺失提醒用户安装
-3. 步骤一执行环境检查与配置：凭据（devkit 登录态或 AK/SK）、Region（局点）、RDS 与 OBS 接入点、`HUAWEICLOUD_PROJECT_ID` 须已配置或可解析；**无法获取的项必须以缺失清单显式提醒用户设置**，不得猜测或跳过
+3. 步骤一执行环境检查与配置：凭据（devkit 登录态或 AK/SK）、Region（局点）、RDS 与 OBS 接入点、`HUAWEICLOUD_PROJECT_ID` 须已配置或可解析；**无法获取的项必须以缺失清单显式提醒用户设置**，不得猜测或跳过。凭据存放遵循**项目级隔离**：只入 `<项目根>/.hwsupabase/secrets/`，不入全局/系统环境变量与个人级配置（红线见注意事项）
 4. 云侧付费资源（实例/OBS 桶/CDN）创建前须用户显式确认（费用预估在步骤二输出）
 
 ## 工作流（步骤一–八 分步执行）
@@ -239,6 +239,7 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 ## 注意事项
 
 - **凭据红线**：密钥永不写入 webapp.json/会话内容/工具返回；agent 不读取交付文件；devkit 注入优先、半自动备选路径；anon key 进入前端产物属预期，Service Role Key 绝不进入
+- **凭据项目级隔离（红线）**：登录态与凭据**只存放于当前项目内**——`<项目根>/.hwsupabase/secrets/`（0600、属主本人、目录排除 Git）。**禁止**写入全局或系统环境变量（shell profile、launchd/系统级 env、会话 `export`）；**禁止**新建或覆写个人级配置（`~/.config/huaweicloud/credentials.json`、`~/.obsutilconfig`）——已有个人级文件属既有工具与其他项目，**不迁移、不删除、不覆写**。MCP 进程凭据经进程内 env 或项目内凭据文件注入（`HUAWEICLOUD_MCP_CREDENTIALS_FILE` / `HUAWEICLOUD_DEVKIT_CREDENTIALS_FILE` 指向项目内 0600 文件；`SUPABASE_REQUESTS_FILE=<项目>/.hwsupabase/requests.json`，Key 交付落盘 secrets/）。本项目凭据轮换只影响本项目 `.hwsupabase/`，不污染其他项目开发
 - **MCP 安装来源锁定**：两台 MCP 服务器只从**本仓**安装（uvx git 模板 `git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=...`，或本地 `uv run --directory server/... <入口脚本>`）；禁止从 PyPI/第三方仓库搜索安装——存在同名第三方 "supabase" MCP 包，会导致连接到完全错误的服务器
 - **配置完备性检查**（步骤三第一动作）：管理面需凭据 + `HUAWEICLOUD_PROJECT_ID` + `SUPABASE_RDS_ENDPOINT`；frontend/OBS 需 AK/SK + `HUAWEICLOUD_REGION`。缺失项以清单**以清单形式提示用户填写**（不猜测不跳过）；endpoint 无法推导（discover 失败/非标准区域）→ 用户显式指定
 - **边界外处置**：复杂业务逻辑（支付/第三方调用/长任务）超出 v1 数据层边界——明确告知用户并停止，不擅自以 RPC 模拟

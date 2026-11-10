@@ -7,6 +7,23 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.7.1: project-scoped credential isolation
+  is now a red line — login state and credentials live only inside the
+  current project at `<project>/.hwsupabase/secrets/` (0600, owner-only,
+  git-ignored; `SUPABASE_REQUESTS_FILE` registry at
+  `.hwsupabase/requests.json`). Writing credentials into global or system
+  environment variables (shell profiles, launchd, session exports) and into
+  personal-level configs (`~/.config/huaweicloud/credentials.json`,
+  `~/.obsutilconfig`) is forbidden — pre-existing personal files belong to
+  other tooling and projects and are never migrated, deleted or overwritten;
+  MCP credentials are injected at process scope only. Rotation affects this
+  project's `.hwsupabase/` alone and cannot pollute other projects. Stated
+  in the prerequisites, the red-line notes, stage-1/3/4 playbook actions and
+  a new credentials-storage section of the project-state contract.
+- Skill `rds-supabase-function-graph` v0.1.1: secret-management aligned with
+  the same project-scoped isolation — protected files live under
+  `<project>/.hwsupabase/secrets/` and never in global or personal-level
+  locations.
 - Skill `rds-supabase-web-build` v0.7.0: data-plane access scheme now follows
   the instance SSL state — when the RDS Supabase application has SSL disabled
   the gateway is accessed over plain HTTP and HTTPS is NOT forced. The rule

@@ -20,7 +20,7 @@
 **动作序列**：
 
 1. 声明步骤一
-2. **凭据检查**：devkit 登录态，或 AK/SK（或服务 Token）位于受保护文件；缺失 → 计入缺失清单
+2. **凭据检查**：devkit 登录态，或 AK/SK（或服务 Token）位于受保护文件；缺失 → 计入缺失清单。**存放遵循项目级隔离**：项目内 `<项目根>/.hwsupabase/secrets/`（0600、排除 Git）；禁止写入全局/系统环境变量与个人级配置（shell profile、`~/.config/huaweicloud/`、`~/.obsutilconfig` 等——不新建、不覆写、不迁移）
 3. **uv（含 uvx）可用**——步骤三/四动态安装 MCP 的前提（`uv --version` 验证）；缺失 → 计入缺失清单并提醒用户安装（`curl -LsSf https://astral.sh/uv/install.sh | sh`）
 4. **Region（局点）确认**：`HUAWEICLOUD_REGION` 已选择——OBS 接入点推导与桶区域的前提；缺失 → 计入缺失清单
 5. **RDS 接入点**：`SUPABASE_RDS_ENDPOINT` 已配置 → 直接采用；未配置且凭据就绪 → 运行 `diagnostics discover`（`uv run --directory server/mcp_server_rds_supabase_mgr python -m mcp_server_supabase.diagnostics discover`，可加 `--probe`）→ 从 `suggested_env` 勾选并采纳；无法推导（非标准区域命名 / probe 不可达 / 报错）→ 要求用户显式指定
@@ -85,7 +85,7 @@
 3. **实例——先询问后执行**：**询问用户：新建实例，还是使用已有 RDS Supabase 应用**（不得代用户默认选择）：
    - **已有**：`list_supabase_applications` → 列表展示（application_id/名称/状态/规格）供用户选择 → `show_supabase_application` 核验（normal/running、无进行中任务、网关可达）→ **随即执行第 4 项（凭据获取）**：网关 URL 与两类密钥为步骤四数据面 MCP 动态安装的必需输入，不得遗漏
    - **新建**：`plan_supabase_creation` + `create_supabase_application`（仅 Single；关联已有 PG 或新 PG）→ 配置 EIP、安全组（8443 入站）、SSL → 等待协议轮询 job；创建完成后**同样必须执行第 4 项**（凭据获取）；创建安全组 ≠ 可访问，须规则放通并核验
-4. **凭据获取（两条路径都必经——缺失任一项则步骤四无法安装，流水线中断）**：网关 URL + Anon Key + Service Role Key（**两类密钥均须获取**），经管理面 ApiKey 交付工具 deliver 到受保护本地文件；webapp.json 只记 env 名 + `instance.source`（`created`/`selected`）
+4. **凭据获取（两条路径都必经——缺失任一项则步骤四无法安装，流水线中断）**：网关 URL + Anon Key + Service Role Key（**两类密钥均须获取**），经管理面 ApiKey 交付工具 deliver 到受保护本地文件——**项目内路径**：`SUPABASE_REQUESTS_FILE=<项目>/.hwsupabase/requests.json` 注册，交付落盘 `.hwsupabase/secrets/`（0600、排除 Git，不写入全局变量与个人级配置）；webapp.json 只记 env 名 + `instance.source`（`created`/`selected`）
 5. **OBS 租户桶**（frontend 技能引导，凭据与 Region 均为步骤一所核对）；域名/证书条件核对，不齐备则步骤七前补齐
 6. 写 webapp.json instance 段 → gate → 步骤报告
 
@@ -114,7 +114,7 @@
 
 1. 声明步骤四
 2. 按 `rds-supabase-mcp 技能 references/install.md` 动态安装；**来源只允许本仓**——完整命令：`uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack --subdirectory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase`（或本地克隆 `uv run --directory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase`；服务器文档：https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase/README.md ），禁止搜索 PyPI 同名包
-3. 凭据注入双路径：**devkit 优先**（已注入 → 直接验证）；**半自动备选路径**（agent 生成含占位符的 mcpServers 配置模板 → 用户从受保护文件复制实际值填入 → 客户端重载；agent 全程不接触明文）
+3. 凭据注入双路径：**devkit 优先**（已注入 → 直接验证）；**半自动备选路径**（agent 生成含占位符的 mcpServers 配置模板 → 用户从**项目内**受保护文件 `.hwsupabase/secrets/` 复制实际值填入 → 客户端重载；agent 全程不接触明文）。**注入作用域限于 MCP 进程**（进程 env 或项目内 0600 凭据文件）——不 `export` 到 shell 会话、不写入 shell profile 或任何全局/个人级配置
 4. **访问协议跟随实例 SSL 状态**（`SUPABASE_URL` 取值规则）：开启 SSL → `https://`；未开启 → `http://`（**不强制 HTTPS 交互**；步骤三已将 `instance.ssl_enabled` 记入 webapp.json，gate `--verify` 对 `ssl_enabled=false` 放行 http）
 5. 验证：`get_project_url` 返回 == 网关地址；`list_tables` 正常应答
 6. 写 webapp.json（stages: mcp_connected）→ gate → 步骤报告

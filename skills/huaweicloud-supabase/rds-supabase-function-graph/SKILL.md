@@ -3,7 +3,7 @@ name: rds-supabase-function-graph
 description: 'RDS Supabase FunctionGraph 云函数技能：为 Web 应用生成、部署、安全验证并运维承载于华为云 FunctionGraph 的自定义服务端业务代码（交易通知、对接外部系统、复杂领域逻辑、高安全隐私处理）。前端经共享版 APIG 触发器以 Supabase GoTrue JWT 调用函数，函数内完成验签、CORS、幂等与错误契约；全流程经 KooCLI 原子命令编排并受 fgs-gate 机械核验。Use when：需要 Postgres RPC 之外的出站 HTTP/Webhook、密钥不进前端的服务端处理、外部 I/O 定时作业（对账/补单/汇总推送），或为已上线的 RDS Supabase 应用追加、更新、回滚、下线云函数。'
 license: Proprietary
 metadata:
-  version: "0.1.0"
+  version: "0.1.1"
 ---
 
 # RDS Supabase FunctionGraph 云函数技能
@@ -42,7 +42,7 @@ v1 负向边界（不得擅自引入）：专享版 APIG（升级路径见 refer
 
 1. 本技能包已按 [README](README.md) 安装；KooCLI（hcloud）已安装——步骤一核对，缺失则提醒安装并停止
 2. RDS Supabase 应用已上线（web-build 步骤八 `launched`）或已有可复用实例；`.hwsupabase/webapp.json` 存在（本技能经 `webapp_ref` 关联）
-3. 凭据：KooCLI 认证（devkit AK/SK 同源，`hcloud configure test` 连通性确认）+ 受保护文件中的 `FGS_JWT_SECRET`（用户从控制台获取 GoTrue JWT Secret 后放入，agent 不读内容）
+3. 凭据：KooCLI 认证（devkit AK/SK 同源，`hcloud configure test` 连通性确认）+ **项目内**受保护文件 `.hwsupabase/secrets/` 中的 `FGS_JWT_SECRET`（用户从控制台获取 GoTrue JWT Secret 后放入，agent 不读内容）——**项目级隔离**：不入全局/系统变量与个人级配置，不污染其他项目（红线见 references/secret-management.md）
 4. OBS：已有桶可用（artifacts 前缀私有路径，不设公开读）
 
 ## 工作流

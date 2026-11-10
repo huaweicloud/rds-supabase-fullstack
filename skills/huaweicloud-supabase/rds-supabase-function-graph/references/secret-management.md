@@ -14,7 +14,7 @@
 agent **永不接触任何密钥值**。步骤四 env 配置流程：
 
 1. 🤖 agent 生成 `env-body.json` **模板**：只含 env **名**与占位符（`"FGS_JWT_SECRET": "<VALUE_FROM_PROTECTED_FILE>"`）
-2. 👤 用户（或受保护文件读取脚本）将模板填充为真实值文件 `env-body.real.json`，存放于 0600 权限受保护路径
+2. 👤 用户（或受保护文件读取脚本）将模板填充为真实值文件 `env-body.real.json`，存放于**项目内**受保护路径 `<项目根>/.hwsupabase/secrets/`（0600、排除 Git）——**项目级隔离**：登录态与凭据不入全局/系统环境变量、不入个人级配置（shell profile、`~/.config/huaweicloud/`、`~/.obsutilconfig`），不影响其他项目
 3. 🤖 agent 执行 `hcloud FGS UpdateFunctionConfig --cli-json-file=<env-body.real.json 路径>`——**只传路径，不读内容**
 4. 🤖 trace 记 `{"tool": "hcloud FGS UpdateFunctionConfig", "note": "env via cli-json-file <路径名>"}`——无值
 5. 🤖 functions.json 只记 env_names
@@ -32,9 +32,9 @@ agent **永不接触任何密钥值**。步骤四 env 配置流程：
 
 | 密钥 | 获取方式 |
 |---|---|
-| `FGS_JWT_SECRET` | 华为云 RDS Supabase 控制台 → 实例 → 认证设置（GoTrue JWT Secret）；复制写入受保护文件（0600），agent 不读内容 |
-| `SUPABASE_SERVICE_ROLE_KEY` | web-build 步骤三已交付的受保护文件复用（deliver_supabase_api_key 产物） |
-| `PARTNER_SIGN_KEY` 等 | 用户从对应外部系统获取后写入受保护文件 |
+| `FGS_JWT_SECRET` | 华为云 RDS Supabase 控制台 → 实例 → 认证设置（GoTrue JWT Secret）；复制写入项目内受保护文件 `.hwsupabase/secrets/`（0600），agent 不读内容 |
+| `SUPABASE_SERVICE_ROLE_KEY` | web-build 步骤三已交付的项目内受保护文件复用（`.hwsupabase/secrets/`，deliver_supabase_api_key 产物） |
+| `PARTNER_SIGN_KEY` 等 | 用户从对应外部系统获取后写入项目内受保护文件 `.hwsupabase/secrets/` |
 
 ## v2 升级路径（文档化，v1 不实施）
 

@@ -1,6 +1,19 @@
 # 项目状态契约（webapp.json）
 
-跨会话断点续作的载体。文件：项目根 `.hwsupabase/webapp.json`（目录排除 Git）。与 rds-supabase-frontend 技能的发布记录契约（`.hwsupabase/frontend/`）同根互补：**引用不复制**——前端版本/验收/回退记录以 frontend 契约为唯一权威。加载时机：首次读写 webapp.json 前。
+跨会话断点续作的载体。文件：项目根 `.hwsupabase/webapp.json`（目录排除 Git）。
+
+## 凭据存放（项目级隔离）
+
+登录态与凭据只存放于当前项目内，不影响、不污染其他项目：
+
+| 位置 | 内容 | 约束 |
+|---|---|---|
+| `<项目根>/.hwsupabase/secrets/` | Key 交付文件、项目凭据 JSON | 属主本人、0600、排除 Git；agent 不读取内容 |
+| `<项目根>/.hwsupabase/requests.json` | `SUPABASE_REQUESTS_FILE` 注册表（alias → output_file 绝对路径） | 注册表本身无秘密值 |
+| MCP 进程 env | 三件套注入（`SUPABASE_URL` 等） | 作用域仅该 MCP 进程；不 `export` 到 shell、不写 shell profile |
+| `HUAWEICLOUD_MCP_CREDENTIALS_FILE` / `HUAWEICLOUD_DEVKIT_CREDENTIALS_FILE` | 指向项目内 0600 凭据文件 | 项目级替代个人级 `~/.config/huaweicloud/credentials.json` |
+
+红线：禁止写入全局/系统环境变量与个人级配置（shell profile、`~/.config/huaweicloud/`、`~/.obsutilconfig`）——已有个人级文件属既有工具与其他项目，不迁移、不删除、不覆写；凭据轮换只更新本项目 secrets/ 与进程注入，其他项目无感知；`.hwsupabase/` 整目录必须列入项目 `.gitignore`。与 rds-supabase-frontend 技能的发布记录契约（`.hwsupabase/frontend/`）同根互补：**引用不复制**——前端版本/验收/回退记录以 frontend 契约为唯一权威。加载时机：首次读写 webapp.json 前。
 
 ## 通用规则
 

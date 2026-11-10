@@ -3,22 +3,35 @@
 
 Stage completion is verified, not self-asserted: this tool validates the
 .hwsupabase/webapp.json contract, stage progression, mandatory-gate
-artifacts and trace hygiene. Read-only; Python stdlib only; travels with
-the skill directory.
+artifacts, trace hygiene and — with --verify — live cloud facts.
 
 Usage:
   python webapp-gate.py <project_dir> check-contract
   python webapp-gate.py <project_dir> check-stage --stage instance_ready
+  python webapp-gate.py <project_dir> check-stage --stage backend_deployed \
+      --verify [--mcp-command "uv run --directory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase"]
   python webapp-gate.py <project_dir> check-gate --number 3
   python webapp-gate.py <project_dir> check-trace
+
+--verify performs machine verification against the live instance:
+REST layer (always, via gateway REST API using SUPABASE_URL / ANON /
+SERVICE_ROLE keys from the process environment) checks deployed-table
+visibility and reachability; the optional MCP layer (--mcp-command) spawns
+the data-plane MCP read-only to check table inventory, RLS status and
+security advisors. Credentials are never logged.
 
 Exit codes: 0 = PASS, 1 = FAIL (missing[] printed as JSON).
 """
 import argparse
+import http.client
 import json
+import os
 import re
+import shlex
+import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import urlsplit
 
 STAGES = ["environment_ready", "requirements_confirmed", "instance_ready", "mcp_connected", "backend_deployed",
           "frontend_built", "hosting_published", "launched", "decommissioned"]
@@ -95,6 +108,14 @@ def check_contract(data, missing):
                 if not (isinstance(dep.get("objects"), list) and
                         all(isinstance(item, str) for item in dep["objects"])):
                     missing.append(f"backend.deployments[{index}].objects must be a string list")
+                exposed = dep.get("exposed")
+                if exposed is not None and not (isinstance(exposed, list) and
+                                                all(isinstance(item, str) for item in exposed)):
+                    missing.append(f"backend.deployments[{index}].exposed must be a string list or null")
+                if exposed is not None and isinstance(exposed, list) and isinstance(dep.get("objects"), list):
+                    unknown = [t for t in exposed if t not in dep["objects"]]
+                    if unknown:
+                        missing.append(f"backend.deployments[{index}].exposed must be a subset of objects: {unknown}")
                 if not (isinstance(dep.get("source_sha256"), str) and SHA.match(dep["source_sha256"])):
                     missing.append(f"backend.deployments[{index}].source_sha256 must be lowercase sha256")
                 if dep.get("status") not in ("applied", "failed", "rolled_back"):
@@ -139,7 +160,7 @@ def check_stage(data, stage, missing):
         missing.append(f"no passed history event for '{stage}'")
     if stage in ("instance_ready", "mcp_connected", "backend_deployed", "frontend_built",
                  "hosting_published", "launched") and not isinstance(data.get("instance"), dict):
-            missing.append("instance section missing from instance_ready onward")
+        missing.append("instance section missing from instance_ready onward")
     if stage in ("frontend_built", "hosting_published", "launched") and not isinstance(data.get("frontend"), dict):
         missing.append("frontend section missing from frontend_built onward")
     if stage in ("backend_deployed", "frontend_built", "hosting_published", "launched"):
@@ -150,7 +171,17 @@ def check_stage(data, stage, missing):
             missing.append("latest backend deployment is not 'applied'")
 
 
-def check_gate(data, number, project_dir, missing):
+def rule_stems():
+    """Known best-practices rule file stems (sibling skill); None when unavailable."""
+    override = os.getenv("WEBAPP_GATE_RULES_DIR")
+    root = Path(override) if override else \
+        Path(__file__).resolve().parent.parent / "rds-supabase-postgres-best-practices" / "references"
+    if not root.is_dir():
+        return None
+    return sorted({p.stem for p in root.glob("*.md") if not p.name.startswith("_")})
+
+
+def check_gate(data, number, project_dir, missing, summary):
     name = GATE_FILES.get(number)
     if not name:
         missing.append("gate number must be 3 or 4")
@@ -159,10 +190,28 @@ def check_gate(data, number, project_dir, missing):
     if not path.is_file():
         missing.append(f"missing mandatory-gate artifact {path} (see workflow-stages.md mandatory gates)")
         return
-    mappings = [line for line in path.read_text(encoding="utf-8").splitlines()
-                if line.strip().startswith(("-", "*")) and ("→" in line or "->" in line)]
-    if len(mappings) < 5:
-        missing.append(f"{name} needs at least 5 rule→location mapping bullets, found {len(mappings)}")
+    lines = [line for line in path.read_text(encoding="utf-8").splitlines()
+             if line.strip().startswith(("-", "*")) and ("→" in line or "->" in line)]
+    if number == 3:
+        stems = rule_stems()
+        if stems is None:
+            if len(lines) < 5:
+                missing.append(f"{name} needs at least 5 rule→location mapping bullets, found {len(lines)}")
+            summary["rule_validation"] = "skipped: best-practices skill not found next to this skill"
+            return
+        valid, invalid = [], []
+        for line in lines:
+            reference = line.split("→")[0].split("->")[0]
+            if any(re.search(rf"(^|[^0-9a-z]){re.escape(stem)}([^0-9a-z]|$)", reference, re.IGNORECASE) for stem in stems):
+                valid.append(line)
+            else:
+                invalid.append(line.strip()[:60])
+        if invalid:
+            missing.append(f"{name} has mapping lines without a known rule file stem: {invalid[:3]}")
+        if len(valid) < 5:
+            missing.append(f"{name} needs at least 5 valid rule→location mappings (known stems), found {len(valid)}")
+    elif len(lines) < 5:
+        missing.append(f"{name} needs at least 5 mapping bullets, found {len(lines)}")
 
 
 def check_trace(project_dir, missing):
@@ -187,6 +236,211 @@ def check_trace(project_dir, missing):
             missing.append(f"trace.jsonl line {index + 1} must be {{at,stage,tool,intent,status,note}}")
 
 
+def latest_deployment(data):
+    deployments = (data.get("backend") or {}).get("deployments") or []
+    return deployments[-1] if deployments else None
+
+
+def table_name(entry):
+    return entry.split(".")[-1].strip().strip('"')
+
+
+def http_get(url, headers, timeout=15):
+    u = urlsplit(url)
+    local = u.hostname in ("127.0.0.1", "localhost")
+    if u.scheme == "https":
+        conn = http.client.HTTPSConnection(u.hostname, u.port, timeout=timeout)
+    elif u.scheme == "http" and local:
+        conn = http.client.HTTPConnection(u.hostname, u.port, timeout=timeout)
+    else:
+        raise ValueError("gateway URL must be HTTPS (HTTP only for loopback tests)")
+    route = u.path + (f"?{u.query}" if u.query else "")
+    conn.request("GET", route, headers=headers)
+    response = conn.getresponse()
+    raw = response.read(1048576)
+    status = response.status
+    conn.close()
+    return status, raw
+
+
+def verify_rest(data, missing, summary):
+    base = os.getenv("SUPABASE_URL", "").rstrip("/")
+    anon = os.getenv("SUPABASE_ANON_KEY", "")
+    service = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+    for name, value in (("SUPABASE_URL", base), ("SUPABASE_ANON_KEY", anon),
+                        ("SUPABASE_SERVICE_ROLE_KEY", service)):
+        if not value:
+            missing.append(f"--verify requires environment variable {name}")
+    if missing:
+        return
+    deployment = latest_deployment(data)
+    if not deployment:
+        summary["rest"] = {"note": "no deployments to verify"}
+        return
+    try:
+        status, raw = http_get(f"{base}/rest/v1/", {"apikey": service, "Authorization": f"Bearer {service}"})
+        if status != 200:
+            missing.append(f"REST root unreachable with service key (status {status})")
+            return
+        paths = (json.loads(raw).get("paths") or {})
+        rest_tables = {p.strip("/").strip('"') for p in paths if not p.strip("/").startswith("rpc/")}
+    except Exception as exc:
+        missing.append(f"REST verification failed: {exc}")
+        return
+    deployed = [table_name(o) for o in deployment.get("objects") or []]
+    absent = [t for t in deployed if t not in rest_tables]
+    for table in absent:
+        missing.append(f"deployed table '{table}' is not visible via REST (service key)")
+    checked, reachable = [], []
+    for table in deployed:
+        try:
+            status, _ = http_get(f"{base}/rest/v1/{table}?select=*&limit=1",
+                                  {"apikey": service, "Authorization": f"Bearer {service}"})
+            if status != 200:
+                missing.append(f"table '{table}' not reachable via REST with service key (status {status})")
+            else:
+                reachable.append(table)
+            checked.append(table)
+        except Exception as exc:
+            missing.append(f"REST check failed for '{table}': {exc}")
+    exposed = [table_name(t) for t in (deployment.get("exposed") or [])]
+    anon_ok, anon_denied = [], []
+    for table in exposed:
+        try:
+            status, _ = http_get(f"{base}/rest/v1/{table}?select=*&limit=1",
+                                  {"apikey": anon, "Authorization": f"Bearer {anon}"})
+            (anon_ok if status == 200 else anon_denied).append((table, status))
+            if status != 200:
+                missing.append(f"exposed table '{table}' not anonymously reachable (status {status})")
+        except Exception as exc:
+            missing.append(f"anon REST check failed for '{table}': {exc}")
+    summary["rest"] = {"rest_tables": len(rest_tables), "deployed": len(deployed),
+                       "reachable": reachable, "anon_ok": anon_ok, "anon_denied": anon_denied}
+
+
+def mcp_spawn(command):
+    argv = shlex.split(command)
+    proc = subprocess.Popen(argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                            stderr=subprocess.DEVNULL, env=dict(os.environ))
+    return proc
+
+
+def mcp_send(proc, message):
+    proc.stdin.write((json.dumps(message) + "\n").encode("utf-8"))
+    proc.stdin.flush()
+
+
+def mcp_recv(proc, request_id, deadline_seconds=25.0):
+    import time
+    deadline = time.monotonic() + deadline_seconds
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError("MCP response timeout")
+        line = proc.stdout.readline()
+        if not line:
+            raise TimeoutError("MCP process closed stdout")
+        try:
+            message = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(message, dict) and message.get("id") == request_id:
+            return message
+
+
+def mcp_tool(proc, counter, name, arguments):
+    request_id = next(counter)
+    mcp_send(proc, {"jsonrpc": "2.0", "id": request_id, "method": "tools/call",
+                    "params": {"name": name, "arguments": arguments}})
+    message = mcp_recv(proc, request_id)
+    if "error" in message:
+        raise RuntimeError(f"MCP tool error: {message['error']}")
+    content = (message.get("result") or {}).get("content") or []
+    text = next((block.get("text") for block in content if isinstance(block, dict) and "text" in block), None)
+    structured = (message.get("result") or {}).get("structuredContent")
+    if structured is not None:
+        return structured
+    if text is None:
+        raise RuntimeError("MCP tool returned no content")
+    return json.loads(text)
+
+
+def row_field(row, *names):
+    for name in names:
+        if name in row:
+            return row[name]
+    return None
+
+
+def verify_mcp(command, data, missing, summary):
+    deployment = latest_deployment(data)
+    if not deployment:
+        summary["mcp"] = {"note": "no deployments to verify"}
+        return
+    proc = None
+    watchdog = None
+    try:
+        proc = mcp_spawn(command)
+        import threading
+        watchdog = threading.Timer(120.0, proc.kill)
+        watchdog.start()
+        counter = iter(range(1, 10_000))
+        mcp_send(proc, {"jsonrpc": "2.0", "id": next(counter), "method": "initialize", "params": {
+            "protocolVersion": "2025-03-26", "capabilities": {},
+            "clientInfo": {"name": "webapp-gate", "version": "0.5"}}})
+        mcp_recv(proc, 1)
+        mcp_send(proc, {"jsonrpc": "2.0", "method": "notifications/initialized"})
+        rows = mcp_tool(proc, counter, "list_tables", {})
+        if not isinstance(rows, list):
+            rows = rows.get("tables") if isinstance(rows, dict) else []
+        public = {table_name(str(row_field(r, "name", "tablename", "table") or ""))
+                  for r in rows if str(row_field(r, "schema", "schemaname") or "public") == "public"}
+        deployed = [table_name(o) for o in deployment.get("objects") or []]
+        for table in deployed:
+            if table not in public:
+                missing.append(f"deployed table '{table}' not found by data-plane MCP list_tables")
+        exposed = [table_name(t) for t in (deployment.get("exposed") or [])]
+        rls_enabled = []
+        for table in exposed:
+            status_rows = mcp_tool(proc, counter, "get_rls_status", {"schema": "public", "table": table})
+            if not isinstance(status_rows, list):
+                status_rows = [status_rows]
+            row = next((r for r in status_rows
+                        if table_name(str(row_field(r, "table", "tablename", "name") or "")) == table), None)
+            enabled = bool(row_field(row or {}, "row_security", "rowsecurity", "rls_enabled",
+                                      "enabled", "relrowsecurity")) if row else False
+            policies = row_field(row or {}, "policies", "policy_count", "policies_count") if row else None
+            if not enabled:
+                missing.append(f"exposed table '{table}' has RLS disabled (machine-verified)")
+            elif not policies or int(policies) < 1:
+                missing.append(f"exposed table '{table}' has RLS enabled but zero policies")
+            else:
+                rls_enabled.append(table)
+        advisors = mcp_tool(proc, counter, "get_advisors", {"type": "security"})
+        issues = advisors.get("issues") if isinstance(advisors, dict) else advisors
+        issues = issues if isinstance(issues, list) else []
+        hits = []
+        for issue in issues:
+            affected = str(row_field(issue if isinstance(issue, dict) else {}, "name", "object", "table") or "")
+            if any(table in affected for table in deployed):
+                hits.append(affected or str(issue)[:40])
+        for hit in hits:
+            missing.append(f"security advisor reports an issue on a deployed table: {hit}")
+        summary["mcp"] = {"public_tables": len(public), "rls_enabled": rls_enabled,
+                          "advisor_issues_total": len(issues), "advisor_hits": hits}
+    except Exception as exc:
+        missing.append(f"MCP verification failed: {exc}")
+    finally:
+        if watchdog:
+            watchdog.cancel()
+        if proc is not None:
+            try:
+                proc.terminate()
+                proc.wait(timeout=5)
+            except Exception:
+                proc.kill()
+
+
 def report(verdict, payload=None):
     print(json.dumps({"verdict": verdict, **(payload or {})}, ensure_ascii=False, indent=2))
     return 0 if verdict == "PASS" else 1
@@ -198,7 +452,13 @@ def main():
     parser.add_argument("mode", choices=("check-contract", "check-stage", "check-gate", "check-trace"))
     parser.add_argument("--stage")
     parser.add_argument("--number", type=int)
+    parser.add_argument("--verify", action="store_true",
+                        help="machine-verify live facts (REST layer; add --mcp-command for RLS/advisors)")
+    parser.add_argument("--mcp-command",
+                        help="data-plane MCP launch command, e.g. "
+                             "'uv run --directory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase'")
     args = parser.parse_args()
+    summary = {}
     if args.mode == "check-trace":
         missing = []
         check_trace(args.project_dir, missing)
@@ -214,9 +474,16 @@ def main():
             return report("FAIL", {"missing": ["--stage is required for check-stage"]})
         check_stage(data, args.stage, missing)
         check_contract(data, missing)
+        if args.verify:
+            verify_rest(data, missing, summary)
+            if args.mcp_command:
+                verify_mcp(args.mcp_command, data, missing, summary)
+            else:
+                summary.setdefault("mcp", {"note": "not machine-verified (no --mcp-command); "
+                                                   "RLS/advisors remain agent-verified"})
     elif args.mode == "check-gate":
-        check_gate(data, args.number, args.project_dir, missing)
-    return report("PASS" if not missing else "FAIL", {"missing": missing})
+        check_gate(data, args.number, args.project_dir, missing, summary)
+    return report("PASS" if not missing else "FAIL", {"missing": missing, **summary})
 
 
 if __name__ == "__main__":

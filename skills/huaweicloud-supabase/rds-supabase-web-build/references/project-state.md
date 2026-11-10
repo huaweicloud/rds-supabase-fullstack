@@ -47,7 +47,7 @@
 | 字段 | 类型 | 规则 |
 |---|---|---|
 | current_batch | string/null | 当前生效批次 ID |
-| deployments | object[] | 每项必含 `batch_id`、`applied_at`、`objects`（字符串数组）、`source_sha256`、`status`（`applied`/`failed`/`rolled_back`） |
+| deployments | object[] | 每项必含 `batch_id`、`applied_at`、`objects`（字符串数组）、`source_sha256`、`status`（`applied`/`failed`/`rolled_back`）；可含 `exposed`（字符串数组，`objects` 子集——对外暴露表，`--verify` 以 anon key 机器核验其 REST 可达） |
 
 ### frontend
 
@@ -71,7 +71,7 @@
 
 | 产物 | 路径 | 规则 |
 |---|---|---|
-| 步骤五 规则对照表 | `.hwsupabase/gates/3-rules-checklist.md` | best-practices 规则 → init.sql 位置映射，≥5 条 `- <规则> → <位置>` 行；步骤五 完成前 gate `check-gate --number 3` 校验 |
+| 步骤五 规则对照表 | `.hwsupabase/gates/3-rules-checklist.md` | 映射行格式 `- <规则文件名 stem>：说明 → <位置>`，stem 须为 best-practices 技能 `references/` 下真实规则文件名（gate 校验真实性）；≥5 条有效映射；步骤五完成前 `check-gate --number 3` 校验 |
 | 步骤六 SDK 契约对照表 | `.hwsupabase/gates/4-sdk-contract-checklist.md` | usage 契约点 → 代码位置映射（会话管理/RLS 语义/错误契约/env 注入/Realtime 清理），≥5 条映射行；步骤六 完成前 gate `check-gate --number 4` 校验 |
 | 执行轨迹 | `.hwsupabase/trace.jsonl` | 每个 MCP/CLI 工具调用后即时追加一行：`{"at":<RFC3339 UTC>,"stage":<步骤枚举>,"tool":<工具名>,"intent":<一句话>,"status":"ok|fail|blocked","note":null}`；**无敏感值**；gate `check-trace` 校验格式 |
 

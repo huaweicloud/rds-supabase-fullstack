@@ -3,7 +3,7 @@ name: rds-supabase-web-build
 description: 'RDS Supabase 全栈开发编排技能：AI Agent 通过自然语言创建并托管 Web 应用网站的端到端工作流——前端代码生成、后端 init.sql（DDL/GRANT/RLS/RPC）生成与部署、前端静态资源 OBS+CDN 全托管、端到端上线与生命周期管理（更新/回滚/下线）。Use when：创建 Web 网站、搭建 AI 应用、全栈应用从零到上线、已有 RDS Supabase 应用的迭代更新与托管维护。编排管理面 MCP（实例生命周期）与数据面 MCP（动态安装）及 rds-supabase-mgr-mcp / rds-supabase-mcp / rds-supabase-usage / rds-supabase-frontend / rds-supabase-postgres-best-practices 五个专项技能。v1 后端边界为数据层；复杂业务逻辑（支付/第三方调用/长任务）不在 v1 范围，SSR 后端部署不支持。'
 license: MIT
 metadata:
-  version: "0.4.0"
+  version: "0.5.0"
 ---
 
 # RDS Supabase 全栈开发编排（web-build）
@@ -124,7 +124,7 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 1. **【强制门】** 读 best-practices（逐条对照）+ usage 客户端消费视角
 2. 生成 init.sql + **规则对照表** `gates/3-rules-checklist.md`（gate 校验）
 3. 五步部署：预检 → 审查 → `execute_sql` 单一事务 → 授权（`NOTIFY pgrst, 'reload schema'`）→ 查询确认
-4. 验证：结构确认 + RLS 生效 + advisors 无新增 + REST 200 且 anon 可见性符合设计 → 写 webapp.json → gate PASS
+4. 验证：结构确认 + RLS 生效 + advisors 无新增 + REST 200 且 anon 可见性符合设计 → 写 webapp.json（含 `exposed` 对外表清单）→ gate `--verify` PASS（机器验真）
 
 ### 步骤六 · 前端生成 → 断点 `frontend_built`
 
@@ -141,7 +141,7 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 ### 步骤八 · 端到端上线 → 断点 `launched`
 
 1. 三层验证（launch-checklist）：后端项 / 前端项 / 连通项（站点渲染、API 可见性、**多用户隔离抽检**、auth 回调）
-2. 上线报告（三级交付语义）→ 写 webapp.json → gate PASS → 交付
+2. 上线报告（三级交付语义）→ 写 webapp.json → gate `--verify` PASS → 交付
 
 **断点续作**：会话开始先读 webapp.json → 从 `last_completed_stage` 的下一步骤重入，并**重验该步骤通过条件**（不信任历史结论）。
 
@@ -164,7 +164,7 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 3. **等待协议**：>30s 的长操作按固定节奏轮询（job 每 30 秒、上限 20 次）；等待期间禁止发起无关操作
 4. **连续失败中止规则**：同一动作连续失败 2 次 → 强制中止并向用户报告，**禁止第三次盲目重试**
 5. **工具白名单**：每步骤允许/禁止集合见 workflow-stages.md；越界须先获用户同意并记 trace
-6. **gate 机械核验**：步骤完成前运行本技能 `scripts/webapp-gate.py`（`check-stage --stage <标记>`；步骤五、步骤六另跑 `check-gate --number 3|4`），**PASS 才能输出步骤报告与推进**；FAIL 按缺项整改后重跑
+6. **gate 机械核验**：步骤完成前运行本技能 `scripts/webapp-gate.py`（`check-stage --stage <标记>`；步骤五、步骤六另跑 `check-gate --number 3|4`），**PASS 才能输出步骤报告与推进**；FAIL 按缺项整改后重跑。**步骤五与步骤八的 `check-stage` 必须加 `--verify`（步骤五另加 `--mcp-command <数据面启动命令>`）**：云上事实（REST 可达/对外表 anon 可见性/RLS/advisors）由 gate 直连机器核验，不采信 agent 自报
 7. **trace**：每个 MCP/CLI 工具调用后追加 `.hwsupabase/trace.jsonl` 一行（无敏感值；格式见 project-state.md）
 
 ## 可用工具

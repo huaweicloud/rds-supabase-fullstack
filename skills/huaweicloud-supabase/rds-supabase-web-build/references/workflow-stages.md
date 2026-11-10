@@ -143,9 +143,9 @@
 3. 生成 init.sql（表/索引/RLS 策略/GRANT/种子/RPC；可重复执行写法 `IF NOT EXISTS`/`CREATE OR REPLACE`/`ON CONFLICT`；pgvector → 向量列+索引+相似度 RPC）
 4. **产出规则对照表** `.hwsupabase/gates/3-rules-checklist.md`：best-practices 每条适用规则 → init.sql 对应位置映射（≥5 条映射行，格式 `- <规则> → init.sql L<行号>`）——**gate 校验，缺即拦下**
 5. 部署（数据面五步）：预检 → 审查（可重复执行/破坏性语句逐条确认/RLS 覆盖/最小授权）→ `execute_sql` 单一事务 → 授权暴露（GRANT + `NOTIFY pgrst, 'reload schema'`）→ 查询确认
-6. 部署批次写入 webapp.json（batch_id/对象清单/init.sql sha256）→ 跑 `check-gate --number 3` + `check-stage --stage backend_deployed` → 步骤报告
+6. 部署批次写入 webapp.json（batch_id/`objects` 对象清单/`exposed` 对外表清单/init.sql sha256）→ 跑 `check-gate --number 3` + `check-stage --stage backend_deployed --verify --mcp-command "<与步骤四同源的数据面启动命令>"`——REST 可达、对外表 anon 200、RLS 与 advisors 由 gate 直连机器核验（凭据经进程 env 注入，agent 不经手明文，不采信自报）→ 步骤报告
 
-**输出断言**：🔍 结构确认（`list_tables`/`list_constraints`）+ RLS 生效（`get_rls_status`）+ `get_advisors(security)` 无新增 + REST 200 且 anon 可见性符合设计（公开表返回数据；受保护表返回空集——RLS 拒绝表现为受限结果，不是 4xx）｜🤖 gate PASS（对照表 ≥5 映射 + deployments 契约 + sha256）
+**输出断言**：🔍 结构确认（`list_tables`/`list_constraints`）｜🤖 gate `--verify` PASS（对照表有效 stem ≥5 + deployments 契约 + sha256 + 机器验真：REST 可达/对外表 anon 200/RLS 启用且有策略/advisors 无命中）
 
 **工具白名单**：允许：数据面全部只读 + `execute_sql`；禁止：管理面写工具（auth 配置属步骤七）、前端构建
 
@@ -228,7 +228,7 @@
 1. 声明步骤八
 2. 按 references/launch-checklist.md 执行三层验证：后端项（结构/RLS/advisors/REST 200 + anon 可见性）/ 前端项（checks 契约）/ 连通项（站点渲染、前端→API 数据可见性、**多用户隔离抽检**——两个测试账号经数据面 MCP 用户管理创建后互访对方数据行断言不可见、auth 回调跳转）
 3. 输出上线报告（三级交付语义 + stable_url + 版本引用）
-4. 写 webapp.json（launched）→ gate → 完成交付
+4. 写 webapp.json（launched）→ gate（`check-stage --stage launched --verify`，后端项机器核验）→ 完成交付
 
 **输出断言**：🔍 三层全必需项 passed（含多用户隔离抽检不可见）｜🤖 gate PASS（launched 终态 + 全链 history）
 
@@ -238,7 +238,7 @@
 ```
 声明步骤八 → 后端项（get_rls_status / get_advisors / REST 200 + anon 可见性）→ 前端项（checks 契约复核）
 → 连通项（stable_url 渲染 ✓ / 站点内查询可见性正确 ✓ / 隔离抽检：账号 A↔B 互访均空集 ✓ / auth 回调 ✓）
-→ 上线报告（本地已验证 / 环境已准备 / 线上验收通过）→ 写 webapp.json(launched)
+→ 上线报告（本地已验证 / 环境已准备 / 线上验收通过）→ 写 webapp.json(launched) → gate --verify PASS
 → gate PASS → 交付
 ```
 

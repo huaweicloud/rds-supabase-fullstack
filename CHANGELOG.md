@@ -148,6 +148,25 @@ semantic versioning.
   environment_ready as the first breakpoint. The framework SVG is re-laid
   out as an eight-stage pipeline (badges 一–八, new environment-check stage
   box and routing card) and re-verified with zero geometric overlaps.
+- Skill `rds-supabase-web-build` v0.5.0: machine verification replaces
+  self-assertion for cloud facts. webapp-gate.py gains --verify: the REST
+  layer (always, using SUPABASE_URL/ANON/SERVICE_ROLE keys from the process
+  environment) checks deployed-table visibility and reachability and
+  hard-verifies that exposed tables answer 200 with the anon key; the
+  optional MCP layer (--mcp-command) spawns the data-plane MCP read-only and
+  verifies table inventory, RLS enablement with at least one policy per
+  exposed table, and security advisors against deployed tables. The
+  deployments contract gains an optional exposed field (subset of objects)
+  that drives the anon-reachability hard check. Mandatory-gate 3 mappings
+  must now cite real best-practices rule-file stems — the gate validates
+  them against the sibling skill's references inventory (graceful skip with
+  a note when the sibling skill is absent; WEBAPP_GATE_RULES_DIR overrides
+  for tests). The gate script itself is now under test: 21 cases in
+  tests/test_webapp_gate.py covering contract failures, stage ordering,
+  gate artifacts, trace hygiene and --verify against local fake REST and
+  MCP servers. Stage-5 and stage-8 playbooks require running
+  check-stage --verify (with --mcp-command at stage 5), and the execution
+  discipline forbids accepting agent self-reports for cloud facts.
 
 - Skill `rds-supabase-frontend` v0.1.0 (renamed from `huawei-supabase-frontend`):
   private OBS + CDN static frontend

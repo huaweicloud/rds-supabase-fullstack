@@ -46,9 +46,17 @@ Agent 执行以下 3 步。
 npx skills add huaweicloud/rds-supabase-fullstack
 ```
 
+> 安装后**核验落位**：CLI 默认目标若为个人级/全局目录，则弃用其结果、改用方式 B/C
+> 手动装入项目级目录（见下方强约束）。
+
+**安装位置强约束（必须遵循）**：技能包只安装到**当前项目的项目级技能目录**——禁止安装到
+系统内置/系统级目录，禁止安装到个人级目录（opencode `~/.config/opencode/skills/`、
+Claude Code `~/.claude/skills/`、CodeArts `~/.codeartsdoer/skills` 等）。技能版本随项目走，
+不得影响、不污染其他项目与本机全局环境——与凭据项目级隔离同一原则。
+
 方式 B（手动复制）：克隆仓库，把 `skills/huaweicloud-supabase/` 下所有技能目录完整复制到
-项目技能目录（opencode：`~/.config/opencode/skills/`；Claude Code：`~/.claude/skills/`；
-其余宿主按其技能机制，Agent 自知位置）：
+项目级技能目录（opencode：`<项目根>/.opencode/skills/`；Claude Code：`<项目根>/.claude/skills/`；
+CodeArts：项目内技能目录；其余宿主按其项目级技能机制，Agent 自知位置）：
 
 ```bash
 git clone https://github.com/huaweicloud/rds-supabase-fullstack

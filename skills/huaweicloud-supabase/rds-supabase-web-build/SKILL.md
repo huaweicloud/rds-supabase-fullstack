@@ -3,7 +3,7 @@ name: rds-supabase-web-build
 description: 'RDS Supabase 全栈开发编排技能：AI Agent 通过自然语言创建并托管 Web 应用网站的端到端工作流——前端代码生成、后端 init.sql（DDL/GRANT/RLS/RPC）生成与部署、前端静态资源 OBS+CDN 全托管、端到端上线与生命周期管理（更新/回滚/下线）。Use when：创建 Web 网站、搭建 AI 应用、全栈应用从零到上线、已有 RDS Supabase 应用的迭代更新与托管维护。编排管理面与数据面两台 MCP（均由工作流步骤动态安装：管理面→步骤三、数据面→步骤四）及 rds-supabase-mgr-mcp / rds-supabase-mcp / rds-supabase-usage / rds-supabase-frontend / rds-supabase-postgres-best-practices 五个专项技能。v1 后端边界为数据层；复杂业务逻辑（支付/第三方调用/长任务）不在 v1 范围，SSR 后端部署不支持。'
 license: MIT
 metadata:
-  version: "0.7.4"
+  version: "0.7.5"
 ---
 
 # RDS Supabase 全栈开发编排（web-build）
@@ -58,7 +58,7 @@ RDS Supabase 全栈开发的**顶层编排技能**：用户以单句自然语言
 
 ## 前置条件
 
-1. 技能包（全部技能）已按 [README](README.md)/[INSTALL.md](INSTALL.md) 完整安装进项目技能目录——安装阶段不含 MCP 与凭据
+1. 技能包（全部技能）已按 [README](README.md)/[INSTALL.md](INSTALL.md) 完整安装进**项目级**技能目录（**强约束：仅项目级；禁系统内置/系统级目录与个人级目录**，如 `~/.config/opencode/skills/`、`~/.claude/skills/`、`~/.codeartsdoer/skills`——技能版本随项目走，不污染其他项目）——安装阶段不含 MCP 与凭据
 2. uv（含 uvx）可用——步骤三/四动态安装 MCP 所需，步骤一环境检查核对，缺失提醒用户安装
 3. 步骤一执行环境检查与配置：凭据（devkit 登录态或 AK/SK）、Region（局点）、RDS 与 OBS 接入点、`HUAWEICLOUD_PROJECT_ID` 须已配置或可解析；**无法获取的项必须以缺失清单显式提醒用户设置**，不得猜测或跳过。凭据存放遵循**项目级隔离**：只入 `<项目根>/.hwsupabase/secrets/`，不入全局/系统环境变量与个人级配置（红线见注意事项）
 4. 云侧付费资源（实例/OBS 桶/CDN）创建前须用户显式确认（费用预估在步骤二输出）

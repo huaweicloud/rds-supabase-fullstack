@@ -7,6 +7,19 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.7.5: install location is now a hard
+  constraint — the skill pack goes only into the current project's
+  project-level skill directory (opencode <project>/.opencode/skills/,
+  Claude Code <project>/.claude/skills/, CodeArts in-project skills dir).
+  Installing into system built-in/system-level directories or personal-level
+  directories (~/.config/opencode/skills/, ~/.claude/skills/,
+  ~/.codeartsdoer/skills) is forbidden: skill versions travel with the
+  project and must not affect or pollute other projects or the global
+  machine environment — the same principle as the project-scoped credential
+  isolation. The `npx skills add` path now requires verifying the landing
+  directory and falling back to manual copy if it defaults to a
+  personal-level location. Stated in INSTALL.md (constraint block + method
+  B paths), the README execution notes, and the SKILL.md prerequisites.
 - Skill `rds-supabase-web-build` v0.7.4: grammar fix in the README short-form
   install instruction — the section name is now properly delimited
   (「一句话自然语言安装」节) instead of a bare noun pile-up, and the sentence

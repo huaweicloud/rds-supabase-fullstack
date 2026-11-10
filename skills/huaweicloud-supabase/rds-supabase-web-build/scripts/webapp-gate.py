@@ -291,15 +291,18 @@ def table_name(entry):
     return entry.split(".")[-1].strip().strip('"')
 
 
-def http_get(url, headers, timeout=15):
+def http_get(url, headers, timeout=15, allow_http=False):
     u = urlsplit(url)
     local = u.hostname in ("127.0.0.1", "localhost")
     if u.scheme == "https":
         conn = http.client.HTTPSConnection(u.hostname, u.port, timeout=timeout)
-    elif u.scheme == "http" and local:
+    elif u.scheme == "http" and (local or allow_http):
+        # HTTP is the intended access mode when the instance has SSL disabled
+        # (webapp.json instance.ssl_enabled is false); loopback stays exempt
+        # for tests. Everything else must be HTTPS.
         conn = http.client.HTTPConnection(u.hostname, u.port, timeout=timeout)
     else:
-        raise ValueError("gateway URL must be HTTPS (HTTP only for loopback tests)")
+        raise ValueError("gateway URL must be HTTPS (HTTP allowed only when instance SSL is disabled, or for loopback tests)")
     route = u.path + (f"?{u.query}" if u.query else "")
     conn.request("GET", route, headers=headers)
     response = conn.getresponse()
@@ -319,12 +322,14 @@ def verify_rest(data, missing, summary):
             missing.append(f"--verify requires environment variable {name}")
     if missing:
         return
+    allow_http = ((data.get("instance") or {}).get("ssl_enabled") is False)
     deployment = latest_deployment(data)
     if not deployment:
         summary["rest"] = {"note": "no deployments to verify"}
         return
     try:
-        status, raw = http_get(f"{base}/rest/v1/", {"apikey": service, "Authorization": f"Bearer {service}"})
+        status, raw = http_get(f"{base}/rest/v1/", {"apikey": service, "Authorization": f"Bearer {service}"},
+                             allow_http=allow_http)
         if status != 200:
             missing.append(f"REST root unreachable with service key (status {status})")
             return
@@ -341,7 +346,7 @@ def verify_rest(data, missing, summary):
     for table in deployed:
         try:
             status, _ = http_get(f"{base}/rest/v1/{table}?select=*&limit=1",
-                                  {"apikey": service, "Authorization": f"Bearer {service}"})
+                                  {"apikey": service, "Authorization": f"Bearer {service}"}, allow_http=allow_http)
             if status != 200:
                 missing.append(f"table '{table}' not reachable via REST with service key (status {status})")
             else:
@@ -354,7 +359,7 @@ def verify_rest(data, missing, summary):
     for table in exposed:
         try:
             status, _ = http_get(f"{base}/rest/v1/{table}?select=*&limit=1",
-                                  {"apikey": anon, "Authorization": f"Bearer {anon}"})
+                                  {"apikey": anon, "Authorization": f"Bearer {anon}"}, allow_http=allow_http)
             (anon_ok if status == 200 else anon_denied).append((table, status))
             if status != 200:
                 missing.append(f"exposed table '{table}' not anonymously reachable (status {status})")

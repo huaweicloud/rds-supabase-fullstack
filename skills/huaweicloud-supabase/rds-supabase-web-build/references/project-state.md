@@ -38,6 +38,7 @@
 | supabase_application_id | string | 管理面应用 ID |
 | source | string | `created`（本流程新建）或 `selected`（步骤三用户选定已有应用） |
 | gateway_url | string | Kong 网关地址 |
+| ssl_enabled | boolean | 实例是否启用 SSL——步骤三创建/选定实例后记录，`change_supabase_ssl` 变更后同步更新；`false` 时数据面经 **HTTP** 访问（非强制 HTTPS 交互），gate `--verify` 放行 http；`true` 时强制 HTTPS |
 | credential_env_names | string[] | 固定 `["SUPABASE_URL","SUPABASE_ANON_KEY","SUPABASE_SERVICE_ROLE_KEY"]` |
 | credential_source | string | `devkit` 或 `protected_file` |
 | region | string/null | 区域（如适用） |

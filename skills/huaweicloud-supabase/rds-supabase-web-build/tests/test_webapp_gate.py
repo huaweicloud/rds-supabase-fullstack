@@ -305,6 +305,31 @@ class VerifyTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("security advisor", result.stdout)
 
+    def _set_ssl(self, project, value):
+        manifest = json.loads((project / ".hwsupabase" / "webapp.json").read_text(encoding="utf-8"))
+        manifest["instance"]["ssl_enabled"] = value
+        (project / ".hwsupabase" / "webapp.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+    def test_verify_http_allowed_when_ssl_disabled(self):
+        project = make_project()
+        self._set_ssl(project, False)
+        result = run_gate(project, "check-stage", "--stage", "backend_deployed", "--verify",
+                          env_extra={"SUPABASE_URL": "http://example.invalid:8443",
+                                     "SUPABASE_ANON_KEY": "test-anon",
+                                     "SUPABASE_SERVICE_ROLE_KEY": "test-service"})
+        self.assertEqual(result.returncode, 1)
+        self.assertNotIn("must be HTTPS", result.stdout)  # http is the intended mode here
+        self.assertIn("REST verification failed", result.stdout)  # fails on reachability, not scheme
+
+    def test_verify_http_rejected_when_ssl_unknown(self):
+        project = make_project()  # ssl_enabled absent -> HTTPS enforced (safe default)
+        result = run_gate(project, "check-stage", "--stage", "backend_deployed", "--verify",
+                          env_extra={"SUPABASE_URL": "http://example.invalid:8443",
+                                     "SUPABASE_ANON_KEY": "test-anon",
+                                     "SUPABASE_SERVICE_ROLE_KEY": "test-service"})
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("must be HTTPS", result.stdout)
+
     def test_verify_without_mcp_notes_gap(self):
         project = make_project()
         result = run_gate(project, "check-stage", "--stage", "backend_deployed", "--verify",

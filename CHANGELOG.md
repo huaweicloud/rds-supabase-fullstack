@@ -7,6 +7,16 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.7.0: data-plane access scheme now follows
+  the instance SSL state — when the RDS Supabase application has SSL disabled
+  the gateway is accessed over plain HTTP and HTTPS is NOT forced. The rule
+  is stated explicitly at the stage-4 install/enable points (SKILL.md and
+  workflow-stages.md), recorded as the new optional `instance.ssl_enabled`
+  field in the webapp.json contract (maintained by stage 3 and by
+  `change_supabase_ssl`), and honored by `webapp-gate.py --verify`: HTTP is
+  allowed when `ssl_enabled` is false, while HTTPS stays mandatory when the
+  field is true or missing (loopback exemption for tests unchanged). Two
+  new gate tests cover both branches.
 - Skill `rds-supabase-web-build` v0.6.5: the complex-business-logic boundary is
   no longer "v2 later" — routing table, SKILL boundary row and stage-2
   edge detection now route to the dedicated function-graph skill; install

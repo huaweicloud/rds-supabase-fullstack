@@ -3,7 +3,7 @@ name: rds-supabase-web-build
 description: 'RDS Supabase 全栈开发编排技能：AI Agent 通过自然语言创建并托管 Web 应用网站的端到端工作流——前端代码生成、后端 init.sql（DDL/GRANT/RLS/RPC）生成与部署、前端静态资源 OBS+CDN 全托管、端到端上线与生命周期管理（更新/回滚/下线）。Use when：创建 Web 网站、搭建 AI 应用、全栈应用从零到上线、已有 RDS Supabase 应用的迭代更新与托管维护。编排管理面与数据面两台 MCP（均由工作流步骤动态安装：管理面→步骤三、数据面→步骤四）及 rds-supabase-mgr-mcp / rds-supabase-mcp / rds-supabase-usage / rds-supabase-frontend / rds-supabase-postgres-best-practices 五个专项技能。v1 后端边界为数据层；复杂业务逻辑（支付/第三方调用/长任务）不在 v1 范围，SSR 后端部署不支持。'
 license: MIT
 metadata:
-  version: "0.6.5"
+  version: "0.7.0"
 ---
 
 # RDS Supabase 全栈开发编排（web-build）
@@ -119,6 +119,8 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
    ```
 
    env：`SUPABASE_URL` / `SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY`（agent 生成含占位符的配置模板 → 用户从受保护文件复制实际值填入 → 客户端重载）
+
+   **访问协议跟随实例 SSL 状态**：实例开启 SSL → `https://`；未开启 SSL → `http://`（**不强制 HTTPS 交互**）。步骤三将 `instance.ssl_enabled`（true/false）记入 webapp.json；gate `--verify` 据此放行 http——`ssl_enabled=false` 时 HTTP 即预期访问方式
 2. 验证：`get_project_url` == 网关地址 + `list_tables` 应答 → 写 webapp.json → gate PASS
 
 ### 步骤五 · 后端生成部署 → 断点 `backend_deployed`

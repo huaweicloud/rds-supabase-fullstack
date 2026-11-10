@@ -115,8 +115,9 @@
 1. 声明步骤四
 2. 按 `rds-supabase-mcp 技能 references/install.md` 动态安装；**来源只允许本仓**——完整命令：`uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack --subdirectory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase`（或本地克隆 `uv run --directory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase`；服务器文档：https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase/README.md ），禁止搜索 PyPI 同名包
 3. 凭据注入双路径：**devkit 优先**（已注入 → 直接验证）；**半自动备选路径**（agent 生成含占位符的 mcpServers 配置模板 → 用户从受保护文件复制实际值填入 → 客户端重载；agent 全程不接触明文）
-4. 验证：`get_project_url` 返回 == 网关地址；`list_tables` 正常应答
-5. 写 webapp.json（stages: mcp_connected）→ gate → 步骤报告
+4. **访问协议跟随实例 SSL 状态**（`SUPABASE_URL` 取值规则）：开启 SSL → `https://`；未开启 → `http://`（**不强制 HTTPS 交互**；步骤三已将 `instance.ssl_enabled` 记入 webapp.json，gate `--verify` 对 `ssl_enabled=false` 放行 http）
+5. 验证：`get_project_url` 返回 == 网关地址；`list_tables` 正常应答
+6. 写 webapp.json（stages: mcp_connected）→ gate → 步骤报告
 
 **输出断言**：🔍 `get_project_url` 与网关一致 + `list_tables` 应答（连通性以工具结果证明）｜🤖 gate PASS
 
@@ -125,7 +126,7 @@
 **黄金路径**：
 ```
 声明步骤四 → 渲染 install.md 模板（占位符）→ 用户从受保护文件复制实际值填入 → 客户端重载
-→ get_project_url == https://gw.example:8443 ✓ → list_tables 应答 ✓
+→ get_project_url == https://gw.example:8443 ✓（本例 SSL 开启；未开启时为 http://，gate 按 ssl_enabled=false 放行）→ list_tables 应答 ✓
 → 写 webapp.json(mcp_connected) → gate PASS → 步骤报告（步骤四）
 ```
 

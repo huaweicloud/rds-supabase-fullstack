@@ -45,9 +45,12 @@ a. **管理面就绪**：检测当前已连接 MCP 中是否已有管理面 MCP�
 
 **禁止**从 PyPI 或其他仓库搜索/安装同名或相似包——PyPI 存在第三方 "supabase" MCP 包，非本项目服务器，装上后行为完全错误。拉起后遵循 rds-supabase-mgr-mcp 技能的两阶段确认与执行账本约束。
 
-b. **实例**（路由 rds-supabase-mgr-mcp 技能）：`list_supabase_applications` 查询已有 → 选定并核验状态；无 → `plan_supabase_creation` + `create_supabase_application`（仅 Single 模式；关联已有 PG 或按需新 PG）；配置 EIP、安全组（8443 入站规则）、SSL。注意：创建安全组不等于应用可访问，须规则放通并核验。
+b. **实例——先问后做**（路由 rds-supabase-mgr-mcp 技能）：**第一步询问用户：新建实例，还是使用已有 RDS Supabase 应用**（不替用户默认）：
 
-c. **凭据获取**：网关 URL + Anon Key + Service Role Key（两种都要），经管理面 MCP 的 ApiKey 交付工具（deliver 到受保护本地文件）。webapp.json 只记 env 名（`SUPABASE_URL` / `SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY`），不记值。
+- **使用已有应用**：管理面 MCP `list_supabase_applications` 查询全部可用应用 → 以列表展示（application_id / 名称 / 状态 / 规格）让用户选择 → 选定后核验状态（`normal`/running、无进行中任务、网关可达）→ **立即执行 c 凭据获取**（该应用的网关 URL + Anon/Service Role Key——② 数据面 MCP 动态安装的必需输入，**一定不能漏**）
+- **新建实例**：`plan_supabase_creation` + `create_supabase_application`（仅 Single 模式；关联已有 PG 或按需新 PG）→ 配置 EIP、安全组（8443 入站规则）、SSL → 创建完成后**同样必须执行 c**。注意：创建安全组不等于应用可访问，须规则放通并核验。
+
+c. **凭据获取（新建与选定已有两条路径都必经——缺失任一项则 ② 数据面 MCP 无法安装，流水线中断）**：所选/所建应用的网关 URL + Anon Key + Service Role Key（**两种 Key 都要**），经管理面 MCP 的 ApiKey 交付工具（deliver 到受保护本地文件）。webapp.json 只记 env 名（`SUPABASE_URL` / `SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY`），不记值；instance 段同时记录 `source`（`created` / `selected`）。
 
 d. **OBS 租户桶**（路由 rds-supabase-frontend 技能）：引导用户创建前端托管桶；域名/证书条件此时一并核对，不齐备则在 ⑤ 前补齐。
 

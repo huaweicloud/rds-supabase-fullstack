@@ -36,6 +36,7 @@
 | 字段 | 类型 | 规则 |
 |---|---|---|
 | supabase_application_id | string | 管理面应用 ID |
+| source | string | `created`（本流程新建）或 `selected`（① 用户选定已有应用） |
 | gateway_url | string | Kong 网关地址 |
 | credential_env_names | string[] | 固定 `["SUPABASE_URL","SUPABASE_ANON_KEY","SUPABASE_SERVICE_ROLE_KEY"]` |
 | credential_source | string | `devkit` 或 `protected_file` |

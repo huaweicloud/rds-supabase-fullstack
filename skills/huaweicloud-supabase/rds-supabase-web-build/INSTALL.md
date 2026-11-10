@@ -165,7 +165,7 @@ REST Token 模式：删除 AK/SK 两行，改放 `HUAWEICLOUD_AUTH_TOKEN`；完�
 | GitHub / PyPI 不可达 | 配置企业镜像（pip index-url、UV_INDEX）；或克隆仓库后 `uv run --directory server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr` 本地运行，不经 uvx git 拉取 |
 | 多项目账号 | discover 列出全部候选（名称/区域/推导入口），用户勾选；不静默选择 |
 | Windows | env 设置用 `$env:`；其余步骤一致 |
-| 已有 RDS Supabase 实例 | 跳过创建：触发时说明"使用已有实例"，① 阶段只做配置核对与密钥确认 |
+| 已有 RDS Supabase 实例 | ① 阶段会先询问"新建还是使用已有"；选已有 → 管理面 `list_supabase_applications` 列出可用应用让你勾选，随即获取该应用的网关 URL 与 API Key（② 数据面安装必需，不会遗漏） |
 | 什么时候才能访问站点 | ⓪–⑥ 全流程由技能驱动，实例创建（①）可能耗时数分钟；⑥ 通过三层上线清单后给出 stable_url |
 
 ## 触发

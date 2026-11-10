@@ -48,6 +48,16 @@ semantic versioning.
   never search PyPI or third-party registries for same-named packages). The
   install guide gains a per-MCP address and install-method table with the
   anti-drift warning; negative routing and stage playbooks updated to match.
+- Skill `rds-supabase-web-build` v0.1.2: stage-1 instance sourcing made
+  ask-first and leak-proof — the agent must explicitly ask whether to create a
+  new RDS Supabase application or use an existing one; the existing-application
+  path lists all available applications via the control-plane MCP
+  (`list_supabase_applications`) for user selection, verifies status, and then
+  immediately obtains the gateway URL plus both API keys (Anon and Service
+  Role) through the control-plane key-delivery tool. Credential acquisition is
+  marked as mandatory on both the create and select paths — missing any item
+  blocks the stage-2 data-plane MCP dynamic install. The webapp.json instance
+  contract gains a `source` field (`created` / `selected`).
 
 - Skill `rds-supabase-frontend` v0.1.0 (renamed from `huawei-supabase-frontend`):
   private OBS + CDN static frontend

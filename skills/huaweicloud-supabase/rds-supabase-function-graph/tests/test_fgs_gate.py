@@ -11,7 +11,6 @@ import os
 import signal
 import subprocess
 import sys
-import time
 from pathlib import Path
 
 import pytest
@@ -76,7 +75,7 @@ def setup(base: Path, d=None, trace=None):
 def run_gate(mode, base: Path, *extra, env_extra=None):
     env = {**os.environ, **(env_extra or {})}
     p = subprocess.run([PY, str(GATE), mode, "--path", str(base), *extra],
-                       capture_output=True, text=True, env=env, timeout=60)
+                       capture_output=True, text=True, env=env, timeout=60, check=False)
     return json.loads(p.stdout), p.returncode
 
 
@@ -90,7 +89,7 @@ def test_contract_ok(tmp_path):
 
 def test_contract_bad_sha(tmp_path):
     setup(tmp_path, doc(functions=[fn_doc(code_sha256="XYZ")]))
-    out, rc = run_gate("check-contract", tmp_path)
+    out, _rc = run_gate("check-contract", tmp_path)
     assert out["verdict"] == "FAIL" and any("code_sha256" in m for m in out["missing"])
 
 

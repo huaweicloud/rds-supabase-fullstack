@@ -134,6 +134,20 @@ semantic versioning.
   "不得遗漏"); all remaining stage-vs-step terminology is unified to
   步骤 (except the control-plane two-phase confirmation term 两阶段确认);
   the SVG's migrations chip reads 禁改 instead of the casual 不碰.
+- Skill `rds-supabase-web-build` v0.4.0: the workflow now opens with a
+  dedicated environment check-and-configuration step. New 步骤一 · 环境检查
+  与配置 (breakpoint `environment_ready`) verifies and resolves credentials,
+  Region, the RDS service endpoint (configured, or derived via
+  diagnostics discover, or explicitly user-specified), the OBS endpoint
+  (derived from Region by KooCLI/SDK) and PROJECT_ID (configured or selected
+  via discovery) — any item that cannot be obtained produces an explicit
+  missing-items checklist reminding the user to set it; no guessing, no
+  skipping, no defaults. All seven business steps shift to 步骤二–步骤八
+  across SKILL.md, the playbooks, README/INSTALL, routing table and project
+  state contract; the stage machine and the gate script gain
+  environment_ready as the first breakpoint. The framework SVG is re-laid
+  out as an eight-stage pipeline (badges 一–八, new environment-check stage
+  box and routing card) and re-verified with zero geometric overlaps.
 
 - Skill `rds-supabase-frontend` v0.1.0 (renamed from `huawei-supabase-frontend`):
   private OBS + CDN static frontend

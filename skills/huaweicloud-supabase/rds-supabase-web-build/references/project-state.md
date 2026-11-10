@@ -18,7 +18,7 @@
 |---|---|---|
 | schema_version | integer | 固定 `1` |
 | project | object | 见下 |
-| instance | object/null | 未进入①时为 `null` |
+| instance | object/null | 未进入步骤二时为 `null` |
 | backend | object/null | 未部署时为 `null` |
 | frontend | object/null | 未生成时为 `null` |
 | stages | object | 见下 |
@@ -29,14 +29,14 @@
 |---|---|---|
 | name | string | 项目名 |
 | description | string/null | 一句话描述 |
-| requirements_summary | string | ⓪ 确认的需求摘要（脱敏，不含凭据与用户数据） |
+| requirements_summary | string | 步骤一 确认的需求摘要（脱敏，不含凭据与用户数据） |
 
 ### instance
 
 | 字段 | 类型 | 规则 |
 |---|---|---|
 | supabase_application_id | string | 管理面应用 ID |
-| source | string | `created`（本流程新建）或 `selected`（① 用户选定已有应用） |
+| source | string | `created`（本流程新建）或 `selected`（步骤二 用户选定已有应用） |
 | gateway_url | string | Kong 网关地址 |
 | credential_env_names | string[] | 固定 `["SUPABASE_URL","SUPABASE_ANON_KEY","SUPABASE_SERVICE_ROLE_KEY"]` |
 | credential_source | string | `devkit` 或 `protected_file` |
@@ -71,8 +71,8 @@
 
 | 产物 | 路径 | 规则 |
 |---|---|---|
-| ③ 规则对照表 | `.hwsupabase/gates/3-rules-checklist.md` | best-practices 规则 → init.sql 位置映射，≥5 条 `- <规则> → <位置>` 行；③ 完成前 gate `check-gate --number 3` 校验 |
-| ④ SDK 契约对照表 | `.hwsupabase/gates/4-sdk-contract-checklist.md` | usage 契约点 → 代码位置映射（会话管理/RLS 语义/错误契约/env 注入/Realtime 清理），≥5 条映射行；④ 完成前 gate `check-gate --number 4` 校验 |
+| 步骤四 规则对照表 | `.hwsupabase/gates/3-rules-checklist.md` | best-practices 规则 → init.sql 位置映射，≥5 条 `- <规则> → <位置>` 行；步骤四 完成前 gate `check-gate --number 3` 校验 |
+| 步骤五 SDK 契约对照表 | `.hwsupabase/gates/4-sdk-contract-checklist.md` | usage 契约点 → 代码位置映射（会话管理/RLS 语义/错误契约/env 注入/Realtime 清理），≥5 条映射行；步骤五 完成前 gate `check-gate --number 4` 校验 |
 | 执行轨迹 | `.hwsupabase/trace.jsonl` | 每个 MCP/CLI 工具调用后即时追加一行：`{"at":<RFC3339 UTC>,"stage":<阶段枚举>,"tool":<工具名>,"intent":<一句话>,"status":"ok|fail|blocked","note":null}`；**无敏感值**；gate `check-trace` 校验格式 |
 
 ## 状态不变量

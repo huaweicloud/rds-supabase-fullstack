@@ -1,4 +1,4 @@
-# 阶段 Playbook（⓪–⑥）
+# 阶段 Playbook（步骤一–七）
 
 首次创建流水线的逐阶段执行规范。**三段式**：每阶段 = 输入 → 动作序列 → 输出断言。断言标记：🤖 = `scripts/webapp-gate.py` 机械核验，🔍 = agent 经 MCP 工具或用户确认核验；**两者全过才完成阶段**。断点续作统一规则：会话开始先读 `.hwsupabase/webapp.json`，从 `last_completed_stage` 的下一阶段重入，并**重验该阶段门槛**——不信任历史结论。加载时机：进入对应阶段执行前（见 SKILL.md 文档加载策略）。
 
@@ -9,9 +9,9 @@
 3. **两次法则**：同一动作连续失败 2 次 → 强制停止，向用户报告失败原因与下一步选项；**禁止第三次盲试**
 4. **工具白名单**：各阶段"允许/禁止"为硬边界；确需越界 → 先说明理由获用户同意并记 trace
 5. **trace**：每个 MCP/CLI 工具调用后追加一行 `.hwsupabase/trace.jsonl`（格式见 project-state.md，无敏感值）
-6. **gate**：动作完成 → 写 webapp.json → 运行 `python <技能目录>/scripts/webapp-gate.py <项目目录> check-stage --stage <标记>`（③④ 另跑 `check-gate --number 3|4`）→ **PASS 才输出阶段报告**；FAIL 按缺项整改后重跑
+6. **gate**：动作完成 → 写 webapp.json → 运行 `python <技能目录>/scripts/webapp-gate.py <项目目录> check-stage --stage <标记>`（步骤四步骤五 另跑 `check-gate --number 3|4`）→ **PASS 才输出阶段报告**；FAIL 按缺项整改后重跑
 
-## ⓪ 需求澄清
+## 步骤一 · 需求澄清
 
 **目的**：把用户一句话转化为确认过的需求摘要与数据模型草案。
 
@@ -33,14 +33,14 @@
 **黄金路径**：
 ```
 用户：帮我建一个博客网站，支持登录评论
-→ 宣言⓪ → 澄清（页面清单 / Posts-Comments-Users 模型 / 邮箱登录 / 无 AI 能力）
+→ 宣言步骤一 → 澄清（页面清单 / Posts-Comments-Users 模型 / 邮箱登录 / 无 AI 能力）
 → 费用清单确认 → 写 webapp.json(requirements_summary)
-→ gate PASS → 阶段报告⓪（下一阶段预告：需要凭据与区域信息）
+→ gate PASS → 阶段报告步骤一（下一阶段预告：需要凭据与区域信息）
 ```
 
 **失败处置**：需求不清 → 继续澄清；用户取消 → 停止，不创建任何资源。**断点**：`requirements_confirmed`
 
-## ① 资源准备
+## 步骤二 · 资源准备
 
 **目的**：配置完备、管理面就绪、实例可用（新建或选定已有）、凭据交付、OBS 桶就绪。
 
@@ -48,7 +48,7 @@
 
 **动作序列**：
 
-1. 宣言①
+1. 宣言步骤二
 2. **配置完备性检查**（缺项以清单**显示让用户填写**——不静默失败、不猜测、不跳过）：
 
    | 消费方 | 必需项 |
@@ -61,8 +61,8 @@
 5. **实例——先问后做**：**询问用户：新建实例，还是使用已有 RDS Supabase 应用**（不替用户默认）：
    - **已有**：`list_supabase_applications` → 列表展示（application_id/名称/状态/规格）让用户选 → `show_supabase_application` 核验（normal/running、无进行中任务、网关可达）
    - **新建**：`plan_supabase_creation` + `create_supabase_application`（仅 Single；关联已有 PG 或新 PG）→ 配置 EIP、安全组（8443 入站）、SSL → 等待协议轮询 job；创建安全组 ≠ 可访问，须规则放通并核验
-6. **凭据获取（两条路径都必经——缺失任一项则 ② 无法安装，流水线中断）**：网关 URL + Anon Key + Service Role Key（**两种 Key 都要**），经管理面 ApiKey 交付工具 deliver 到受保护本地文件；webapp.json 只记 env 名 + `instance.source`（`created`/`selected`）
-7. **OBS 租户桶**（frontend 技能引导，需 AK/SK+region）；域名/证书条件核对，不齐备则 ⑤ 前补齐
+6. **凭据获取（两条路径都必经——缺失任一项则 步骤三 无法安装，流水线中断）**：网关 URL + Anon Key + Service Role Key（**两种 Key 都要**），经管理面 ApiKey 交付工具 deliver 到受保护本地文件；webapp.json 只记 env 名 + `instance.source`（`created`/`selected`）
+7. **OBS 租户桶**（frontend 技能引导，需 AK/SK+region）；域名/证书条件核对，不齐备则 步骤六 前补齐
 8. 写 webapp.json instance 段 → gate → 阶段报告
 
 **输出断言**：🔍 配置无缺项（清单回执）｜🔍 实例 running 且实际可访问｜🔍 桶就绪｜🤖 gate PASS（instance 契约 + `source` 枚举）
@@ -71,25 +71,25 @@
 
 **黄金路径**：
 ```
-宣言① → 缺项清单（用户填 AK/SK + region + 勾选 discover 候选 cn-north-4/p-123）
+宣言步骤二 → 缺项清单（用户填 AK/SK + region + 勾选 discover 候选 cn-north-4/p-123）
 → 问：新建 or 已有？用户：已有
 → list_supabase_applications → 用户选 app-123 → show_supabase_application 核验 normal
 → list_supabase_api_keys + deliver → 受保护文件（agent 不见明文）
 → frontend 技能建桶 obs://webapp-123 → 写 webapp.json(instance.source=selected)
-→ gate PASS → 阶段报告①（下一阶段预告：重载客户端后安装数据面 MCP）
+→ gate PASS → 阶段报告步骤二（下一阶段预告：重载客户端后安装数据面 MCP）
 ```
 
 **失败处置**：配置缺项 → 显示清单让用户填写后重试；入口推导不了 → 用户显式指定；创建结果未知 → 管理面账本 `inspect_supabase_plan`，不重复提交；配额/权限不足 → 停止报告缺项。**断点**：`instance_ready`
 
-## ② 数据面接入
+## 步骤三 · 数据面接入
 
 **目的**：数据面 MCP 就绪并连通 RDS Supabase。
 
-**输入**：① 交付的网关 URL + 两把 Key（受保护文件）；上一断点 `instance_ready`
+**输入**：步骤二 交付的网关 URL + 两把 Key（受保护文件）；上一断点 `instance_ready`
 
 **动作序列**：
 
-1. 宣言②
+1. 宣言步骤三
 2. 按 `rds-supabase-mcp 技能 references/install.md` 动态安装；**来源只允许本仓**——完整命令：`uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack --subdirectory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase`（或本地克隆 `uv run --directory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase`；服务器文档：https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase/README.md ），禁止搜索 PyPI 同名包
 3. 凭据注入双路径：**devkit 优先**（已注入 → 直接验证）；**半自动兜底**（agent 写 mcpServers 骨架占位符 → 用户从受保护文件填值 → 客户端重载；agent 全程不接触明文）
 4. 验证：`get_project_url` 返回 == 网关地址；`list_tables` 正常应答
@@ -97,26 +97,26 @@
 
 **输出断言**：🔍 `get_project_url` 与网关一致 + `list_tables` 应答（连通性以工具结果证明）｜🤖 gate PASS
 
-**工具白名单**：允许：数据面 `get_project_url`、`list_tables`（仅验证）；禁止：`execute_sql`（③ 才用）、一切写工具
+**工具白名单**：允许：数据面 `get_project_url`、`list_tables`（仅验证）；禁止：`execute_sql`（步骤四 才用）、一切写工具
 
 **黄金路径**：
 ```
-宣言② → 渲染 install.md 模板（占位符）→ 用户从受保护文件填值 → 客户端重载
+宣言步骤三 → 渲染 install.md 模板（占位符）→ 用户从受保护文件填值 → 客户端重载
 → get_project_url == https://gw.example:8443 ✓ → list_tables 应答 ✓
-→ 写 webapp.json(mcp_connected) → gate PASS → 阶段报告②
+→ 写 webapp.json(mcp_connected) → gate PASS → 阶段报告步骤三
 ```
 
 **失败处置**：401/403 → 核对凭据注入路径；连接失败 → 网关地址/安全组规则；重载后仍失败 → 检查旧环境残留（两次法则：连续 2 次失败即停下报告）。**断点**：`mcp_connected`
 
-## ③ 后端生成与部署
+## 步骤四 · 后端生成与部署
 
 **目的**：强制门对照后生成 init.sql 并单一事务部署。
 
-**输入**：确认过的数据模型；数据面 MCP（② 已连通）；上一断点 `mcp_connected`
+**输入**：确认过的数据模型；数据面 MCP（步骤三 已连通）；上一断点 `mcp_connected`
 
 **动作序列**：
 
-1. 宣言③
+1. 宣言步骤四
 2. **【强制门】读 rds-supabase-postgres-best-practices 技能**（按症状/任务索引规则文件）+ rds-supabase-usage 客户端消费视角
 3. 生成 init.sql（表/索引/RLS 策略/GRANT/种子/RPC；可重复执行写法 `IF NOT EXISTS`/`CREATE OR REPLACE`/`ON CONFLICT`；pgvector → 向量列+索引+相似度 RPC）
 4. **产出规则对照表** `.hwsupabase/gates/3-rules-checklist.md`：best-practices 每条适用规则 → init.sql 对应位置映射（≥5 条映射行，格式 `- <规则> → init.sql L<行号>`）——**gate 校验，缺即拦下**
@@ -125,28 +125,28 @@
 
 **输出断言**：🔍 结构确认（`list_tables`/`list_constraints`）+ RLS 生效（`get_rls_status`）+ `get_advisors(security)` 无新增 + REST 200 且 anon 可见性符合设计（公开表返回数据；受保护表返回空集——RLS 拒绝表现为受限结果，不是 4xx）｜🤖 gate PASS（对照表 ≥5 映射 + deployments 契约 + sha256）
 
-**工具白名单**：允许：数据面全部只读 + `execute_sql`；禁止：管理面写工具（auth 配置属⑤）、前端构建
+**工具白名单**：允许：数据面全部只读 + `execute_sql`；禁止：管理面写工具（auth 配置属步骤六）、前端构建
 
 **黄金路径**：
 ```
-宣言③ → 读 best-practices 索引 → 生成 init.sql（Posts/Users/Comments + RLS + GRANT + RPC）
+宣言步骤四 → 读 best-practices 索引 → 生成 init.sql（Posts/Users/Comments + RLS + GRANT + RPC）
 → 写 gates/3-rules-checklist.md（8 条规则→SQL 行号）
 → 五步部署：预检 → 审查确认 → execute_sql(单一事务) → NOTIFY pgrst reload schema
 → list_tables 核对 → get_rls_status → get_advisors(security) 无新增 → REST 200 ✓
-→ 写 webapp.json(backend.deployments[b1]) → check-gate 3 PASS + check-stage PASS → 阶段报告③
+→ 写 webapp.json(backend.deployments[b1]) → check-gate 3 PASS + check-stage PASS → 阶段报告步骤四
 ```
 
 **失败处置**：批次失败自动整体回滚（单一事务）→ 修正脚本再部署；advisors 报告 → 按 remediation 处理后复核；连续 2 次部署失败 → 停下报告。**断点**：`backend_deployed`
 
-## ④ 前端生成
+## 步骤五 · 前端生成
 
 **目的**：强制门对照后生成可构建的前端源码。
 
-**输入**：③ 的表结构与 RPC 契约；上一断点 `backend_deployed`
+**输入**：步骤四 的表结构与 RPC 契约；上一断点 `backend_deployed`
 
 **动作序列**：
 
-1. 宣言④
+1. 宣言步骤五
 2. **【强制门】读 rds-supabase-usage 技能**（SDK 正确用法：会话管理、RLS 语义、错误契约 `{"error":{code,message,hint}}`）
 3. 生成源码（默认 React+Vite+TS + supabase-js；用户已指定框架则沿用其静态导出方案）；anon key 经 env 注入构建；凭据仅 anon key 进产物
 4. **产出 SDK 契约对照表** `.hwsupabase/gates/4-sdk-contract-checklist.md`：usage 契约点 → 代码位置映射（会话管理/RLS 语义/错误契约/env 注入/Realtime 清理，≥5 条）——**gate 校验，缺即拦下**
@@ -159,25 +159,25 @@
 
 **黄金路径**：
 ```
-宣言④ → 读 usage 技能 → 脚手架 react-vite-ts → 实现页面/auth/数据层
+宣言步骤五 → 读 usage 技能 → 脚手架 react-vite-ts → 实现页面/auth/数据层
 → 写 gates/4-sdk-contract-checklist.md（6 条契约点→代码位置）
 → npm run build ✓ → 本地冒烟（首页渲染 / RLS 查询返回受限数据 / 登录流走通）✓
-→ 写 webapp.json(frontend.*) → check-gate 4 PASS + check-stage PASS → 阶段报告④
+→ 写 webapp.json(frontend.*) → check-gate 4 PASS + check-stage PASS → 阶段报告步骤五
 ```
 
 **失败处置**：构建错误 → 修正；运行时错误 → 对照 usage 规则排查；连续 2 次同错 → 停下报告。**断点**：`frontend_built`
 
-## ⑤ 构建与托管
+## 步骤六 · 构建与托管
 
-**目的**：静态产物发布到①预建桶，经 CDN 形成稳定入口，完成回调回路。
+**目的**：静态产物发布到步骤二预建桶，经 CDN 形成稳定入口，完成回调回路。
 
-**输入**：④ 产物源码；① 预建桶与域名/证书；上一断点 `frontend_built`
+**输入**：步骤五 产物源码；步骤二 预建桶与域名/证书；上一断点 `frontend_built`
 
 **动作序列**：
 
-1. 宣言⑤
-2. frontend 技能：构建环境核对（Node/包管理器，不擅自升级）→ build → 上传①预建桶 → CDN 刷新 → 版本记录（`.hwsupabase/frontend/` 契约）
-3. **回调回路（⑤↻）**：域名确定 → 管理面 `update_supabase_auth_config` 配 site_url/redirect_uris（展示差异后确认）→ 前端按最终地址**重建再发布**。不走此回路 = auth 登录回调 404
+1. 宣言步骤六
+2. frontend 技能：构建环境核对（Node/包管理器，不擅自升级）→ build → 上传步骤二预建桶 → CDN 刷新 → 版本记录（`.hwsupabase/frontend/` 契约）
+3. **回调回路（步骤六↻）**：域名确定 → 管理面 `update_supabase_auth_config` 配 site_url/redirect_uris（展示差异后确认）→ 前端按最终地址**重建再发布**。不走此回路 = auth 登录回调 404
 4. frontend checks（entry/assets/routes/negative_paths/cache）
 5. 写 webapp.json（hosting_published）→ gate → 阶段报告
 
@@ -187,23 +187,23 @@
 
 **黄金路径**：
 ```
-宣言⑤ → 构建环境核对 → npm run build → 上传 obs://webapp-123/v1 → CDN 刷新
+宣言步骤六 → 构建环境核对 → npm run build → 上传 obs://webapp-123/v1 → CDN 刷新
 → 用户确定域名 https://demo.example.com → update_supabase_auth_config(site_url + redirect_uris，差异确认)
 → 前端重建再发布 v2 → frontend checks 全 passed（entry 2xx / assets 2xx / routes / 404 路径 / cache 头）
-→ 写 webapp.json(hosting_published) → gate PASS → 阶段报告⑤
+→ 写 webapp.json(hosting_published) → gate PASS → 阶段报告步骤六
 ```
 
 **失败处置**：发布失败 → frontend 技能恢复流程；验收失败 → 按其检查项处置；回调配置失败 → 重试差异确认（两次法则）。**断点**：`hosting_published`
 
-## ⑥ 端到端上线
+## 步骤七 · 端到端上线
 
 **目的**：三层组合验证后正式上线并留档。
 
-**输入**：⑤ 的 stable_url 与版本记录；上一断点 `hosting_published`
+**输入**：步骤六 的 stable_url 与版本记录；上一断点 `hosting_published`
 
 **动作序列**：
 
-1. 宣言⑥
+1. 宣言步骤七
 2. 按 references/launch-checklist.md 执行三层验证：后端项（结构/RLS/advisors/REST 200 + anon 可见性）/ 前端项（checks 契约）/ 连通项（站点渲染、前端→API 数据可见性、**多用户隔离抽检**——两个测试账号经数据面 MCP 用户管理创建后互访对方数据行断言不可见、auth 回调跳转）
 3. 输出上线报告（三级交付语义 + stable_url + 版本引用）
 4. 写 webapp.json（launched）→ gate → 完成交付
@@ -214,10 +214,10 @@
 
 **黄金路径**：
 ```
-宣言⑥ → 后端项（get_rls_status / get_advisors / REST 200 + anon 可见性）→ 前端项（checks 契约复核）
+宣言步骤七 → 后端项（get_rls_status / get_advisors / REST 200 + anon 可见性）→ 前端项（checks 契约复核）
 → 连通项（stable_url 渲染 ✓ / 站点内查询可见性正确 ✓ / 隔离抽检：账号 A↔B 互访均空集 ✓ / auth 回调 ✓）
 → 上线报告（本地已验证 / 环境已准备 / 线上验收通过）→ 写 webapp.json(launched)
 → gate PASS → 交付
 ```
 
-**失败处置**：后端项失败 → 回③修复重部署；前端项失败 → frontend 修复/回退；连通项失败 → 回调回路/网关/安全组排查——不标记 launched。**断点**：`launched`
+**失败处置**：后端项失败 → 回步骤四修复重部署；前端项失败 → frontend 修复/回退；连通项失败 → 回调回路/网关/安全组排查——不标记 launched。**断点**：`launched`

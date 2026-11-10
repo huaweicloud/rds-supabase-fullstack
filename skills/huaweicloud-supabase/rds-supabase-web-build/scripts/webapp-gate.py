@@ -139,13 +139,13 @@ def check_stage(data, stage, missing):
         missing.append(f"no passed history event for '{stage}'")
     if stage in ("instance_ready", "mcp_connected", "backend_deployed", "frontend_built",
                  "hosting_published", "launched") and not isinstance(data.get("instance"), dict):
-        missing.append("instance section missing for a post-① stage")
+            missing.append("instance section missing from instance_ready onward")
     if stage in ("frontend_built", "hosting_published", "launched") and not isinstance(data.get("frontend"), dict):
-        missing.append("frontend section missing for a post-④ stage")
+        missing.append("frontend section missing from frontend_built onward")
     if stage in ("backend_deployed", "frontend_built", "hosting_published", "launched"):
         deployments = (data.get("backend") or {}).get("deployments") or []
         if not deployments:
-            missing.append("backend.deployments empty for a post-③ stage")
+            missing.append("backend.deployments empty from backend_deployed onward")
         elif deployments[-1].get("status") != "applied":
             missing.append("latest backend deployment is not 'applied'")
 
@@ -157,7 +157,7 @@ def check_gate(data, number, project_dir, missing):
         return
     path = Path(project_dir) / ".hwsupabase" / "gates" / name
     if not path.is_file():
-        missing.append(f"missing mandatory-gate artifact {path} (see workflow-stages ③/④)")
+        missing.append(f"missing mandatory-gate artifact {path} (see workflow-stages.md mandatory gates)")
         return
     mappings = [line for line in path.read_text(encoding="utf-8").splitlines()
                 if line.strip().startswith(("-", "*")) and ("→" in line or "->" in line)]

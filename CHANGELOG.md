@@ -114,6 +114,12 @@ semantic versioning.
   inline the complete copy-ready commands (git uvx template and local
   `uv run --directory`, plus the exact env variable names) at the exact point
   they are used, so the agent never has to search for how to install.
+- Skill `rds-supabase-web-build` v0.3.2: workflow steps are now labelled
+  explicitly as 步骤一–步骤七 (Step One through Step Seven) instead of the
+  compact circled-number markers — headers, in-text stage references, the
+  README/INSTALL guides, the reference playbooks and the SVG diagram badges
+  all use the same explicit step numbering; the gate script's two messages
+  that embedded circled numbers switch to enum-based wording.
 
 - Skill `rds-supabase-frontend` v0.1.0 (renamed from `huawei-supabase-frontend`):
   private OBS + CDN static frontend

@@ -13,7 +13,7 @@ Agent 按下述步骤执行即可；人类也可照读自查。安装本身**不
 |---|---|---|
 | 技能文件（6 个） | 现在，一次性 | `npx skills add` 或复制目录到 Agent 技能目录 |
 | 管理面 MCP（29 工具） | 现在，一次性 | uvx 模板 + 凭据注入（devkit 优先 / discover 勾选） |
-| 数据面 MCP（38 工具） | **刻意不装** | 实例在 ① 阶段才创建；② 阶段由技能按 rds-supabase-mcp 技能 `references/install.md` 动态安装 |
+| 数据面 MCP（38 工具） | **刻意不装** | 实例在 步骤二才创建；步骤三 阶段由技能按 rds-supabase-mcp 技能 `references/install.md` 动态安装 |
 
 数据面 MCP 依赖实例网关 URL 与 API Key——安装时实例尚不存在。这正是"动态"的本体：
 不要现在向用户索取这三项信息，也不要预置占位配置。
@@ -67,7 +67,7 @@ cp -r rds-supabase-fullstack/skills/huaweicloud-supabase/* <你的技能目录>/
 | MCP | 仓内路径 | 入口脚本 | git uvx 模板 | 本地克隆运行 |
 |---|---|---|---|---|
 | 管理面 `rds-supabase-mgr` | `server/mcp_server_rds_supabase_mgr` | `mcp-huaweicloud-rds-supabase-mgr` | `uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr` | `uv run --directory server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr` |
-| 数据面 `rds-supabase` | `server/mcp_server_rds_supabase` | `mcp-server-huaweicloud-rds-supabase` | `uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack --subdirectory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase`（② 阶段动态装） | `uv run --directory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase` |
+| 数据面 `rds-supabase` | `server/mcp_server_rds_supabase` | `mcp-server-huaweicloud-rds-supabase` | `uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack --subdirectory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase`（步骤三 阶段动态装） | `uv run --directory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase` |
 
 > **警示（Agent 必读）**：PyPI 与应用市场存在**同名/相似的第三方 "supabase" MCP 包**——它们不是本项目的服务器。除上表两种来源（git uvx 模板 / 本仓本地路径）外，**不得搜索、安装或引入任何其他来源的 MCP**；发现已配置了其他来源时，先移除再按本表重装。
 
@@ -126,7 +126,7 @@ REST Token 模式：删除 AK/SK 两行，改放 `HUAWEICLOUD_AUTH_TOKEN`；完�
 （只读起步）。真实变更时由操作方显式改这两个变量并重启——Agent 不得自行修改。
 
 **region 说明**：frontend/OBS 侧（KooCLI）另需 `HUAWEICLOUD_REGION` + AK/SK——安装阶段
-不强制，但建站流程 ① 阶段会做配置完备性检查，缺失项会显示让你填写；届时 endpoint
+不强制，但建站流程 步骤二会做配置完备性检查，缺失项会显示让你填写；届时 endpoint
 若推导不了，也会要求你显式指定。
 
 ### 第 3 步：验证管理面
@@ -138,13 +138,13 @@ REST Token 模式：删除 AK/SK 两行，改放 `HUAWEICLOUD_AUTH_TOKEN`；完�
 
 ### 第 4 步：数据面 MCP——不安装（声明）
 
-告诉用户：数据面 MCP 将在首次建站流程的 ② 阶段由 web-build 技能自动动态安装
+告诉用户：数据面 MCP 将在首次建站流程的 步骤三由 web-build 技能自动动态安装
 （届时实例已创建，网关 URL 与 API Key 就绪）。现在**不要**配置 `rds-supabase`
 条目，也不要索取实例信息。安装过程与断点状态记录在项目根 `.hwsupabase/webapp.json`。
 
 ### 第 5 步：完成报告
 
-向用户汇报四项：已装技能清单；管理面工具数与只读状态；数据面"② 阶段动态安装"的
+向用户汇报四项：已装技能清单；管理面工具数与只读状态；数据面"步骤三 阶段动态安装"的
 约定；触发语句。
 
 ## 凭据红线（贯穿全程）
@@ -152,7 +152,7 @@ REST Token 模式：删除 AK/SK 两行，改放 `HUAWEICLOUD_AUTH_TOKEN`；完�
 - 密钥只写入本地客户端配置（env），不进仓库、不进日志、不进对话
 - Agent 不索取、不回显、不落盘明文；对话中只出现占位符与工具调用结果
 - 受保护文件权限 0600；交付/轮换流程见管理面 README"安全机制"
-- service_role key 将在 ② 阶段注入数据面（绕过 RLS），仅进可信宿主环境
+- service_role key 将在 步骤三注入数据面（绕过 RLS），仅进可信宿主环境
 
 ## 更新与卸载
 
@@ -169,8 +169,8 @@ REST Token 模式：删除 AK/SK 两行，改放 `HUAWEICLOUD_AUTH_TOKEN`；完�
 | GitHub / PyPI 不可达 | 配置企业镜像（pip index-url、UV_INDEX）；或克隆仓库后 `uv run --directory server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr` 本地运行，不经 uvx git 拉取 |
 | 多项目账号 | discover 列出全部候选（名称/区域/推导入口），用户勾选；不静默选择 |
 | Windows | env 设置用 `$env:`；其余步骤一致 |
-| 已有 RDS Supabase 实例 | ① 阶段会先询问"新建还是使用已有"；选已有 → 管理面 `list_supabase_applications` 列出可用应用让你勾选，随即获取该应用的网关 URL 与 API Key（② 数据面安装必需，不会遗漏） |
-| 什么时候才能访问站点 | ⓪–⑥ 全流程由技能驱动，实例创建（①）可能耗时数分钟；⑥ 通过三层上线清单后给出 stable_url |
+| 已有 RDS Supabase 实例 | 步骤二会先询问"新建还是使用已有"；选已有 → 管理面 `list_supabase_applications` 列出可用应用让你勾选，随即获取该应用的网关 URL 与 API Key（步骤三 数据面安装必需，不会遗漏） |
+| 什么时候才能访问站点 | 步骤一–七 全流程由技能驱动，实例创建（步骤二）可能耗时数分钟；步骤七 通过三层上线清单后给出 stable_url |
 
 ## 触发
 
@@ -179,5 +179,5 @@ REST Token 模式：删除 AK/SK 两行，改放 `HUAWEICLOUD_AUTH_TOKEN`；完�
 > 帮我建一个博客网站，支持登录评论。
 > 搭一个带 AI 问答的知识库应用。
 
-技能从 ⓪ 需求澄清开始接管；流水线、强制门、断点续作与上线验收由
+技能从 步骤一 需求澄清开始接管；流水线、强制门、断点续作与上线验收由
 [rds-supabase-web-build](SKILL.md) 编排。

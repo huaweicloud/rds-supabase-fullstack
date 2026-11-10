@@ -1,6 +1,6 @@
 # 端到端上线清单（步骤七）
 
-上线门槛 = 三层组合验证。任何必需项 failed → 不标记 `launched`（处置见 workflow-stages.md 步骤七）。验收事件沿用 frontend 契约的 checks 语义：新的 check_id、独立文件、不覆写历史。加载时机：步骤七 上线验证前。
+上线通过条件 = 三层组合验证。任何必需项 failed → 不标记 `launched`（处置见 workflow-stages.md 步骤七）。验收事件沿用 frontend 契约的 checks 语义：新的 check_id、独立文件、不覆写历史。加载时机：步骤七 上线验证前。
 
 ## 第一层：后端项（数据面 MCP）
 

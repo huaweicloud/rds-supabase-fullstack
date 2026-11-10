@@ -8,7 +8,7 @@
 
 1. 需求增量澄清（同 步骤一 的规则，范围限定增量；费用影响一并说明）
 2. 数据模型差异 → 生成**增量 init.sql**（可重复执行原则：已存在对象用 `IF NOT EXISTS` / 增量变更，不整库重建）
-3. 重走 步骤四：**强制门同样生效**（best-practices 必读）；五步部署门槛重验；记录新部署批次（webapp.json 追加 deployment）
+3. 重走 步骤四：**强制门同样生效**（best-practices 必读）；五步部署通过条件重验；记录新部署批次（webapp.json 追加 deployment）
 4. 前端更新 → 步骤六 新版本发布与验收（frontend 契约的 update 语义）→ 步骤七 复验
 
 注意：新增对外表同样需要 RLS 覆盖与最小授权；`get_advisors(security)` 复核无新增问题。

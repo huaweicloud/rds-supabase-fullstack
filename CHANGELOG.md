@@ -120,6 +120,20 @@ semantic versioning.
   README/INSTALL guides, the reference playbooks and the SVG diagram badges
   all use the same explicit step numbering; the gate script's two messages
   that embedded circled numbers switch to enum-based wording.
+- Skill `rds-supabase-web-build` v0.3.3: professional-language pass over the
+  whole skill. Colloquial and AI-flavored wording is replaced with formal,
+  precise terminology throughout SKILL.md, README, INSTALL and the reference
+  playbooks — the orchestrator is described as a top-level orchestration
+  skill (顶层编排技能) rather than a "commander"; stage assertions are
+  通过条件 (pass conditions) instead of casual "thresholds"; credential
+  handling speaks of configuration templates with placeholders and users
+  copying real values, not "skeletons" and "fill-in"; the stage-header
+  declaration, wait protocol, two-strike rule and other discipline items
+  are reworded to formal specification language ("连续失败中止规则",
+  "单次回复推进单一步骤", "暂不安装", "先询问后执行", "不得代用户默认选择",
+  "不得遗漏"); all remaining stage-vs-step terminology is unified to
+  步骤 (except the control-plane two-phase confirmation term 两阶段确认);
+  the SVG's migrations chip reads 禁改 instead of the casual 不碰.
 
 - Skill `rds-supabase-frontend` v0.1.0 (renamed from `huawei-supabase-frontend`):
   private OBS + CDN static frontend

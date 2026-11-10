@@ -124,7 +124,7 @@
   <rect x="421" y="287" width="168" height="3" fill="#7c3aed"/>
   <text x="505" y="307" text-anchor="middle" font-size="9" fill="#94a3b8">阶段路由</text>
   <rect class="mgrB" x="435" y="318" width="140" height="20" rx="6"/><text class="mgrT" x="505" y="331" text-anchor="middle">管理面 MCP</text>
-  <text x="505" y="356" text-anchor="middle" class="cap">devkit 检测 → uvx 拉起</text>
+  <text x="505" y="356" text-anchor="middle" class="cap">devkit 检测 → uvx 启动</text>
   <text x="505" y="372" text-anchor="middle" class="cap">创建实例（Single 后付费）</text>
   <text x="505" y="388" text-anchor="middle" class="cap">EIP · 安全组 8443 · SSL</text>
   <text x="505" y="404" text-anchor="middle" font-size="9.5" fill="#d97706" font-weight="700">密钥交付 Anon/Service</text>
@@ -253,7 +253,7 @@
     <rect class="chip" x="1080" y="900" width="170" height="40" rx="8"/>
     <text x="1165" y="924" text-anchor="middle" font-size="10.5" font-weight="700">pgvector 0.8.2</text>
     <rect class="chip" x="1270" y="900" width="130" height="40" rx="8"/>
-    <text x="1335" y="924" text-anchor="middle" font-size="10" font-weight="700">migrations（不碰）</text>
+    <text x="1335" y="924" text-anchor="middle" font-size="10" font-weight="700">migrations（禁改）</text>
   </g>
 
   <!-- OBS + CDN -->

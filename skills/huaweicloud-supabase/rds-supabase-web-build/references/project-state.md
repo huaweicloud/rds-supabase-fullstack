@@ -65,20 +65,20 @@
 | updated_at | string | 本次更新时间 |
 | history | object[] | 每项必含 `stage`、`status`（`passed`/`failed`/`blocked`）、`at`、`note` |
 
-**阶段枚举**：`requirements_confirmed` → `instance_ready` → `mcp_connected` → `backend_deployed` → `frontend_built` → `hosting_published` → `launched`；另有终态 `decommissioned`（下线后）。
+**步骤枚举**：`requirements_confirmed` → `instance_ready` → `mcp_connected` → `backend_deployed` → `frontend_built` → `hosting_published` → `launched`；另有终态 `decommissioned`（下线后）。
 
-## 门槛产物与执行轨迹
+## 通过条件产物与执行轨迹
 
 | 产物 | 路径 | 规则 |
 |---|---|---|
 | 步骤四 规则对照表 | `.hwsupabase/gates/3-rules-checklist.md` | best-practices 规则 → init.sql 位置映射，≥5 条 `- <规则> → <位置>` 行；步骤四 完成前 gate `check-gate --number 3` 校验 |
 | 步骤五 SDK 契约对照表 | `.hwsupabase/gates/4-sdk-contract-checklist.md` | usage 契约点 → 代码位置映射（会话管理/RLS 语义/错误契约/env 注入/Realtime 清理），≥5 条映射行；步骤五 完成前 gate `check-gate --number 4` 校验 |
-| 执行轨迹 | `.hwsupabase/trace.jsonl` | 每个 MCP/CLI 工具调用后即时追加一行：`{"at":<RFC3339 UTC>,"stage":<阶段枚举>,"tool":<工具名>,"intent":<一句话>,"status":"ok|fail|blocked","note":null}`；**无敏感值**；gate `check-trace` 校验格式 |
+| 执行轨迹 | `.hwsupabase/trace.jsonl` | 每个 MCP/CLI 工具调用后即时追加一行：`{"at":<RFC3339 UTC>,"stage":<步骤枚举>,"tool":<工具名>,"intent":<一句话>,"status":"ok|fail|blocked","note":null}`；**无敏感值**；gate `check-trace` 校验格式 |
 
 ## 状态不变量
 
-1. **阶段只前进**：`last_completed_stage` 仅在对应门槛通过后更新；断点重验失败不改写已通过阶段，只在 history 记录 `failed`
+1. **步骤只前进**：`last_completed_stage` 仅在对应通过条件通过后更新；断点重验失败不改写已通过步骤，只在 history 记录 `failed`
 2. **失败/未知显式记录**（history.status + note），不猜测、不静默跳过
-3. **断点续作**从 `last_completed_stage` 的下一阶段重入，且必须重验该阶段门槛（不信任历史结论）
+3. **断点续作**从 `last_completed_stage` 的下一步骤重入，且必须重验该步骤通过条件（不信任历史结论）
 4. **密钥轮换**后仅更新 `credential_source` 与注入状态，仍不记录任何凭据值
 5. 前端记录变化（新版本/回退）只需保持 `record_ref` 指向有效环境记录，不在本文件复制其字段

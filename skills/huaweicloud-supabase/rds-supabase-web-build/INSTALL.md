@@ -13,7 +13,7 @@ Agent 按下述步骤执行即可；人类也可照读自查。安装本身**不
 |---|---|---|
 | 技能文件（6 个） | 现在，一次性 | `npx skills add` 或复制目录到 Agent 技能目录 |
 | 管理面 MCP（29 工具） | 现在，一次性 | uvx 模板 + 凭据注入（devkit 优先 / discover 勾选） |
-| 数据面 MCP（38 工具） | **刻意不装** | 实例在 步骤二才创建；步骤三 阶段由技能按 rds-supabase-mcp 技能 `references/install.md` 动态安装 |
+| 数据面 MCP（38 工具） | **暂不安装** | 实例在 步骤二才创建；步骤三 步骤由技能按 rds-supabase-mcp 技能 `references/install.md` 动态安装 |
 
 数据面 MCP 依赖实例网关 URL 与 API Key——安装时实例尚不存在。这正是"动态"的本体：
 不要现在向用户索取这三项信息，也不要预置占位配置。
@@ -67,7 +67,7 @@ cp -r rds-supabase-fullstack/skills/huaweicloud-supabase/* <你的技能目录>/
 | MCP | 仓内路径 | 入口脚本 | git uvx 模板 | 本地克隆运行 |
 |---|---|---|---|---|
 | 管理面 `rds-supabase-mgr` | `server/mcp_server_rds_supabase_mgr` | `mcp-huaweicloud-rds-supabase-mgr` | `uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr` | `uv run --directory server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr` |
-| 数据面 `rds-supabase` | `server/mcp_server_rds_supabase` | `mcp-server-huaweicloud-rds-supabase` | `uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack --subdirectory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase`（步骤三 阶段动态装） | `uv run --directory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase` |
+| 数据面 `rds-supabase` | `server/mcp_server_rds_supabase` | `mcp-server-huaweicloud-rds-supabase` | `uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack --subdirectory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase`（步骤三 步骤动态装） | `uv run --directory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase` |
 
 > **警示（Agent 必读）**：PyPI 与应用市场存在**同名/相似的第三方 "supabase" MCP 包**——它们不是本项目的服务器。除上表两种来源（git uvx 模板 / 本仓本地路径）外，**不得搜索、安装或引入任何其他来源的 MCP**；发现已配置了其他来源时，先移除再按本表重装。
 
@@ -118,16 +118,16 @@ REST Token 模式：删除 AK/SK 两行，改放 `HUAWEICLOUD_AUTH_TOKEN`；完�
      python -m mcp_server_supabase.diagnostics discover --probe
    ```
 
-3. **半自动兜底**：Agent 生成含 `<...>` 占位符的配置骨架 → 用户自己从受保护文件把
+3. **半自动备选路径**：Agent 生成含 `<...>` 占位符的配置模板 → 用户自己从受保护文件把
    真实值复制进 env → 重启客户端。Agent 不索取、不回显、不落盘任何明文；连通与否
    以下一步的只读调用结果为准。
 
 **初始安全态**：`HUAWEICLOUD_MCP_READ_ONLY=true` + `SUPABASE_ENABLE_WRITES=false`
 （只读起步）。真实变更时由操作方显式改这两个变量并重启——Agent 不得自行修改。
 
-**region 说明**：frontend/OBS 侧（KooCLI）另需 `HUAWEICLOUD_REGION` + AK/SK——安装阶段
+**region 说明**：frontend/OBS 侧（KooCLI）另需 `HUAWEICLOUD_REGION` + AK/SK——安装步骤
 不强制，但建站流程 步骤二会做配置完备性检查，缺失项会显示让你填写；届时 endpoint
-若推导不了，也会要求你显式指定。
+若无法推导，也会要求你显式指定。
 
 ### 第 3 步：验证管理面
 
@@ -144,7 +144,7 @@ REST Token 模式：删除 AK/SK 两行，改放 `HUAWEICLOUD_AUTH_TOKEN`；完�
 
 ### 第 5 步：完成报告
 
-向用户汇报四项：已装技能清单；管理面工具数与只读状态；数据面"步骤三 阶段动态安装"的
+向用户汇报四项：已装技能清单；管理面工具数与只读状态；数据面"步骤三 步骤动态安装"的
 约定；触发语句。
 
 ## 凭据红线（贯穿全程）

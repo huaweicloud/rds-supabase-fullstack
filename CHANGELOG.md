@@ -7,6 +7,31 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.6.5: the complex-business-logic boundary is
+  no longer "v2 later" — routing table, SKILL boundary row and stage-2
+  edge detection now route to the dedicated function-graph skill; install
+  expectations updated to eight skills.
+
+### Added
+
+- Skill `rds-supabase-function-graph` v0.1.0: new skill hosting custom
+  server-side business code (transaction notifications, external-system
+  integration, complex domain logic, high-security processing) on Huawei
+  Cloud FunctionGraph. Six-stage workflow (env check with KooCLI command-
+  surface self-calibration → logic decomposition → code generation →
+  deployment → security verification & release → frontend integration),
+  zero-dependency Node.js 18 template with in-function GoTrue JWT
+  verification, exact-origin CORS, idempotency and a unified error
+  contract; shared-APIG entry with `fgs-gate.py` as the independent
+  verifier (unauthenticated 401 / invalid-JWT 401 / valid-JWT 200 /
+  exact CORS origin machine-checked), functions.json artifact contract,
+  per-stage KooCLI whitelist and 21 pytest cases with a local fake APIG.
+  Secrets only ever live in function environment variables assembled via
+  `--cli-json-file` by the user — the agent never sees plaintext.
+- Skill `rds-supabase-usage` v0.2.3: the FunctionGraph routing row and the
+  server-side computing section now point to the dedicated
+  `rds-supabase-function-graph` skill instead of a "planned skill"
+  placeholder.
 - Skill `rds-supabase-frontend` v0.2.0: support public-read OBS with direct-domain
   or CDN hosting; add internal-cloud discovery, repeat-release fast path,
   policy coverage preflight and single-pass MIME/cache metadata uploads.

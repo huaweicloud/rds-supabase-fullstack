@@ -61,7 +61,8 @@ uv run mcp_server_rfs
   Postgres 最佳实践规则库——按症状直达规则文件，含华为云 RDS 部署专属规则。
 - **[rds-supabase-frontend](skills/huaweicloud-supabase/rds-supabase-frontend/SKILL.md)**：公开读 OBS 静态前端部署技能（域名直连或 CDN 回源）——构建环境准备、接入已有华为云 RDS Supabase、版本发布、更新、回退与真实入口验收。
 - **[rds-supabase-mgr-mcp](skills/huaweicloud-supabase/rds-supabase-mgr-mcp/SKILL.md)**：管理面 MCP 使用技能——实例创建、配置、密钥交付与删除的意图理解、影响展示与两阶段确认指导。
-- **[rds-supabase-web-build](skills/huaweicloud-supabase/rds-supabase-web-build/SKILL.md)**：全栈开发总指挥技能——一句话触发 ⓪–⑥ 七阶段流水线（需求 → 资源准备 → 数据面接入 → 后端 → 前端 → 托管 → 上线）与生命周期循环；[一键安装指导](skills/huaweicloud-supabase/rds-supabase-web-build/INSTALL.md)。
+- **[rds-supabase-web-build](skills/huaweicloud-supabase/rds-supabase-web-build/SKILL.md)**：全栈开发总指挥技能——一句话触发步骤一~八八步流水线（环境检查 → 需求 → 资源 → 数据面 → 后端 → 前端 → 托管 → 上线）与生命周期循环；[一键安装指导](skills/huaweicloud-supabase/rds-supabase-web-build/INSTALL.md)。
+- **[rds-supabase-function-graph](skills/huaweicloud-supabase/rds-supabase-function-graph/SKILL.md)**：FunctionGraph 云函数技能——交易通知/外部对接/复杂领域逻辑/高安全处理的服务端承载，KooCLI 编排 + 函数内验签 + fgs-gate 独立验证。
 - **[huaweicloud-mcp-dev](skills/huaweicloud-mcp-dev/SKILL.md)**：本仓库 MCP 服务器开发指南。
 
 ## License

@@ -25,7 +25,7 @@ web-build 是编排者：仅执行路由，不复制内容。命中左列任务�
 |---|---|
 | SQL 质量规则细节 | 不复制 best-practices 内容，只路由 |
 | 前端构建/发布/域名细节 | 不复制 frontend 内容，只路由 |
-| 复杂业务逻辑（支付/第三方调用/长任务） | v1 边界外：明确告知用户并停止；FunctionGraph 留待 v2 |
+| 复杂业务逻辑（支付/第三方调用/长任务） | 路由 rds-supabase-function-graph 技能（云函数承载：KooCLI 编排 + fgs-gate 验证） |
 | SSR 后端部署 | 不支持：静态导出为边界（继承 frontend 策略） |
 | 文件上传（Storage） | v1 默认不含：步骤二识别并说明（可选扩展：管理面 `update_supabase_storage` 配 OBS 凭据，数据桶与前端托管桶分离） |
 | 绕过强制门直接生成代码 | 禁止：步骤五、步骤六生成前必读对应技能 |

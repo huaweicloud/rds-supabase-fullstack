@@ -1,0 +1,14 @@
+{
+  "runtime": "Node.js18",
+  "entry": "handler.js",
+  "env_names": {
+    "FGS_JWT_SECRET": "高敏：GoTrue JWT Secret（对外 apig 函数必填；从受保护文件经 cli-json-file 注入，不得写入本文件）",
+    "FGS_ALLOWED_ORIGINS": "精确 origin 白名单（逗号分隔，对外 apig 函数必填；例：https://www.example.com）",
+    "SUPABASE_URL": "Kong 网关地址（web-build 步骤三交付；非秘密）",
+    "SUPABASE_SERVICE_ROLE_KEY": "高敏：service key（幂等落库/RPC 用；从受保护文件注入）",
+    "FGS_IDEMPOTENCY_TABLE": "幂等表名（交易类函数设置；设为 disabled 可显式关闭）",
+    "FGS_IDEMPOTENCY_KEY_FIELD": "幂等键字段名（默认 request_id）",
+    "PARTNER_SIGN_KEY": "高敏：外部系统签名密钥（对接场景按需）"
+  },
+  "idempotency": { "enabled": false, "key_field": "request_id", "ddl_hint": "create table fn_<name>_idem (request_id text primary key, created_at timestamptz not null default now());" }
+}

@@ -57,13 +57,13 @@ cp -r rds-supabase-fullstack/skills/huaweicloud-supabase/* <项目技能目录>/
 
 安装的全部技能：`rds-supabase-web-build`（编排总指挥）、`rds-supabase-mgr-mcp`、
 `rds-supabase-mcp`、`rds-supabase-usage`、`rds-supabase-frontend`、
-`rds-supabase-postgres-best-practices`。
+`rds-supabase-postgres-best-practices`、`rds-supabase-function-graph`（云函数）。
 
 ### 第 2 步：校验
 
 每个技能目录含 `SKILL.md`；克隆了仓库的，可运行
 `uv run --directory server/mcp_server_rds_supabase python ../../scripts/validate_skills.py`，
-期望输出 `validate-skills: OK (7 skills)`。
+期望输出 `validate-skills: OK (8 skills)`。
 
 ### 第 3 步：完成报告
 

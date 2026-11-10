@@ -1,0 +1,13 @@
+{
+  "httpMethod": "POST",
+  "headers": {
+    "Origin": "https://www.example.com",
+    "Authorization": "Bearer <GOTRUE_ACCESS_TOKEN>",
+    "Content-Type": "application/json",
+    "X-Request-Id": "req-local-selftest-0001"
+  },
+  "queryStringParameters": {},
+  "pathParameters": {},
+  "body": "{\"request_id\": \"req-local-selftest-0001\", \"amount\": 9900, \"currency\": \"CNY\"}",
+  "isBase64Encoded": false
+}

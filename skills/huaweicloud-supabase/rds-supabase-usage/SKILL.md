@@ -3,7 +3,7 @@ name: rds-supabase-usage
 description: '华为云 RDS Supabase 平台开发技能（自建 Supabase 栈：Kong 网关、PostgREST、GoTrue 认证、Storage、Realtime、pgvector）。Use when：使用 supabase-js / @supabase/ssr 客户端库或 Next.js、React、SvelteKit、Astro、Remix 集成；认证问题（login、logout、sessions、JWT、cookies、getSession、getUser、RLS）；schema 变更与 init.sql 部署；REST/Data API 行为异常（permission denied、schema cache、42501、超时、表不可见）；Postgres 错误与性能问题（慢查询、索引、连接、锁）；Storage 故障、Realtime 断连；向量检索；服务端计算与定时任务。不适用于：MCP 服务器操作与实例管理（rds-supabase-mcp）、SQL 与 schema 质量规则（rds-supabase-postgres-best-practices）。'
 license: MIT
 metadata:
-  version: "0.2.2"
+  version: "0.2.3"
   author: fitz-liujian
   derived-from: "supabase/agent-skills@c9be0e9 (MIT)"
 ---
@@ -21,7 +21,7 @@ metadata:
 | 客户端集成、认证排查、Data API 行为、调试、FunctionGraph | 本技能 |
 | MCP 服务器操作、init.sql 五步部署规程、用户与存储管理 | `rds-supabase-mcp` 技能 |
 | SQL 编写与 schema 设计质量、慢查询/索引/锁优化 | `rds-supabase-postgres-best-practices` 技能 |
-| FunctionGraph 工作流编排 | 华为云 FunctionGraph 官方文档（专用技能规划中） |
+| FunctionGraph 云函数生成/部署/验证/运维 | `rds-supabase-function-graph` 技能 |
 
 ## 核心原则
 
@@ -123,7 +123,7 @@ alter default privileges for role postgres in schema public
 
 ## 服务端计算与定时任务
 
-本平台无 Edge Functions。服务端计算与 Webhook 处理使用**华为云 FunctionGraph 工作流**（专用技能规划中，当前参考华为云 FunctionGraph 官方文档）。定时任务使用 pg_cron 在数据库内调度（编写规范见 best-practices 技能 `rds-scheduled-jobs`；实例未启用时经 RDS 参数模板配置，见 `rds-parameter-template`）。数据库侧出站 HTTP 使用 pg_net。
+本平台无 Edge Functions。服务端计算与 Webhook 处理使用**华为云 FunctionGraph**，生成/部署/安全验证与生命周期管理由 `rds-supabase-function-graph` 技能承载。定时任务使用 pg_cron 在数据库内调度（编写规范见 best-practices 技能 `rds-scheduled-jobs`；实例未启用时经 RDS 参数模板配置，见 `rds-parameter-template`）。数据库侧出站 HTTP 使用 pg_net。
 
 ## 向量检索
 

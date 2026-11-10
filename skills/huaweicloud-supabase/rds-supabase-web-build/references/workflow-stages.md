@@ -53,7 +53,7 @@
 
 1. 输出步骤声明（格式见 SKILL.md 执行纪律）
 2. 澄清清单逐项确认（以对接卡片表格呈现：确认项 | 内容 | 状态 ☐，格式见 SKILL.md 输出格式）：网站类型与页面清单 / 数据模型草案（实体、关系、对外暴露表）/ 认证需求 / AI 能力识别（pgvector 语义检索、Realtime 订阅、文件上传→v1 默认不含）
-3. 边界外识别明确告知（不擅自模拟）：复杂业务逻辑（支付/第三方/长任务）→ v2 FunctionGraph；SSR 不支持
+3. 边界外识别明确告知（不擅自模拟）：复杂业务逻辑（支付/第三方/长任务）→ 路由 rds-supabase-function-graph 技能（云函数）；SSR 不支持
 4. 费用预估清单（实例规格/时长、OBS 存储、CDN 流量、域名证书）→ 用户确认
 5. 写 webapp.json：`project.requirements_summary`（脱敏）+ history 追加 passed 事件
 6. 跑 gate（check-stage --stage requirements_confirmed）→ 步骤报告

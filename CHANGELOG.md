@@ -167,6 +167,23 @@ semantic versioning.
   MCP servers. Stage-5 and stage-8 playbooks require running
   check-stage --verify (with --mcp-command at stage 5), and the execution
   discipline forbids accepting agent self-reports for cloud facts.
+- Skill `rds-supabase-web-build` v0.6.0: adherence materialization and
+  interaction upgrades. Trace enforcement — check-stage now fails when a
+  tool-active stage (instance_ready onward) claims passed without ok trace
+  records for that stage; a new check-whitelist subcommand audits every trace
+  record against per-stage tool allow-lists and surfaces out-of-stage tool
+  use. A new scripts/skill-lint.py structurally lints the skill itself
+  (eight sequential step headers with matching names and breakpoints in
+  SKILL.md and the playbook, enum order in the project-state contract, gate
+  STAGES equality, and reference-file existence) — its first run caught a
+  real stage-name mismatch between SKILL.md and the playbook. Interaction:
+  a progress board keeps an eight-item todo list in sync with the host todo
+  tool (in-progress / completed / blocked per step, rebuilt from webapp.json
+  on session re-entry), missing-configuration and requirement checklists are
+  rendered as alignment cards (item | status ✅/❌/⏳ | how to obtain), and
+  node bulletins announce long-running actions before and after
+  (action · object · outcome). Trace contract documents tool naming and the
+  two audits; 27 tests cover the gate suite including the new checks.
 
 - Skill `rds-supabase-frontend` v0.1.0 (renamed from `huawei-supabase-frontend`):
   private OBS + CDN static frontend

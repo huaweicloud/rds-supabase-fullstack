@@ -85,6 +85,13 @@ def make_project(tables=("public.posts", "public.users"), exposed=("public.posts
                                          "backend_deployed", "frontend_built")]},
     }
     (root / ".hwsupabase" / "webapp.json").write_text(json.dumps(manifest), encoding="utf-8")
+    trace_lines = [json.dumps({"at": "2026-11-10T07:30:00Z", "stage": stage, "tool": tool,
+                               "intent": "fixture", "status": "ok", "note": None})
+                   for stage, tool in (("instance_ready", "list_supabase_applications"),
+                                       ("mcp_connected", "get_project_url"),
+                                       ("backend_deployed", "execute_sql"),
+                                       ("frontend_built", "npm run build"))]
+    (root / ".hwsupabase" / "trace.jsonl").write_text("\n".join(trace_lines) + "\n", encoding="utf-8")
     return root
 
 
@@ -304,6 +311,66 @@ class VerifyTests(unittest.TestCase):
                           env_extra=self.env())
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertIn("no --mcp-command", result.stdout)
+
+
+class TraceEnforcementTests(unittest.TestCase):
+    def test_fail_when_trace_missing_for_required_stage(self):
+        project = make_project()
+        (project / ".hwsupabase" / "trace.jsonl").unlink()
+        result = run_gate(project, "check-stage", "--stage", "backend_deployed")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("trace enforcement", result.stdout)
+
+    def test_exempt_stage_passes_without_trace(self):
+        project = make_project()
+        path = project / ".hwsupabase" / "webapp.json"
+        data = json.loads(path.read_text())
+        data["stages"]["history"].append({"stage": "requirements_confirmed", "status": "passed",
+                                          "at": "2026-11-10T06:00:00Z", "note": None})
+        path.write_text(json.dumps(data))
+        (project / ".hwsupabase" / "trace.jsonl").unlink()
+        result = run_gate(project, "check-stage", "--stage", "requirements_confirmed")
+        self.assertEqual(result.returncode, 0, result.stdout)
+
+
+class WhitelistTests(unittest.TestCase):
+    def test_pass_all_tools_allowed(self):
+        result = run_gate(make_project(), "check-whitelist")
+        self.assertEqual(result.returncode, 0, result.stdout)
+
+    def test_fail_on_out_of_stage_tool(self):
+        project = make_project()
+        with (project / ".hwsupabase" / "trace.jsonl").open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps({"at": "2026-11-10T08:30:00Z", "stage": "backend_deployed",
+                                     "tool": "delete_supabase_application", "intent": "oops",
+                                     "status": "ok", "note": None}) + "\n")
+        result = run_gate(project, "check-whitelist")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("outside the stage allow-list", result.stdout)
+
+
+class SkillLintTests(unittest.TestCase):
+    SKILL_DIR = HERE.parent
+
+    def test_pass_on_real_skill(self):
+        result = subprocess.run([sys.executable, str(HERE.parent / "scripts" / "skill-lint.py"),
+                                 str(self.SKILL_DIR)], capture_output=True, text=True, timeout=60)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_fail_on_broken_copy(self):
+        import shutil
+        broken = Path(tempfile.mkdtemp(prefix="skill-lint-")) / "rds-supabase-web-build"
+        shutil.copytree(self.SKILL_DIR, broken,
+                        ignore=shutil.ignore_patterns("__pycache__", ".DS_Store"))
+        skill = broken / "SKILL.md"
+        skill.write_text(skill.read_text(encoding="utf-8").replace(
+            "### 步骤五 · 后端生成部署 → 断点 `backend_deployed`",
+            "### 步骤五 · 后端生成部署 → 断点 `backend_deployed_x`"), encoding="utf-8")
+        result = subprocess.run([sys.executable, str(broken / "scripts" / "skill-lint.py"),
+                                 str(broken)], capture_output=True, text=True, timeout=60)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("mismatch", result.stdout)
+        shutil.rmtree(broken, ignore_errors=True)
 
 
 if __name__ == "__main__":

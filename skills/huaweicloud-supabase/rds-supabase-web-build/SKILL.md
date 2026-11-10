@@ -3,7 +3,7 @@ name: rds-supabase-web-build
 description: 'RDS Supabase 全栈开发编排技能：AI Agent 通过自然语言创建并托管 Web 应用网站的端到端工作流——前端代码生成、后端 init.sql（DDL/GRANT/RLS/RPC）生成与部署、前端静态资源 OBS+CDN 全托管、端到端上线与生命周期管理（更新/回滚/下线）。Use when：创建 Web 网站、搭建 AI 应用、全栈应用从零到上线、已有 RDS Supabase 应用的迭代更新与托管维护。编排管理面 MCP（实例生命周期）与数据面 MCP（动态安装）及 rds-supabase-mgr-mcp / rds-supabase-mcp / rds-supabase-usage / rds-supabase-frontend / rds-supabase-postgres-best-practices 五个专项技能。v1 后端边界为数据层；复杂业务逻辑（支付/第三方调用/长任务）不在 v1 范围，SSR 后端部署不支持。'
 license: MIT
 metadata:
-  version: "0.5.0"
+  version: "0.6.0"
 ---
 
 # RDS Supabase 全栈开发编排（web-build）
@@ -165,7 +165,8 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 4. **连续失败中止规则**：同一动作连续失败 2 次 → 强制中止并向用户报告，**禁止第三次盲目重试**
 5. **工具白名单**：每步骤允许/禁止集合见 workflow-stages.md；越界须先获用户同意并记 trace
 6. **gate 机械核验**：步骤完成前运行本技能 `scripts/webapp-gate.py`（`check-stage --stage <标记>`；步骤五、步骤六另跑 `check-gate --number 3|4`），**PASS 才能输出步骤报告与推进**；FAIL 按缺项整改后重跑。**步骤五与步骤八的 `check-stage` 必须加 `--verify`（步骤五另加 `--mcp-command <数据面启动命令>`）**：云上事实（REST 可达/对外表 anon 可见性/RLS/advisors）由 gate 直连机器核验，不采信 agent 自报
-7. **trace**：每个 MCP/CLI 工具调用后追加 `.hwsupabase/trace.jsonl` 一行（无敏感值；格式见 project-state.md）
+7. **trace**：每个 MCP/CLI 工具调用后追加 `.hwsupabase/trace.jsonl` 一行（无敏感值；格式见 project-state.md）；工具调用须在该步骤白名单内（`check-whitelist` 审计，越界即违规）
+8. **进度看板**：技能触发后第一动作创建八项待办（步骤一~八）并随推进实时更新；重入会话时依据 webapp.json 重建
 
 ## 可用工具
 
@@ -188,8 +189,23 @@ MCP 动态安装的**唯一来源与完整 URL 命令内联于 workflow-stages.m
 
 ## 输出格式
 
+- **进度看板**（全程维护）：技能触发后第一动作即创建八项待办（对应步骤一~八，与宿主待办列表联动）——进入步骤置"进行中"、gate PASS 置"已完成"、失败置"受阻"；用户全程总览进度，重入会话时依据 webapp.json 重建看板
 - **步骤声明**（每步骤第一条输出）：步骤号、前一态、允许/禁止动作、完成断言（格式见执行纪律）
-- **步骤报告**（每步骤完成时）：目标、执行动作、通过条件验证结果（**引用 gate verdict**）、下一步骤预告 + 需要用户准备什么
+- **对接卡片**（需要用户配置或输入时，以表格直观呈现，便于高效对接）：
+
+  ```
+  【环境检查与配置】
+  | 检查项 | 状态 | 获取方式 |
+  |---|---|---|
+  | 凭据（devkit/AK/SK） | ✅ devkit 已登录 | — |
+  | Region（局点） | ❌ 未配置 | 回复局点，如 cn-north-4 |
+  | RDS 接入点 | ⏳ 待推导 | discover 自动 / 需你指定 |
+  | OBS 接入点 | ⏳ 按 Region 推导 | 自动 |
+  | PROJECT_ID | ❌ 未配置 | discover 勾选 / 控制台查询 |
+  ```
+
+- **节点快讯**（关键动作前后各一行）：`动作 · 对象 · 结果摘要`（如"部署 init.sql · 批次 b1 · 12 对象 applied"）；长操作（实例创建/构建/部署/上传）开始与完成各发一条
+- **步骤报告**（每步骤完成时）：先更新进度看板，再输出报告——目标、执行动作、通过条件验证结果（**引用 gate verdict**）、下一步骤预告 + 需要用户准备什么
 - **上线报告**（步骤八）：三级交付语义（本地已验证/环境已准备/线上验收通过）+ stable_url + 前端版本记录引用；格式见 references/launch-checklist.md
 - **失败/断点报告**：当前步骤、失败原因（含连续失败中止规则触发）、已恢复/待人工项、webapp.json 状态
 

@@ -25,7 +25,7 @@
 4. **RDS 接入点**：`SUPABASE_RDS_ENDPOINT` 已配置 → 直接采用；未配置且凭据就绪 → 运行 `diagnostics discover`（`uv run --directory server/mcp_server_rds_supabase_mgr python -m mcp_server_supabase.diagnostics discover`，可加 `--probe`）→ 从 `suggested_env` 勾选并采纳；无法推导（非标准区域命名 / probe 不可达 / 报错）→ 要求用户显式指定
 5. **OBS 接入点**：按 Region 推导（`obs.<region>.myhuaweicloud.com`，KooCLI/SDK 自动解析）；无法推导 → 要求用户显式指定
 6. **PROJECT_ID**：已配置 → 采用；未配置 → `diagnostics discover` 勾选；无法获取 → 要求用户显式指定
-7. **缺失清单处置**：存在缺失项 → **以清单显式提醒用户逐项设置并等待补齐**（不得猜测、不得跳过、不得以默认值代替）；补齐后重新检查
+7. **缺失清单处置**：存在缺失项 → 以**对接卡片**表格呈现（检查项 | 状态 ✅/❌/⏳ | 获取方式，格式见 SKILL.md 输出格式），显式提醒用户逐项设置并等待补齐（不得猜测、不得跳过、不得以默认值代替）；补齐后重新检查
 8. 全部就绪 → 写 webapp.json（stages: environment_ready）→ gate → 步骤报告
 
 **输出断言**：🔍 凭据、Region、RDS 接入点、OBS 接入点、PROJECT_ID 全部已配置或已解析（缺失清单为空）｜🤖 gate PASS
@@ -51,7 +51,7 @@
 **动作序列**：
 
 1. 输出步骤声明（格式见 SKILL.md 执行纪律）
-2. 澄清清单逐项确认：网站类型与页面清单 / 数据模型草案（实体、关系、对外暴露表）/ 认证需求 / AI 能力识别（pgvector 语义检索、Realtime 订阅、文件上传→v1 默认不含）
+2. 澄清清单逐项确认（以对接卡片表格呈现：确认项 | 内容 | 状态 ☐，格式见 SKILL.md 输出格式）：网站类型与页面清单 / 数据模型草案（实体、关系、对外暴露表）/ 认证需求 / AI 能力识别（pgvector 语义检索、Realtime 订阅、文件上传→v1 默认不含）
 3. 边界外识别明确告知（不擅自模拟）：复杂业务逻辑（支付/第三方/长任务）→ v2 FunctionGraph；SSR 不支持
 4. 费用预估清单（实例规格/时长、OBS 存储、CDN 流量、域名证书）→ 用户确认
 5. 写 webapp.json：`project.requirements_summary`（脱敏）+ history 追加 passed 事件
@@ -130,7 +130,7 @@
 
 **失败处置**：401/403 → 核对凭据注入路径；连接失败 → 网关地址/安全组规则；重载后仍失败 → 检查旧环境残留（连续失败中止规则：连续 2 次失败即停下报告）。**断点**：`mcp_connected`
 
-## 步骤五 · 后端生成与部署
+## 步骤五 · 后端生成部署
 
 **目的**：强制门对照后生成 init.sql 并单一事务部署。
 

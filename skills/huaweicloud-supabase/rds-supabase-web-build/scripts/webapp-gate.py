@@ -40,6 +40,27 @@ SHA = re.compile(r"^[0-9a-f]{64}$")
 CRED = re.compile(r"eyJ[A-Za-z0-9_-]{10,}|BEGIN (RSA|EC|OPENSSH) PRIVATE|AKID[A-Za-z0-9]{10,}")
 GATE_FILES = {3: "3-rules-checklist.md", 4: "4-sdk-contract-checklist.md"}
 CRED_ENV_NAMES = ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"]
+# Stages whose completion requires at least one ok trace record (tool activity
+# is mandatory there); conversation-only steps are exempt.
+TRACE_REQUIRED = {"instance_ready", "mcp_connected", "backend_deployed", "frontend_built",
+                  "hosting_published", "launched"}
+# Per-stage tool allow-lists (shell wildcards matched against the trace tool
+# string). Violations surface in check-whitelist; patterns are deliberately
+# generous — prefixes group control-plane, data-plane, CLI and bookkeeping.
+WHITELIST = {
+    "environment_ready": ["diagnostics*", "uv*", "webapp*"],
+    "requirements_confirmed": [],
+    "instance_ready": ["list_*", "show_*", "plan_*", "create_*", "wait_*", "cancel_*",
+                       "inspect_*", "reconcile_*", "deliver_*", "change_*", "update_*",
+                       "hcloud*", "obsutil*", "diagnostics*", "uv*", "webapp*", "gate*"],
+    "mcp_connected": ["get_project_url", "list_tables", "uv*", "webapp*", "gate*"],
+    "backend_deployed": ["list_*", "get_*", "execute_sql", "webapp*", "gate*"],
+    "frontend_built": ["list_*", "get_*", "npm*", "npx*", "node*", "webapp*", "gate*"],
+    "hosting_published": ["list_*", "show_*", "get_*", "update_*", "hcloud*", "obsutil*",
+                          "npm*", "npx*", "uv*", "webapp*", "gate*"],
+    "launched": ["get_*", "list_*", "*user*", "*admin*", "webapp*", "gate*"],
+    "decommissioned": ["list_*", "show_*", "delete_*", "hcloud*", "obsutil*", "webapp*", "gate*"],
+}
 
 
 def scan_credential_like(value, path, missing):
@@ -214,15 +235,16 @@ def check_gate(data, number, project_dir, missing, summary):
         missing.append(f"{name} needs at least 5 mapping bullets, found {len(lines)}")
 
 
-def check_trace(project_dir, missing):
+def load_trace(project_dir, missing):
     path = Path(project_dir) / ".hwsupabase" / "trace.jsonl"
     if not path.exists():
-        return
+        return []
     try:
         lines = [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
     except OSError as exc:
         missing.append(f"unreadable {path}: {exc}")
-        return
+        return []
+    records = []
     for index, line in enumerate(lines):
         try:
             record = json.loads(line)
@@ -234,6 +256,30 @@ def check_trace(project_dir, missing):
                 or record.get("status") not in ("ok", "fail", "blocked") \
                 or not (isinstance(record.get("at"), str) and TS.match(record["at"])):
             missing.append(f"trace.jsonl line {index + 1} must be {{at,stage,tool,intent,status,note}}")
+            continue
+        records.append(record)
+    return records
+
+
+def check_trace(project_dir, missing):
+    load_trace(project_dir, missing)
+
+
+def check_whitelist(project_dir, missing, summary):
+    import fnmatch
+    records = load_trace(project_dir, missing)
+    violations, per_stage = [], {}
+    for record in records:
+        stage, tool = record["stage"], record["tool"]
+        per_stage.setdefault(stage, set()).add(tool)
+        allowed = WHITELIST.get(stage)
+        if allowed is None:
+            violations.append(f"unknown stage '{stage}' in trace (tool: {tool})")
+        elif not any(fnmatch.fnmatch(tool, pattern) for pattern in allowed):
+            violations.append(f"stage {stage}: tool '{tool}' is outside the stage allow-list")
+    for violation in sorted(set(violations)):
+        missing.append(violation)
+    summary["whitelist"] = {stage: sorted(tools) for stage, tools in sorted(per_stage.items())}
 
 
 def latest_deployment(data):
@@ -449,7 +495,8 @@ def report(verdict, payload=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("project_dir")
-    parser.add_argument("mode", choices=("check-contract", "check-stage", "check-gate", "check-trace"))
+    parser.add_argument("mode", choices=("check-contract", "check-stage", "check-gate",
+                                         "check-trace", "check-whitelist"))
     parser.add_argument("--stage")
     parser.add_argument("--number", type=int)
     parser.add_argument("--verify", action="store_true",
@@ -459,10 +506,13 @@ def main():
                              "'uv run --directory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase'")
     args = parser.parse_args()
     summary = {}
-    if args.mode == "check-trace":
-        missing = []
-        check_trace(args.project_dir, missing)
-        return report("PASS" if not missing else "FAIL", {"missing": missing})
+    if args.mode in ("check-trace", "check-whitelist"):
+        missing, summary = [], {}
+        if args.mode == "check-whitelist":
+            check_whitelist(args.project_dir, missing, summary)
+        else:
+            check_trace(args.project_dir, missing)
+        return report("PASS" if not missing else "FAIL", {"missing": missing, **summary})
     data, load_errors = load_manifest(args.project_dir)
     if load_errors:
         return report("FAIL", {"missing": load_errors})
@@ -474,6 +524,10 @@ def main():
             return report("FAIL", {"missing": ["--stage is required for check-stage"]})
         check_stage(data, args.stage, missing)
         check_contract(data, missing)
+        if args.stage in TRACE_REQUIRED:
+            records = load_trace(args.project_dir, missing)
+            if not any(r["stage"] == args.stage and r["status"] == "ok" for r in records):
+                missing.append(f"trace enforcement: no ok trace records for stage '{args.stage}'")
         if args.verify:
             verify_rest(data, missing, summary)
             if args.mcp_command:

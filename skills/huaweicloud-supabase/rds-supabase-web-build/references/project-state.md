@@ -73,7 +73,7 @@
 |---|---|---|
 | 步骤五 规则对照表 | `.hwsupabase/gates/3-rules-checklist.md` | 映射行格式 `- <规则文件名 stem>：说明 → <位置>`，stem 须为 best-practices 技能 `references/` 下真实规则文件名（gate 校验真实性）；≥5 条有效映射；步骤五完成前 `check-gate --number 3` 校验 |
 | 步骤六 SDK 契约对照表 | `.hwsupabase/gates/4-sdk-contract-checklist.md` | usage 契约点 → 代码位置映射（会话管理/RLS 语义/错误契约/env 注入/Realtime 清理），≥5 条映射行；步骤六 完成前 gate `check-gate --number 4` 校验 |
-| 执行轨迹 | `.hwsupabase/trace.jsonl` | 每个 MCP/CLI 工具调用后即时追加一行：`{"at":<RFC3339 UTC>,"stage":<步骤枚举>,"tool":<工具名>,"intent":<一句话>,"status":"ok|fail|blocked","note":null}`；**无敏感值**；gate `check-trace` 校验格式 |
+| 执行轨迹 | `.hwsupabase/trace.jsonl` | 每个 MCP/CLI 工具调用后即时追加一行：`{"at":<RFC3339 UTC>,"stage":<步骤枚举>,"tool":<工具名>,"intent":<一句话>,"status":"ok|fail|blocked","note":null}`；`tool` 记 MCP 工具名或 CLI 命令名（如 `execute_sql` / `hcloud obs ls` / `npm run build`）；**无敏感值**；gate `check-trace` 校验格式；**trace 强制化**——instance_ready 起各步骤 passed 前须有该步骤 ok 记录；工具须在该步骤白名单内（`check-whitelist` 审计）；`tool` 记 MCP 工具名或 CLI 命令名（如 `execute_sql` / `hcloud obs ls` / `npm run build`）；**trace 强制化**：instance_ready 起各步骤 passed 前须有该步骤 ok 记录；工具须在步骤白名单内（`check-whitelist` 审计） |
 
 ## 状态不变量
 

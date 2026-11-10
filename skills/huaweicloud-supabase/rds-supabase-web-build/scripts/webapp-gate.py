@@ -20,7 +20,7 @@ import re
 import sys
 from pathlib import Path
 
-STAGES = ["requirements_confirmed", "instance_ready", "mcp_connected", "backend_deployed",
+STAGES = ["environment_ready", "requirements_confirmed", "instance_ready", "mcp_connected", "backend_deployed",
           "frontend_built", "hosting_published", "launched", "decommissioned"]
 TS = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 SHA = re.compile(r"^[0-9a-f]{64}$")

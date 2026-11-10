@@ -27,201 +27,224 @@
 
   <rect x="0" y="0" width="1680" height="1200" fill="#ffffff"/>
   <text x="40" y="38" font-size="21" font-weight="800">RDS Supabase 全栈开发编排 · 交互链路框架图</text>
-  <text x="40" y="62" class="sub" font-size="11.5">web-build 厚工作流编排 ｜ 管理面 / 数据面双 MCP ｜ 步骤一–七流水线 ｜ 断点续作 .hwsupabase/webapp.json ｜ 生命周期循环</text>
-  <text x="1640" y="38" text-anchor="end" font-size="10" fill="#94a3b8">v3 · 2026-11</text>
+  <text x="40" y="62" class="sub" font-size="11.5">web-build 厚工作流编排 ｜ 管理面 / 数据面双 MCP ｜ 步骤一–八流水线 ｜ 断点续作 .hwsupabase/webapp.json ｜ 生命周期循环</text>
+  <text x="1640" y="38" text-anchor="end" font-size="10" fill="#94a3b8">v4 · 2026-11</text>
 
   <!-- 编排条 -->
   <rect x="40" y="80" width="1600" height="58" rx="10" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5"/>
   <text x="60" y="104" font-size="14" font-weight="800" fill="#6d28d9">编排核心 · web-build（厚工作流）</text>
-  <text x="60" y="124" class="sub">阶段状态机 · 通过门槛 · 失败处置 · 只路由不复制</text>
-  <text x="560" y="107" font-size="10" fill="#7c3aed">requirements_confirmed → instance_ready → mcp_connected → backend_deployed → frontend_built → hosting_published → launched</text>
+  <text x="60" y="124" class="sub">步骤状态机 · 通过条件 · 失败处置 · 仅执行路由</text>
+  <text x="470" y="106" font-size="8.5" fill="#7c3aed">environment_ready → requirements_confirmed → instance_ready → mcp_connected → backend_deployed → frontend_built → hosting_published → launched</text>
   <text x="1620" y="104" text-anchor="end" font-size="12" font-weight="800" fill="#6d28d9">.hwsupabase/webapp.json</text>
   <text x="1620" y="124" text-anchor="end" class="sub">断点续作 · 密钥不入记录 · 失败显式</text>
   <g stroke="#7c3aed" stroke-width="1" stroke-dasharray="2 3" opacity=".5">
-    <line x1="305" y1="138" x2="305" y2="168"/><line x1="505" y1="138" x2="505" y2="168"/><line x1="705" y1="138" x2="705" y2="168"/><line x1="905" y1="138" x2="905" y2="168"/><line x1="1105" y1="138" x2="1105" y2="168"/><line x1="1305" y1="138" x2="1305" y2="168"/><line x1="1505" y1="138" x2="1505" y2="168"/>
+    <line x1="300" y1="138" x2="300" y2="168"/><line x1="480" y1="138" x2="480" y2="168"/><line x1="660" y1="138" x2="660" y2="168"/><line x1="840" y1="138" x2="840" y2="168"/><line x1="1020" y1="138" x2="1020" y2="168"/><line x1="1200" y1="138" x2="1200" y2="168"/><line x1="1380" y1="138" x2="1380" y2="168"/><line x1="1560" y1="138" x2="1560" y2="168"/>
   </g>
 
   <!-- 用户 -->
   <rect x="40" y="168" width="150" height="96" rx="12" fill="#fafafa" stroke="#64748b" stroke-width="1.4"/>
   <text x="115" y="203" text-anchor="middle" font-size="15" font-weight="800">用户</text>
-  <text x="115" y="224" text-anchor="middle" class="sub">一句话触发</text>
-  <text x="115" y="244" text-anchor="middle" class="sub">勾选 · 确认</text>
+  <text x="115" y="226" text-anchor="middle" class="sub">单句需求触发</text>
+  <text x="115" y="244" text-anchor="middle" class="sub">选择 · 确认</text>
   <line x1="190" y1="211" x2="214" y2="211" stroke="#7c3aed" stroke-width="1.8" marker-end="url(#ahP)"/>
 
-  <!-- 七阶段（h96） -->
+  <!-- 八阶段 -->
   <g>
-    <rect class="stageB" x="220" y="168" width="170" height="96" rx="10"/>
-    <circle cx="305" cy="190" r="12" fill="#7c3aed"/><text x="305" y="194" text-anchor="middle" font-size="11" font-weight="800" fill="#ffffff">一</text>
-    <text x="305" y="224" text-anchor="middle" class="stageT">需求澄清</text>
-    <text x="305" y="242" text-anchor="middle" class="sub">网站·数据模型·认证</text>
-    <text x="305" y="258" text-anchor="middle" class="sub">· AI 能力识别</text>
+    <rect class="stageB" x="220" y="168" width="160" height="96" rx="10"/>
+    <circle cx="300" cy="190" r="12" fill="#7c3aed"/><text x="300" y="194" text-anchor="middle" font-size="11" font-weight="800" fill="#ffffff">一</text>
+    <text x="300" y="224" text-anchor="middle" class="stageT" font-size="12">环境检查与配置</text>
+    <text x="300" y="242" text-anchor="middle" class="sub">Region · RDS/OBS 接入点</text>
+    <text x="300" y="258" text-anchor="middle" class="sub">PROJECT_ID · 凭据</text>
 
-    <rect class="stageB" x="420" y="168" width="170" height="96" rx="10"/>
-    <circle cx="505" cy="190" r="12" fill="#7c3aed"/><text x="505" y="194" text-anchor="middle" font-size="11" font-weight="800" fill="#ffffff">二</text>
-    <text x="505" y="224" text-anchor="middle" class="stageT">资源准备</text>
-    <text x="505" y="242" text-anchor="middle" class="sub">实例 · 密钥 · OBS 桶</text>
-    <text x="505" y="258" text-anchor="middle" class="sub">devkit 检测</text>
+    <rect class="stageB" x="400" y="168" width="160" height="96" rx="10"/>
+    <circle cx="480" cy="190" r="12" fill="#7c3aed"/><text x="480" y="194" text-anchor="middle" font-size="11" font-weight="800" fill="#ffffff">二</text>
+    <text x="480" y="224" text-anchor="middle" class="stageT">需求澄清</text>
+    <text x="480" y="242" text-anchor="middle" class="sub">网站·数据模型·认证</text>
+    <text x="480" y="258" text-anchor="middle" class="sub">· AI 能力识别</text>
 
-    <rect class="stageB" x="620" y="168" width="170" height="96" rx="10"/>
-    <circle cx="705" cy="190" r="12" fill="#7c3aed"/><text x="705" y="194" text-anchor="middle" font-size="11" font-weight="800" fill="#ffffff">三</text>
-    <text x="705" y="224" text-anchor="middle" class="stageT">数据面接入</text>
-    <text x="705" y="242" text-anchor="middle" class="sub">动态安装数据面 MCP</text>
-    <text x="705" y="258" text-anchor="middle" class="sub">（install.md）</text>
+    <rect class="stageB" x="580" y="168" width="160" height="96" rx="10"/>
+    <circle cx="660" cy="190" r="12" fill="#7c3aed"/><text x="660" y="194" text-anchor="middle" font-size="11" font-weight="800" fill="#ffffff">三</text>
+    <text x="660" y="224" text-anchor="middle" class="stageT">资源准备</text>
+    <text x="660" y="242" text-anchor="middle" class="sub">实例 · 密钥 · OBS 桶</text>
+    <text x="660" y="258" text-anchor="middle" class="sub">devkit 检测</text>
 
-    <rect class="stageB" x="820" y="168" width="170" height="96" rx="10"/>
-    <circle cx="905" cy="190" r="12" fill="#7c3aed"/><text x="905" y="194" text-anchor="middle" font-size="11" font-weight="800" fill="#ffffff">四</text>
-    <text x="905" y="224" text-anchor="middle" class="stageT">后端生成部署</text>
-    <text x="905" y="242" text-anchor="middle" class="sub">init.sql：DDL·GRANT</text>
-    <text x="905" y="258" text-anchor="middle" class="sub">·RLS·RPC·种子</text>
+    <rect class="stageB" x="760" y="168" width="160" height="96" rx="10"/>
+    <circle cx="840" cy="190" r="12" fill="#7c3aed"/><text x="840" y="194" text-anchor="middle" font-size="11" font-weight="800" fill="#ffffff">四</text>
+    <text x="840" y="224" text-anchor="middle" class="stageT">数据面接入</text>
+    <text x="840" y="242" text-anchor="middle" class="sub">动态安装数据面 MCP</text>
+    <text x="840" y="258" text-anchor="middle" class="sub">（install.md）</text>
 
-    <rect class="stageB" x="1020" y="168" width="170" height="96" rx="10"/>
-    <circle cx="1105" cy="190" r="12" fill="#7c3aed"/><text x="1105" y="194" text-anchor="middle" font-size="11" font-weight="800" fill="#ffffff">五</text>
-    <text x="1105" y="224" text-anchor="middle" class="stageT">前端生成</text>
-    <text x="1105" y="242" text-anchor="middle" class="sub">React+Vite+TS</text>
-    <text x="1105" y="258" text-anchor="middle" class="sub">+ supabase-js</text>
+    <rect class="stageB" x="940" y="168" width="160" height="96" rx="10"/>
+    <circle cx="1020" cy="190" r="12" fill="#7c3aed"/><text x="1020" y="194" text-anchor="middle" font-size="11" font-weight="800" fill="#ffffff">五</text>
+    <text x="1020" y="224" text-anchor="middle" class="stageT">后端生成部署</text>
+    <text x="1020" y="242" text-anchor="middle" class="sub">init.sql：DDL·GRANT</text>
+    <text x="1020" y="258" text-anchor="middle" class="sub">·RLS·RPC·种子</text>
 
-    <rect class="stageB" x="1220" y="168" width="170" height="96" rx="10"/>
-    <circle cx="1305" cy="190" r="12" fill="#7c3aed"/><text x="1305" y="194" text-anchor="middle" font-size="11" font-weight="800" fill="#ffffff">六</text>
-    <text x="1305" y="224" text-anchor="middle" class="stageT">构建与托管</text>
-    <text x="1305" y="242" text-anchor="middle" class="sub">build → 上传 → CDN</text>
-    <text x="1305" y="258" text-anchor="middle" class="sub">· 回调回路 ↻</text>
+    <rect class="stageB" x="1120" y="168" width="160" height="96" rx="10"/>
+    <circle cx="1200" cy="190" r="12" fill="#7c3aed"/><text x="1200" y="194" text-anchor="middle" font-size="11" font-weight="800" fill="#ffffff">六</text>
+    <text x="1200" y="224" text-anchor="middle" class="stageT">前端生成</text>
+    <text x="1200" y="242" text-anchor="middle" class="sub">React+Vite+TS</text>
+    <text x="1200" y="258" text-anchor="middle" class="sub">+ supabase-js</text>
 
-    <rect class="stageB" x="1420" y="168" width="170" height="96" rx="10"/>
-    <circle cx="1505" cy="190" r="12" fill="#7c3aed"/><text x="1505" y="194" text-anchor="middle" font-size="11" font-weight="800" fill="#ffffff">七</text>
-    <text x="1505" y="224" text-anchor="middle" class="stageT">端到端上线</text>
-    <text x="1505" y="242" text-anchor="middle" class="sub">三层验证</text>
-    <text x="1505" y="258" text-anchor="middle" class="sub">· 上线报告</text>
+    <rect class="stageB" x="1300" y="168" width="160" height="96" rx="10"/>
+    <circle cx="1380" cy="190" r="12" fill="#7c3aed"/><text x="1380" y="194" text-anchor="middle" font-size="11" font-weight="800" fill="#ffffff">七</text>
+    <text x="1380" y="224" text-anchor="middle" class="stageT">构建与托管</text>
+    <text x="1380" y="242" text-anchor="middle" class="sub">build → 上传 → CDN</text>
+    <text x="1380" y="258" text-anchor="middle" class="sub">· 回调回路 ↻</text>
+
+    <rect class="stageB" x="1480" y="168" width="160" height="96" rx="10"/>
+    <circle cx="1560" cy="190" r="12" fill="#7c3aed"/><text x="1560" y="194" text-anchor="middle" font-size="11" font-weight="800" fill="#ffffff">八</text>
+    <text x="1560" y="224" text-anchor="middle" class="stageT">端到端上线</text>
+    <text x="1560" y="242" text-anchor="middle" class="sub">三层验证</text>
+    <text x="1560" y="258" text-anchor="middle" class="sub">· 上线报告</text>
   </g>
   <g stroke="#7c3aed" stroke-width="1.8">
-    <line x1="390" y1="211" x2="414" y2="211" marker-end="url(#ahP)"/>
-    <line x1="590" y1="211" x2="614" y2="211" marker-end="url(#ahP)"/>
-    <line x1="790" y1="211" x2="814" y2="211" marker-end="url(#ahP)"/>
-    <line x1="990" y1="211" x2="1014" y2="211" marker-end="url(#ahP)"/>
-    <line x1="1190" y1="211" x2="1214" y2="211" marker-end="url(#ahP)"/>
-    <line x1="1390" y1="211" x2="1414" y2="211" marker-end="url(#ahP)"/>
+    <line x1="380" y1="211" x2="396" y2="211" marker-end="url(#ahP)"/>
+    <line x1="560" y1="211" x2="576" y2="211" marker-end="url(#ahP)"/>
+    <line x1="740" y1="211" x2="756" y2="211" marker-end="url(#ahP)"/>
+    <line x1="920" y1="211" x2="936" y2="211" marker-end="url(#ahP)"/>
+    <line x1="1100" y1="211" x2="1116" y2="211" marker-end="url(#ahP)"/>
+    <line x1="1280" y1="211" x2="1296" y2="211" marker-end="url(#ahP)"/>
+    <line x1="1460" y1="211" x2="1476" y2="211" marker-end="url(#ahP)"/>
   </g>
 
-  <!-- 阶段 → 路由卡 连接 -->
+  <!-- 步骤 → 路由卡 连接 -->
   <g stroke="#94a3b8" stroke-width="1" stroke-dasharray="3 3">
-    <line x1="305" y1="264" x2="305" y2="286"/><line x1="505" y1="264" x2="505" y2="286"/><line x1="705" y1="264" x2="705" y2="286"/><line x1="905" y1="264" x2="905" y2="286"/><line x1="1105" y1="264" x2="1105" y2="286"/><line x1="1305" y1="264" x2="1305" y2="286"/><line x1="1505" y1="264" x2="1505" y2="286"/>
+    <line x1="300" y1="264" x2="300" y2="286"/><line x1="480" y1="264" x2="480" y2="286"/><line x1="660" y1="264" x2="660" y2="286"/><line x1="840" y1="264" x2="840" y2="286"/><line x1="1020" y1="264" x2="1020" y2="286"/><line x1="1200" y1="264" x2="1200" y2="286"/><line x1="1380" y1="264" x2="1380" y2="286"/><line x1="1560" y1="264" x2="1560" y2="286"/>
   </g>
 
-  <!-- 路由卡 步骤一 -->
-  <rect x="220" y="286" width="170" height="310" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
-  <rect x="221" y="287" width="168" height="3" fill="#7c3aed"/>
-  <text x="305" y="307" text-anchor="middle" font-size="9" fill="#94a3b8">阶段路由</text>
-  <rect class="neuB" x="235" y="318" width="140" height="20" rx="10"/><text class="neuT" x="305" y="331" text-anchor="middle">web-build 自身</text>
-  <text x="305" y="356" text-anchor="middle" class="cap">参数确认单：数据模型</text>
-  <text x="305" y="372" text-anchor="middle" class="cap">页面 · 认证 · AI 能力</text>
-  <text x="305" y="388" text-anchor="middle" class="cap">费用预估（实例/流量）</text>
-  <text x="305" y="404" text-anchor="middle" class="cap">文件上传 → 可选扩展</text>
-  <line x1="235" y1="522" x2="375" y2="522" stroke="#e2e8f0" stroke-dasharray="3 3"/>
-  <text x="305" y="546" text-anchor="middle" class="capB">输出：requirements_confirmed</text>
-  <text x="305" y="562" text-anchor="middle" class="cap">用户勾选后进入 步骤二</text>
+  <!-- 路由卡 步骤一 环境检查与配置 -->
+  <rect x="220" y="286" width="160" height="310" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+  <rect x="221" y="287" width="158" height="3" fill="#7c3aed"/>
+  <text x="300" y="307" text-anchor="middle" font-size="9" fill="#94a3b8">步骤路由</text>
+  <rect class="neuB" x="235" y="318" width="130" height="20" rx="10"/><text class="neuT" x="300" y="331" text-anchor="middle">web-build 自身</text>
+  <text x="300" y="356" text-anchor="middle" class="cap">凭据：devkit / AK/SK</text>
+  <text x="300" y="372" text-anchor="middle" class="cap">Region（局点）确认</text>
+  <text x="300" y="388" text-anchor="middle" class="cap">RDS 接入点：discover</text>
+  <text x="300" y="404" text-anchor="middle" class="cap">推导或用户显式指定</text>
+  <text x="300" y="424" text-anchor="middle" class="cap">OBS 接入点：按 Region</text>
+  <text x="300" y="440" text-anchor="middle" class="cap">PROJECT_ID：discover 勾选</text>
+  <text x="300" y="464" text-anchor="middle" font-size="9.5" fill="#b45309" font-weight="700">缺失 → 清单提醒用户设置</text>
+  <line x1="235" y1="522" x2="365" y2="522" stroke="#e2e8f0" stroke-dasharray="3 3"/>
+  <text x="300" y="546" text-anchor="middle" class="capB">输出：environment_ready</text>
+  <text x="300" y="562" text-anchor="middle" class="cap">缺失清单为空方可通过</text>
 
-  <!-- 路由卡 步骤二 -->
-  <rect x="420" y="286" width="170" height="310" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
-  <rect x="421" y="287" width="168" height="3" fill="#7c3aed"/>
-  <text x="505" y="307" text-anchor="middle" font-size="9" fill="#94a3b8">阶段路由</text>
-  <rect class="mgrB" x="435" y="318" width="140" height="20" rx="6"/><text class="mgrT" x="505" y="331" text-anchor="middle">管理面 MCP</text>
-  <text x="505" y="356" text-anchor="middle" class="cap">devkit 检测 → uvx 启动</text>
-  <text x="505" y="372" text-anchor="middle" class="cap">创建实例（Single 后付费）</text>
-  <text x="505" y="388" text-anchor="middle" class="cap">EIP · 安全组 8443 · SSL</text>
-  <text x="505" y="404" text-anchor="middle" font-size="9.5" fill="#d97706" font-weight="700">密钥交付 Anon/Service</text>
-  <rect class="pill" x="435" y="420" width="140" height="20" rx="10"/><text class="pillT" x="505" y="433" text-anchor="middle">rds-supabase-frontend</text>
-  <text x="505" y="458" text-anchor="middle" class="cap">OBS 租户桶创建</text>
-  <line x1="435" y1="522" x2="575" y2="522" stroke="#e2e8f0" stroke-dasharray="3 3"/>
-  <text x="505" y="546" text-anchor="middle" class="capB">输出：instance_ready</text>
-  <text x="505" y="562" text-anchor="middle" class="cap">gateway_url + Keys</text>
+  <!-- 路由卡 步骤二 需求澄清 -->
+  <rect x="400" y="286" width="160" height="310" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+  <rect x="401" y="287" width="158" height="3" fill="#7c3aed"/>
+  <text x="480" y="307" text-anchor="middle" font-size="9" fill="#94a3b8">步骤路由</text>
+  <rect class="neuB" x="415" y="318" width="130" height="20" rx="10"/><text class="neuT" x="480" y="331" text-anchor="middle">web-build 自身</text>
+  <text x="480" y="356" text-anchor="middle" class="cap">参数确认单：数据模型</text>
+  <text x="480" y="372" text-anchor="middle" class="cap">页面 · 认证 · AI 能力</text>
+  <text x="480" y="388" text-anchor="middle" class="cap">费用预估（实例/流量）</text>
+  <text x="480" y="408" text-anchor="middle" class="cap">文件上传 → 可选扩展</text>
+  <line x1="415" y1="522" x2="545" y2="522" stroke="#e2e8f0" stroke-dasharray="3 3"/>
+  <text x="480" y="546" text-anchor="middle" class="capB">输出：requirements_confirmed</text>
+  <text x="480" y="562" text-anchor="middle" class="cap">用户确认后进入步骤三</text>
 
-  <!-- 路由卡 步骤三 -->
-  <rect x="620" y="286" width="170" height="310" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
-  <rect x="621" y="287" width="168" height="3" fill="#7c3aed"/>
-  <text x="705" y="307" text-anchor="middle" font-size="9" fill="#94a3b8">阶段路由</text>
-  <rect class="datB" x="635" y="318" width="140" height="20" rx="6"/><text class="datT" x="705" y="331" text-anchor="middle">数据面 MCP</text>
-  <text x="705" y="356" text-anchor="middle" class="cap">install.md 动态安装</text>
-  <text x="705" y="372" text-anchor="middle" class="cap">env：SUPABASE_URL 等</text>
-  <text x="705" y="388" text-anchor="middle" class="cap">连通复验 get_project_url</text>
-  <rect x="635" y="404" width="140" height="20" rx="6" fill="#fffbeb" stroke="#d97706" stroke-width="1.1" stroke-dasharray="4 3"/>
-  <text x="705" y="417" text-anchor="middle" font-size="9.5" fill="#92400e" font-weight="700">密钥 env 注入（devkit）</text>
-  <text x="705" y="444" text-anchor="middle" font-size="9.5" fill="#92400e">agent 全程不见明文</text>
-  <line x1="635" y1="522" x2="775" y2="522" stroke="#e2e8f0" stroke-dasharray="3 3"/>
-  <text x="705" y="546" text-anchor="middle" class="capB">输出：mcp_connected</text>
-  <text x="705" y="562" text-anchor="middle" class="cap">38 工具 · 审计脱敏</text>
-  <!-- 琥珀凭据通道 步骤二 → 步骤三 -->
-  <line x1="590" y1="414" x2="614" y2="414" stroke="#d97706" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#ahA)"/>
+  <!-- 路由卡 步骤三 资源准备 -->
+  <rect x="580" y="286" width="160" height="310" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+  <rect x="581" y="287" width="158" height="3" fill="#7c3aed"/>
+  <text x="660" y="307" text-anchor="middle" font-size="9" fill="#94a3b8">步骤路由</text>
+  <rect class="mgrB" x="595" y="318" width="130" height="20" rx="6"/><text class="mgrT" x="660" y="331" text-anchor="middle">管理面 MCP</text>
+  <text x="660" y="356" text-anchor="middle" class="cap">devkit 检测 → uvx 启动</text>
+  <text x="660" y="372" text-anchor="middle" class="cap">创建实例（Single 后付费）</text>
+  <text x="660" y="388" text-anchor="middle" class="cap">EIP · 安全组 8443 · SSL</text>
+  <text x="660" y="404" text-anchor="middle" font-size="9.5" fill="#d97706" font-weight="700">密钥交付 Anon/Service</text>
+  <rect class="pill" x="595" y="420" width="130" height="20" rx="10"/><text class="pillT" x="660" y="433" text-anchor="middle">rds-supabase-frontend</text>
+  <text x="660" y="458" text-anchor="middle" class="cap">OBS 租户桶创建</text>
+  <line x1="595" y1="522" x2="725" y2="522" stroke="#e2e8f0" stroke-dasharray="3 3"/>
+  <text x="660" y="546" text-anchor="middle" class="capB">输出：instance_ready</text>
+  <text x="660" y="562" text-anchor="middle" class="cap">gateway_url + Keys</text>
 
-  <!-- 路由卡 步骤四 -->
-  <rect x="820" y="286" width="170" height="310" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
-  <rect x="821" y="287" width="168" height="3" fill="#7c3aed"/>
-  <text x="905" y="307" text-anchor="middle" font-size="9" fill="#94a3b8">阶段路由</text>
-  <rect class="pill" x="835" y="318" width="140" height="20" rx="10"/><text class="pillT" x="905" y="331" text-anchor="middle">best-practices</text>
-  <text x="905" y="356" text-anchor="middle" font-size="9.5" fill="#dc2626" font-weight="700">【强制门】质量规则</text>
-  <text x="905" y="372" text-anchor="middle" class="cap">init.sql 逐条对照</text>
-  <rect class="pill" x="835" y="390" width="140" height="20" rx="10"/><text class="pillT" x="905" y="403" text-anchor="middle">rds-supabase-usage</text>
-  <text x="905" y="428" text-anchor="middle" class="cap">客户端视角 · RPC 契约</text>
-  <rect class="datB" x="835" y="446" width="140" height="20" rx="6"/><text class="datT" x="905" y="459" text-anchor="middle">数据面 MCP</text>
-  <text x="905" y="484" text-anchor="middle" class="cap">五步部署 · 批次记录</text>
-  <line x1="835" y1="522" x2="975" y2="522" stroke="#e2e8f0" stroke-dasharray="3 3"/>
-  <text x="905" y="546" text-anchor="middle" class="capB">输出：backend_deployed</text>
-  <text x="905" y="562" text-anchor="middle" class="cap">advisors 无新增 · REST 200</text>
-  <!-- 路由卡 步骤五 -->
-  <rect x="1020" y="286" width="170" height="310" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
-  <rect x="1021" y="287" width="168" height="3" fill="#7c3aed"/>
-  <text x="1105" y="307" text-anchor="middle" font-size="9" fill="#94a3b8">阶段路由</text>
-  <rect class="pill" x="1035" y="318" width="140" height="20" rx="10"/><text class="pillT" x="1105" y="331" text-anchor="middle">rds-supabase-usage</text>
-  <text x="1105" y="356" text-anchor="middle" font-size="9.5" fill="#dc2626" font-weight="700">【强制门】SDK 用法</text>
-  <text x="1105" y="372" text-anchor="middle" class="cap">避免运行时报错</text>
-  <rect class="neuB" x="1035" y="390" width="140" height="20" rx="10"/><text class="neuT" x="1105" y="403" text-anchor="middle">web-build 生成</text>
-  <text x="1105" y="428" text-anchor="middle" class="cap">React + Vite + TS</text>
-  <text x="1105" y="444" text-anchor="middle" class="cap">+ supabase-js</text>
-  <line x1="1035" y1="522" x2="1175" y2="522" stroke="#e2e8f0" stroke-dasharray="3 3"/>
-  <text x="1105" y="546" text-anchor="middle" class="capB">输出：frontend_built</text>
-  <text x="1105" y="562" text-anchor="middle" class="cap">源码 + 本地冒烟</text>
+  <!-- 路由卡 步骤四 数据面接入 -->
+  <rect x="760" y="286" width="160" height="310" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+  <rect x="761" y="287" width="158" height="3" fill="#7c3aed"/>
+  <text x="840" y="307" text-anchor="middle" font-size="9" fill="#94a3b8">步骤路由</text>
+  <rect class="datB" x="775" y="318" width="130" height="20" rx="6"/><text class="datT" x="840" y="331" text-anchor="middle">数据面 MCP</text>
+  <text x="840" y="356" text-anchor="middle" class="cap">install.md 动态安装</text>
+  <text x="840" y="372" text-anchor="middle" class="cap">env：SUPABASE_URL 等</text>
+  <text x="840" y="388" text-anchor="middle" class="cap">连通复验 get_project_url</text>
+  <rect x="775" y="404" width="130" height="20" rx="6" fill="#fffbeb" stroke="#d97706" stroke-width="1.1" stroke-dasharray="4 3"/>
+  <text x="840" y="417" text-anchor="middle" font-size="9.5" fill="#92400e" font-weight="700">密钥 env 注入（devkit）</text>
+  <text x="840" y="444" text-anchor="middle" font-size="9.5" fill="#92400e">agent 全程不接触明文</text>
+  <line x1="775" y1="522" x2="905" y2="522" stroke="#e2e8f0" stroke-dasharray="3 3"/>
+  <text x="840" y="546" text-anchor="middle" class="capB">输出：mcp_connected</text>
+  <text x="840" y="562" text-anchor="middle" class="cap">38 工具 · 审计脱敏</text>
+  <!-- 琥珀凭据通道 步骤三 → 步骤四 -->
+  <line x1="740" y1="414" x2="756" y2="414" stroke="#d97706" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#ahA)"/>
+  <!-- 路由卡 步骤五 后端生成与部署 -->
+  <rect x="940" y="286" width="160" height="310" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+  <rect x="941" y="287" width="158" height="3" fill="#7c3aed"/>
+  <text x="1020" y="307" text-anchor="middle" font-size="9" fill="#94a3b8">步骤路由</text>
+  <rect class="pill" x="955" y="318" width="130" height="20" rx="10"/><text class="pillT" x="1020" y="331" text-anchor="middle">best-practices</text>
+  <text x="1020" y="356" text-anchor="middle" font-size="9.5" fill="#dc2626" font-weight="700">【强制门】质量规则</text>
+  <text x="1020" y="372" text-anchor="middle" class="cap">init.sql 逐条对照</text>
+  <rect class="pill" x="955" y="390" width="130" height="20" rx="10"/><text class="pillT" x="1020" y="403" text-anchor="middle">rds-supabase-usage</text>
+  <text x="1020" y="428" text-anchor="middle" class="cap">客户端视角 · RPC 契约</text>
+  <rect class="datB" x="955" y="446" width="130" height="20" rx="6"/><text class="datT" x="1020" y="459" text-anchor="middle">数据面 MCP</text>
+  <text x="1020" y="484" text-anchor="middle" class="cap">五步部署 · 批次记录</text>
+  <line x1="955" y1="522" x2="1085" y2="522" stroke="#e2e8f0" stroke-dasharray="3 3"/>
+  <text x="1020" y="546" text-anchor="middle" class="capB">输出：backend_deployed</text>
+  <text x="1020" y="562" text-anchor="middle" class="cap">advisors 无新增 · REST 200</text>
 
-  <!-- 路由卡 步骤六 -->
-  <rect x="1220" y="286" width="170" height="310" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
-  <rect x="1221" y="287" width="168" height="3" fill="#7c3aed"/>
-  <text x="1305" y="307" text-anchor="middle" font-size="9" fill="#94a3b8">阶段路由</text>
-  <rect class="pill" x="1235" y="318" width="140" height="20" rx="10"/><text class="pillT" x="1305" y="331" text-anchor="middle">rds-supabase-frontend</text>
-  <text x="1305" y="356" text-anchor="middle" class="cap">构建 · OBS 上传 · CDN</text>
-  <text x="1305" y="372" text-anchor="middle" class="cap">版本记录 / 回退（契约）</text>
-  <rect class="mgrB" x="1235" y="390" width="140" height="20" rx="6"/><text class="mgrT" x="1305" y="403" text-anchor="middle">管理面 MCP</text>
-  <text x="1305" y="428" text-anchor="middle" class="cap">update_supabase_auth_config</text>
-  <text x="1305" y="444" text-anchor="middle" class="cap">步骤六↻ site_url · redirect_uris</text>
-  <text x="1305" y="460" text-anchor="middle" class="cap">→ 前端重建再发布</text>
-  <line x1="1235" y1="522" x2="1375" y2="522" stroke="#e2e8f0" stroke-dasharray="3 3"/>
-  <text x="1305" y="546" text-anchor="middle" class="capB">输出：hosting_published</text>
-  <text x="1305" y="562" text-anchor="middle" class="cap">stable_url · checks 验收</text>
+  <!-- 路由卡 步骤六 前端生成 -->
+  <rect x="1120" y="286" width="160" height="310" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+  <rect x="1121" y="287" width="158" height="3" fill="#7c3aed"/>
+  <text x="1200" y="307" text-anchor="middle" font-size="9" fill="#94a3b8">步骤路由</text>
+  <rect class="pill" x="1135" y="318" width="130" height="20" rx="10"/><text class="pillT" x="1200" y="331" text-anchor="middle">rds-supabase-usage</text>
+  <text x="1200" y="356" text-anchor="middle" font-size="9.5" fill="#dc2626" font-weight="700">【强制门】SDK 用法</text>
+  <text x="1200" y="372" text-anchor="middle" class="cap">避免运行时报错</text>
+  <rect class="neuB" x="1135" y="390" width="130" height="20" rx="10"/><text class="neuT" x="1200" y="403" text-anchor="middle">web-build 生成</text>
+  <text x="1200" y="428" text-anchor="middle" class="cap">React + Vite + TS</text>
+  <text x="1200" y="444" text-anchor="middle" class="cap">+ supabase-js</text>
+  <line x1="1135" y1="522" x2="1265" y2="522" stroke="#e2e8f0" stroke-dasharray="3 3"/>
+  <text x="1200" y="546" text-anchor="middle" class="capB">输出：frontend_built</text>
+  <text x="1200" y="562" text-anchor="middle" class="cap">源码 + 本地冒烟</text>
 
-  <!-- 路由卡 步骤七 -->
-  <rect x="1420" y="286" width="170" height="310" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
-  <rect x="1421" y="287" width="168" height="3" fill="#7c3aed"/>
-  <text x="1505" y="307" text-anchor="middle" font-size="9" fill="#94a3b8">阶段路由</text>
-  <rect class="datB" x="1435" y="318" width="140" height="20" rx="6"/><text class="datT" x="1505" y="331" text-anchor="middle">数据面 MCP</text>
-  <text x="1505" y="356" text-anchor="middle" class="cap">结构 · RLS · advisors</text>
-  <text x="1505" y="372" text-anchor="middle" class="cap">REST 200 复验</text>
-  <rect class="pill" x="1435" y="390" width="140" height="20" rx="10"/><text class="pillT" x="1505" y="403" text-anchor="middle">frontend checks</text>
-  <text x="1505" y="428" text-anchor="middle" class="cap">entry · assets · routes</text>
-  <text x="1505" y="444" text-anchor="middle" class="cap">negative · cache</text>
-  <rect x="1435" y="462" width="140" height="20" rx="6" fill="#dcfce7" stroke="#059669" stroke-width="1.1"/>
-  <text x="1505" y="475" text-anchor="middle" font-size="10" fill="#065f46" font-weight="700">连通项 → launched</text>
-  <text x="1505" y="500" text-anchor="middle" class="cap">站点渲染 · API · 回调</text>
-  <line x1="1435" y1="522" x2="1575" y2="522" stroke="#e2e8f0" stroke-dasharray="3 3"/>
-  <text x="1505" y="546" text-anchor="middle" class="capB">输出：launched</text>
-  <text x="1505" y="562" text-anchor="middle" class="cap">上线报告 · 三级交付语义</text>
+  <!-- 路由卡 步骤七 构建与托管 -->
+  <rect x="1300" y="286" width="160" height="310" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+  <rect x="1301" y="287" width="158" height="3" fill="#7c3aed"/>
+  <text x="1380" y="307" text-anchor="middle" font-size="9" fill="#94a3b8">步骤路由</text>
+  <rect class="pill" x="1315" y="318" width="130" height="20" rx="10"/><text class="pillT" x="1380" y="331" text-anchor="middle">rds-supabase-frontend</text>
+  <text x="1380" y="356" text-anchor="middle" class="cap">构建 · OBS 上传 · CDN</text>
+  <text x="1380" y="372" text-anchor="middle" class="cap">版本记录 / 回退（契约）</text>
+  <rect class="mgrB" x="1315" y="390" width="130" height="20" rx="6"/><text class="mgrT" x="1380" y="403" text-anchor="middle">管理面 MCP</text>
+  <text x="1380" y="428" text-anchor="middle" class="cap">update_supabase_auth_config</text>
+  <text x="1380" y="446" text-anchor="middle" class="cap">↻ site_url · redirect_uris</text>
+  <text x="1380" y="464" text-anchor="middle" class="cap">→ 前端重建再发布</text>
+  <line x1="1315" y1="522" x2="1445" y2="522" stroke="#e2e8f0" stroke-dasharray="3 3"/>
+  <text x="1380" y="546" text-anchor="middle" class="capB">输出：hosting_published</text>
+  <text x="1380" y="562" text-anchor="middle" class="cap">stable_url · checks 验收</text>
+
+  <!-- 路由卡 步骤八 端到端上线 -->
+  <rect x="1480" y="286" width="160" height="310" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+  <rect x="1481" y="287" width="158" height="3" fill="#7c3aed"/>
+  <text x="1560" y="307" text-anchor="middle" font-size="9" fill="#94a3b8">步骤路由</text>
+  <rect class="datB" x="1495" y="318" width="130" height="20" rx="6"/><text class="datT" x="1560" y="331" text-anchor="middle">数据面 MCP</text>
+  <text x="1560" y="356" text-anchor="middle" class="cap">结构 · RLS · advisors</text>
+  <text x="1560" y="372" text-anchor="middle" class="cap">REST 200 复验</text>
+  <rect class="pill" x="1495" y="390" width="130" height="20" rx="10"/><text class="pillT" x="1560" y="403" text-anchor="middle">frontend checks</text>
+  <text x="1560" y="428" text-anchor="middle" class="cap">entry · assets · routes</text>
+  <text x="1560" y="444" text-anchor="middle" class="cap">negative · cache</text>
+  <rect x="1495" y="462" width="130" height="20" rx="6" fill="#dcfce7" stroke="#059669" stroke-width="1.1"/>
+  <text x="1560" y="475" text-anchor="middle" font-size="10" fill="#065f46" font-weight="700">连通项 → launched</text>
+  <text x="1560" y="500" text-anchor="middle" class="cap">站点渲染 · API · 回调</text>
+  <line x1="1495" y1="522" x2="1625" y2="522" stroke="#e2e8f0" stroke-dasharray="3 3"/>
+  <text x="1560" y="546" text-anchor="middle" class="capB">输出：launched</text>
+  <text x="1560" y="562" text-anchor="middle" class="cap">上线报告 · 三级交付语义</text>
 
   <!-- 走廊纵向流 -->
-  <line x1="505" y1="596" x2="505" y2="780" stroke="#ea580c" stroke-width="1.8" marker-end="url(#ahO)"/>
-  <text x="513" y="650" font-size="9.5" fill="#ea580c">创建 · 配置 · 密钥交付</text>
-  <line x1="670" y1="596" x2="670" y2="840" stroke="#2563eb" stroke-width="1.8" marker-end="url(#ahB)"/>
-  <text x="678" y="650" font-size="9.5" fill="#2563eb">install 复验 · SQL/REST</text>
-  <line x1="940" y1="596" x2="940" y2="840" stroke="#2563eb" stroke-width="1.8" marker-end="url(#ahB)"/>
-  <text x="948" y="650" font-size="9.5" fill="#2563eb">init.sql 五步部署</text>
-  <path d="M 1265 596 L 1265 688 L 1160 688 L 1160 840" fill="none" stroke="#ea580c" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#ahO)"/>
-  <text x="1212" y="680" text-anchor="middle" font-size="9.5" fill="#ea580c">步骤六↻ 回调配置</text>
-  <path d="M 1345 596 L 1345 708 L 1545 708 L 1545 780" fill="none" stroke="#0d9488" stroke-width="1.8" marker-end="url(#ahT)"/>
-  <text x="1447" y="700" text-anchor="middle" font-size="9.5" fill="#0d9488">构建产物上传 · 发布</text>
+  <line x1="660" y1="596" x2="660" y2="780" stroke="#ea580c" stroke-width="1.8" marker-end="url(#ahO)"/>
+  <text x="668" y="650" font-size="9.5" fill="#ea580c">创建 · 配置 · 密钥交付</text>
+  <line x1="840" y1="596" x2="840" y2="840" stroke="#2563eb" stroke-width="1.8" marker-end="url(#ahB)"/>
+  <text x="848" y="650" font-size="9.5" fill="#2563eb">install 复验 · SQL/REST</text>
+  <line x1="1020" y1="596" x2="1020" y2="840" stroke="#2563eb" stroke-width="1.8" marker-end="url(#ahB)"/>
+  <text x="1028" y="650" font-size="9.5" fill="#2563eb">init.sql 五步部署</text>
+  <path d="M 1380 596 L 1380 688 L 1160 688 L 1160 840" fill="none" stroke="#ea580c" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#ahO)"/>
+  <text x="1270" y="680" text-anchor="middle" font-size="9.5" fill="#ea580c">步骤七↻ 回调配置</text>
+  <path d="M 1440 596 L 1440 708 L 1525 708 L 1525 780" fill="none" stroke="#0d9488" stroke-width="1.8" marker-end="url(#ahT)"/>
+  <text x="1487" y="700" text-anchor="middle" font-size="9.5" fill="#0d9488">构建产物上传 · 发布</text>
 
   <!-- 云资源底座 -->
   <rect x="220" y="742" width="1420" height="378" rx="14" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
@@ -234,8 +257,8 @@
   <text x="270" y="848" class="sub">EIP · 安全组 TCP 8443 · SSL</text>
   <text x="270" y="864" class="sub">Anon / Service Role Key</text>
   <text x="270" y="880" class="sub">密钥不入 webapp.json</text>
-  <text x="270" y="912" font-size="9" fill="#64748b">步骤二 管理面创建 · 配置</text>
-  <text x="270" y="928" font-size="9" fill="#64748b">步骤四 五步部署目标</text>
+  <text x="270" y="912" font-size="9" fill="#64748b">步骤三 管理面创建 · 配置</text>
+  <text x="270" y="928" font-size="9" fill="#64748b">步骤五 五步部署目标</text>
   <text x="270" y="944" font-size="9" fill="#64748b">运行时经 Kong 对外服务</text>
   <g>
     <rect class="chip" x="560" y="840" width="490" height="40" rx="8"/>
@@ -295,19 +318,19 @@
   <g font-size="8.5" fill="#9f1239" text-anchor="middle">
     <text x="403" y="1064">stable_url</text><text x="553" y="1064">加载 JS/静态</text><text x="718" y="1064">anon key + JWT</text><text x="918" y="1064">SQL（RLS）</text>
   </g>
-  <text x="1110" y="1068" font-size="9.5" fill="#475569">anon key 公开（RLS 兜底）· Service Key 仅服务端</text>
-  <text x="1110" y="1086" font-size="9.5" fill="#475569">supabase-js：步骤五 生成 · 步骤六 发布（内嵌 anon key）</text>
+  <text x="1110" y="1068" font-size="9.5" fill="#475569">anon key 公开（RLS 兜底保障）· Service Key 仅服务端</text>
+  <text x="1110" y="1086" font-size="9.5" fill="#475569">supabase-js：步骤六生成 · 步骤七发布（内嵌 anon key）</text>
 
   <!-- 图例 -->
   <g>
-    <line x1="40" y1="1150" x2="84" y2="1150" stroke="#7c3aed" stroke-width="1.8" marker-end="url(#ahP)"/><text x="92" y="1154" font-size="10" fill="#475569">阶段推进</text>
+    <line x1="40" y1="1150" x2="84" y2="1150" stroke="#7c3aed" stroke-width="1.8" marker-end="url(#ahP)"/><text x="92" y="1154" font-size="10" fill="#475569">步骤推进</text>
     <rect class="pill" x="170" y="1141" width="60" height="17" rx="9"/><text x="238" y="1154" font-size="10" fill="#475569">Skill 路由</text>
     <rect class="mgrB" x="330" y="1141" width="48" height="17" rx="4"/><text x="386" y="1154" font-size="10" fill="#475569">管理面 MCP</text>
     <rect class="datB" x="490" y="1141" width="48" height="17" rx="4"/><text x="546" y="1154" font-size="10" fill="#475569">数据面 MCP</text>
-    <line x1="650" y1="1150" x2="690" y2="1150" stroke="#ea580c" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#ahO)"/><text x="698" y="1154" font-size="10" fill="#475569">步骤六↻ 回调回路</text>
-    <line x1="815" y1="1150" x2="855" y2="1150" stroke="#d97706" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#ahA)"/><text x="863" y="1154" font-size="10" fill="#475569">凭据流 · 不见明文</text>
+    <line x1="650" y1="1150" x2="690" y2="1150" stroke="#ea580c" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#ahO)"/><text x="698" y="1154" font-size="10" fill="#475569">步骤七↻ 回调回路</text>
+    <line x1="815" y1="1150" x2="855" y2="1150" stroke="#d97706" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#ahA)"/><text x="863" y="1154" font-size="10" fill="#475569">凭据流 · 不接触明文</text>
     <line x1="995" y1="1150" x2="1035" y2="1150" stroke="#db2777" stroke-width="1.6" marker-end="url(#ahR)"/><text x="1043" y="1154" font-size="10" fill="#475569">运行态链路</text>
     <line x1="1150" y1="1150" x2="1190" y2="1150" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3 3"/><text x="1198" y="1154" font-size="10" fill="#475569">编排管理（webapp.json）</text>
   </g>
-  <text x="40" y="1182" font-size="9.5" fill="#64748b">断点续作：.hwsupabase/webapp.json（last_completed_stage → 重验门槛）· 生命周期：更新 / 回滚 / 下线 / 密钥轮换 · v1 边界：复杂业务逻辑（支付 / 第三方 / 长任务）→ FunctionGraph 留待 v2</text>
+  <text x="40" y="1182" font-size="9.5" fill="#64748b">断点续作：.hwsupabase/webapp.json（last_completed_stage → 重验通过条件）· 生命周期：更新 / 回滚 / 下线 / 密钥轮换 · v1 边界：复杂业务逻辑（支付 / 第三方 / 长任务）→ FunctionGraph 留待 v2</text>
 </svg>

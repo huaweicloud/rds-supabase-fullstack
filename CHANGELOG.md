@@ -204,6 +204,12 @@ semantic versioning.
   environment check gains a uv/uvx availability item (prerequisite for the
   dynamic MCP installs) with install guidance, and the prerequisites section
   states that the skill pack is the sole install artifact.
+- Skill `rds-supabase-web-build` v0.6.2: residual install-time implications
+  of the control-plane MCP removed — the frontmatter description, the ASCII
+  pipeline overview and the dual-plane section now state uniformly that both
+  MCP servers are loaded only when a scenario triggers the skill and are
+  installed automatically inside the workflow steps (control plane → stage 3,
+  data plane → stage 4, repo sources only), never with the skill package.
 
 - Skill `rds-supabase-frontend` v0.1.0 (renamed from `huawei-supabase-frontend`):
   private OBS + CDN static frontend

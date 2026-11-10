@@ -7,6 +7,16 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.7.2: the stage-3 control-plane env spec
+  now states the credential modes explicitly — REST token
+  (HUAWEICLOUD_AUTH_TOKEN, default SUPABASE_TRANSPORT=rest) or AK/SK,
+  which REQUIRES SUPABASE_TRANSPORT=sdk_core (reads
+  HUAWEICLOUD_ACCESS_KEY/HUAWEICLOUD_SECRET_KEY, optional
+  HUAWEICLOUD_SECURITY_TOKEN); starting with AK/SK but without sdk_core
+  falls back to REST mode and fails on the missing token. The stage-1
+  discover command carries the same requirement. Stage 4 states that the
+  data-plane server has no SUPABASE_TRANSPORT parameter and never uses
+  Huawei Cloud AK/SK (gateway triple only).
 - Skill `rds-supabase-web-build` v0.7.1: project-scoped credential isolation
   is now a red line — login state and credentials live only inside the
   current project at `<project>/.hwsupabase/secrets/` (0600, owner-only,

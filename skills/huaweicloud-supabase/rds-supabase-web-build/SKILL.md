@@ -3,7 +3,7 @@ name: rds-supabase-web-build
 description: 'RDS Supabase 全栈开发编排技能：AI Agent 通过自然语言创建并托管 Web 应用网站的端到端工作流——前端代码生成、后端 init.sql（DDL/GRANT/RLS/RPC）生成与部署、前端静态资源 OBS+CDN 全托管、端到端上线与生命周期管理（更新/回滚/下线）。Use when：创建 Web 网站、搭建 AI 应用、全栈应用从零到上线、已有 RDS Supabase 应用的迭代更新与托管维护。编排管理面与数据面两台 MCP（均由工作流步骤动态安装：管理面→步骤三、数据面→步骤四）及 rds-supabase-mgr-mcp / rds-supabase-mcp / rds-supabase-usage / rds-supabase-frontend / rds-supabase-postgres-best-practices 五个专项技能。v1 后端边界为数据层；复杂业务逻辑（支付/第三方调用/长任务）不在 v1 范围，SSR 后端部署不支持。'
 license: MIT
 metadata:
-  version: "0.7.1"
+  version: "0.7.2"
 ---
 
 # RDS Supabase 全栈开发编排（web-build）
@@ -102,7 +102,7 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
    uv run --directory server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr
    ```
 
-   env：`SUPABASE_RDS_ENDPOINT` / `HUAWEICLOUD_PROJECT_ID` / 凭据（devkit 优先；或 `diagnostics discover` 勾选；或半自动方案：配置模板含占位符，由用户填入实际值）
+   env：`SUPABASE_RDS_ENDPOINT` / `HUAWEICLOUD_PROJECT_ID` / 凭据。**凭据模式二选一**：REST token（`HUAWEICLOUD_AUTH_TOKEN`，`SUPABASE_TRANSPORT` 默认 rest）或 **AK/SK（必须设置 `SUPABASE_TRANSPORT=sdk_core`**，读取 `HUAWEICLOUD_ACCESS_KEY`/`HUAWEICLOUD_SECRET_KEY`/可选 `HUAWEICLOUD_SECURITY_TOKEN`）——用户已填 AK/SK 而未设 `sdk_core` 时管理面将按 REST 模式启动并因缺 Token 失败；devkit 优先；或 `diagnostics discover` 勾选；或半自动方案：配置模板含占位符，由用户填入实际值
 3. 实例**先问新建/已有**：已有 → `list_supabase_applications` 列表勾选 + 状态核验；新建 → 创建（仅 Single）+ 配置 EIP/安全组 8443/SSL
 4. **凭据获取（两条路径均必须执行，不得遗漏）**：网关 URL + Anon/Service Role Key → 受保护文件（步骤四安装所必需）
 5. OBS 租户桶（frontend 技能引导）→ 写 webapp.json instance 段 → gate PASS

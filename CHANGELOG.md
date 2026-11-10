@@ -7,6 +7,16 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.7.7: per-host project-level skill paths
+  are now pinned explicitly — CodeArts installs to
+  <project>/.codeartsdoer/skills/ (mandatory), opencode to
+  <project>/.opencode/skills/, Claude Code to <project>/.claude/skills/.
+  The constraint is presented as a table pairing each allowed project-level
+  directory with its forbidden personal-level twin, calling out that the
+  CodeArts pair shares the same directory name with a different root
+  (<project>/ vs ~/). System built-in/system-level directories remain
+  forbidden; CLI results landing in personal-level locations are discarded
+  in favor of manual copy into the pinned project-level paths.
 - Skill `rds-supabase-web-build` v0.7.6: install-section wording polished —
   the README section is renamed from the noun-pile-up "一句话自然语言安装"
   to "一句话安装" (matching INSTALL.md), the short-form instruction now reads

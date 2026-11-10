@@ -49,14 +49,23 @@ npx skills add huaweicloud/rds-supabase-fullstack
 > 安装后**核验落位**：CLI 默认目标若为个人级/全局目录，则弃用其结果、改用方式 B/C
 > 手动装入项目级目录（见下方强约束）。
 
-**安装位置强约束（必须遵循）**：技能包只安装到**当前项目的项目级技能目录**——禁止安装到
-系统内置/系统级目录，禁止安装到个人级目录（opencode `~/.config/opencode/skills/`、
-Claude Code `~/.claude/skills/`、CodeArts `~/.codeartsdoer/skills` 等）。技能版本随项目走，
-不得影响、不污染其他项目与本机全局环境——与凭据项目级隔离同一原则。
+**安装位置强约束（强制执行）**：技能包只安装到**当前项目的项目级技能目录**，各宿主的项目级路径固定如下——
+
+| 宿主 | 项目级技能目录（唯一允许） | 对应禁止的个人级目录 |
+|---|---|---|
+| CodeArts | `<项目根>/.codeartsdoer/skills/` | `~/.codeartsdoer/skills` |
+| opencode | `<项目根>/.opencode/skills/` | `~/.config/opencode/skills/` |
+| Claude Code | `<项目根>/.claude/skills/` | `~/.claude/skills/` |
+
+系统内置/系统级目录一律禁止；其余宿主按其项目级技能机制定位，Agent 自知位置。注意
+CodeArts 的两级目录**同名不同根**：随项目走的是 `<项目根>/.codeartsdoer/skills/`，家目录下
+的 `~/.codeartsdoer/skills` 属个人级、严禁使用。技能版本随项目走，不得影响、不污染其他
+项目与本机全局环境——与凭据项目级隔离同一原则。CLI（`npx skills add`）默认落位为个人级时，
+弃用其结果，改用手动复制装入上表项目级路径。
 
 方式 B（手动复制）：克隆仓库，把 `skills/huaweicloud-supabase/` 下所有技能目录完整复制到
-项目级技能目录（opencode：`<项目根>/.opencode/skills/`；Claude Code：`<项目根>/.claude/skills/`；
-CodeArts：项目内技能目录；其余宿主按其项目级技能机制，Agent 自知位置）：
+项目级技能目录（CodeArts：`<项目根>/.codeartsdoer/skills/`；opencode：`<项目根>/.opencode/skills/`；
+Claude Code：`<项目根>/.claude/skills/`；其余宿主按其项目级技能机制，Agent 自知位置）：
 
 ```bash
 git clone https://github.com/huaweicloud/rds-supabase-fullstack

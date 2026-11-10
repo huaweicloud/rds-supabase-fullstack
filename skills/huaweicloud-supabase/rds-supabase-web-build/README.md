@@ -20,7 +20,7 @@
 
 Agent 执行要点：
 
-1. **技能包（安装阶段的全部内容）**：`npx skills add huaweicloud/rds-supabase-fullstack`，或把 `skills/huaweicloud-supabase/` 下所有技能完整安装到项目技能目录。**安装位置强约束**：只装**项目级**技能目录（opencode `<项目根>/.opencode/skills/`、Claude Code `<项目根>/.claude/skills/`、CodeArts 项目内技能目录）；**禁止系统内置/系统级目录，禁止个人级目录**（`~/.config/opencode/skills/`、`~/.claude/skills/`、`~/.codeartsdoer/skills` 等）——技能版本随项目走，不污染其他项目与本机全局；CLI 默认落位为个人级时弃用其结果改手动装入
+1. **技能包（安装阶段的全部内容）**：`npx skills add huaweicloud/rds-supabase-fullstack`，或把 `skills/huaweicloud-supabase/` 下所有技能完整安装到项目技能目录。**安装位置强约束**：只装**项目级**技能目录——CodeArts `<项目根>/.codeartsdoer/skills/`、opencode `<项目根>/.opencode/skills/`、Claude Code `<项目根>/.claude/skills/`；**禁止系统内置/系统级目录与一切个人级目录**（`~/.codeartsdoer/skills`、`~/.config/opencode/skills/`、`~/.claude/skills/` 等，注意 CodeArts 两级目录同名不同根）——技能版本随项目走，不污染其他项目与本机全局；CLI 默认落位为个人级时弃用其结果改手动装入
 1a. **网络逃生通道（git 不可达时立即切换，不反复重试）**：克隆失败或停滞（代理后仍不通，连续失败 2 次或 30 秒无进展即判失败）→ 直接下载仓库 ZIP 归档并解压使用：
 
    ```bash

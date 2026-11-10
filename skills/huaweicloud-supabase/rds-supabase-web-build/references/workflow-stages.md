@@ -90,7 +90,7 @@
 **动作序列**：
 
 1. 宣言②
-2. 按 `rds-supabase-mcp 技能 references/install.md` 动态安装；**来源只允许本仓**（install.md 的 uvx git 模板，或本地 `uv run --directory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase`），禁止搜索 PyPI 同名包
+2. 按 `rds-supabase-mcp 技能 references/install.md` 动态安装；**来源只允许本仓**——完整命令：`uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack --subdirectory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase`（或本地克隆 `uv run --directory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase`；服务器文档：https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase/README.md ），禁止搜索 PyPI 同名包
 3. 凭据注入双路径：**devkit 优先**（已注入 → 直接验证）；**半自动兜底**（agent 写 mcpServers 骨架占位符 → 用户从受保护文件填值 → 客户端重载；agent 全程不接触明文）
 4. 验证：`get_project_url` 返回 == 网关地址；`list_tables` 正常应答
 5. 写 webapp.json（stages: mcp_connected）→ gate → 阶段报告

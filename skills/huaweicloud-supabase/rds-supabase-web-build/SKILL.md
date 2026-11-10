@@ -3,7 +3,7 @@ name: rds-supabase-web-build
 description: 'RDS Supabase 全栈开发编排技能：AI Agent 通过自然语言创建并托管 Web 应用网站的端到端工作流——前端代码生成、后端 init.sql（DDL/GRANT/RLS/RPC）生成与部署、前端静态资源 OBS+CDN 全托管、端到端上线与生命周期管理（更新/回滚/下线）。Use when：创建 Web 网站、搭建 AI 应用、全栈应用从零到上线、已有 RDS Supabase 应用的迭代更新与托管维护。编排管理面 MCP（实例生命周期）与数据面 MCP（动态安装）及 rds-supabase-mgr-mcp / rds-supabase-mcp / rds-supabase-usage / rds-supabase-frontend / rds-supabase-postgres-best-practices 五个专项技能。v1 后端边界为数据层；复杂业务逻辑（支付/第三方调用/长任务）不在 v1 范围，SSR 后端部署不支持。'
 license: MIT
 metadata:
-  version: "0.2.2"
+  version: "0.2.3"
 ---
 
 # RDS Supabase 全栈开发编排（web-build）
@@ -48,7 +48,7 @@ Agent 执行要点（完整指导与排错见 [INSTALL.md](INSTALL.md)）：
 
 1. **技能**：`npx skills add huaweicloud/rds-supabase-fullstack`，或复制 `skills/huaweicloud-supabase/` 六个技能目录到技能目录
 2. **管理面 MCP**：仅本仓来源（uvx git 模板 / 本地 `uv run --directory`；生产建议 pin `@<commit>`）；凭据注入顺序 devkit → `diagnostics discover` 勾选 → 半自动兜底；初始 `HUAWEICLOUD_MCP_READ_ONLY=true` + `SUPABASE_ENABLE_WRITES=false`
-3. **数据面 MCP**：**刻意不装**——实例在 ① 阶段创建后，② 阶段按 rds-supabase-mcp 技能 `references/install.md` 动态安装
+3. **数据面 MCP**：**刻意不装**——实例在 ① 阶段创建后，② 阶段按 rds-supabase-mcp 技能 `references/install.md` 动态安装（完整 uvx 命令与 README URL 见下方"可用工具"的安装来源表）
 4. **汇报**：已装技能清单、管理面工具数与只读状态、触发语句示例（如"帮我建一个博客网站"）
 
 ## 适用范围
@@ -129,6 +129,22 @@ requirements_confirmed → instance_ready → mcp_connected → backend_deployed
 |---|---|---|
 | 管理面 | mcp_server_rds_supabase_mgr（29 工具） | 实例创建/配置（EIP/安全组/SSL）、ApiKey 交付、`update_supabase_auth_config`（回调配置）、删除；两阶段确认 + 执行账本 |
 | 数据面 | mcp_server_rds_supabase（38 工具） | `execute_sql`（单一事务，五步部署执行者）、结构查询、RLS/advisors、用户管理；只读拦截/审计脱敏 |
+
+**MCP 安装来源（唯一允许的完整 URL）**——动态安装时直接照抄，本地未克隆仓库也不必搜索：
+
+| MCP | 入口脚本 | README（完整 URL） |
+|---|---|---|
+| 管理面（① 拉起） | `mcp-huaweicloud-rds-supabase-mgr` | https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase_mgr/README.md |
+| 数据面（② 动态安装） | `mcp-server-huaweicloud-rds-supabase` | https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase/README.md |
+
+```bash
+# 管理面（① 阶段拉起）
+uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr
+# 数据面（② 阶段，实例凭据就绪后动态安装）
+uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack --subdirectory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase
+```
+
+本地已克隆仓库时可用 `uv run --directory server/<目录> <入口脚本>` 等价替代（生产建议 pin `@<commit>`）。**注意：技能目录里没有 `server/` 子目录属正常**——服务器不在技能包内，凡见仓内路径引用一律以上表 URL 为准；除上述两种来源外的一切途径（含 PyPI/第三方仓同名包）禁止。
 
 完整路由矩阵见 references/routing-table.md。
 

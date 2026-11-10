@@ -89,6 +89,15 @@ semantic versioning.
   handing the agent any file first; a short variant covers the case where the
   skill is already in context, and a four-point execution digest links to
   INSTALL.md for the full guide and troubleshooting.
+- Skill `rds-supabase-web-build` v0.2.3: complete URLs for the dynamically
+  installed MCPs are now embedded wherever they are referenced — SKILL.md's
+  tool section gains a canonical install-source table (per-MCP entry script,
+  full GitHub README URL on the default branch, copy-ready uvx commands for
+  both planes, and the note that skill packages contain no server/ directory
+  so repo-relative paths must always resolve to these URLs). The stage-2
+  playbook inlines the full data-plane uvx command and README URL, and the
+  routing table's control-plane anchor becomes an absolute URL instead of a
+  repo-relative path that dangles when the repo is not cloned.
 
 - Skill `rds-supabase-frontend` v0.1.0 (renamed from `huawei-supabase-frontend`):
   private OBS + CDN static frontend

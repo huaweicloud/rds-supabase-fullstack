@@ -6,7 +6,7 @@ web-build 是编排者：只路由不复制。命中左列任务时，加载对�
 
 | 任务 | 路由目标 | 锚点 |
 |---|---|---|
-| 管理面 MCP 拉起（devkit 检测 → 动态拉起） | mgr 服务器 uvx 模板 | `server/mcp_server_rds_supabase_mgr/README.md`（Configure and run） |
+| 管理面 MCP 拉起（devkit 检测 → 动态拉起） | mgr 服务器 uvx 模板 | https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase_mgr/README.md |
 | 实例创建/选定/配置（EIP/安全组/SSL）/密钥交付/删除 | rds-supabase-mgr-mcp 技能 + 管理面 MCP | SKILL.md 六场景工作流；工具两阶段确认 |
 | 数据面 MCP 动态安装 | rds-supabase-mcp 技能 | `references/install.md` |
 | init.sql 生成质量（③ 强制门） | rds-supabase-postgres-best-practices 技能 | SKILL.md 症状/任务索引 → 对应规则文件 |

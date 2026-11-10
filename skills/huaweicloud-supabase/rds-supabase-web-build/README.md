@@ -16,7 +16,7 @@
 
 > 从 https://github.com/huaweicloud/rds-supabase-fullstack 克隆仓库，把 `skills/huaweicloud-supabase/` 下所有 Skill 技能完整安装进项目技能目录，装完汇报已装技能清单与一句话建站触发语。
 
-简短版本（本技能已在 Agent 上下文时）：**"按 README 一句话自然语言安装节，安装 rds-supabase 技能包（全部技能）并汇报。"**
+简短版本（本技能已在 Agent 上下文时）：**"参照 README 的「一句话自然语言安装」节，完整安装 rds-supabase 技能包（全部技能），装完汇报安装结果。"**
 
 Agent 执行要点：
 

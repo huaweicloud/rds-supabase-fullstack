@@ -7,6 +7,11 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.7.4: grammar fix in the README short-form
+  install instruction — the section name is now properly delimited
+  (「一句话自然语言安装」节) instead of a bare noun pile-up, and the sentence
+  ends with a complete object (装完汇报安装结果) instead of a dangling
+  并汇报.
 - Skill `rds-supabase-web-build` v0.7.3: network escape hatch for downloads.
   When git access fails or stalls (proxy exhausted, two consecutive failures
   or 30s without progress), both the skill-pack install and the dynamic MCP

@@ -7,6 +7,20 @@ semantic versioning.
 
 ### Added
 
+- `mcp_server_rds_supabase_mgr` v0.4.0a1: `diagnostics discover` — credential-driven
+  context discovery. With only a REST token or AK/SK configured, the new CLI mode
+  queries IAM (token project-scope self-check in REST mode, project listing in
+  sdk_core mode), derives the standard regional RDS origin per project
+  (`https://rds.{region}.myhuaweicloud.com`) and emits a per-candidate
+  `suggested_env` block (`HUAWEICLOUD_PROJECT_ID` + `SUPABASE_RDS_ENDPOINT`) for
+  selection; `--probe` adds one bounded read-only reachability check. An
+  explicitly configured `SUPABASE_RDS_ENDPOINT` always wins; probes never echo
+  resource values or credentials. Both transports now accept extra request
+  headers (used for the IAM `X-Subject-Token` self-query) and sign IAM paths at
+  domain scope. Removed the `SUPABASE_VPC_ENDPOINT` parameter: security-group
+  tools share the same native RDS origin and project identity as the rest of the
+  server (internal adaptation, no separate entry to configure). 136 tests at
+  93.00% coverage.
 - Skill `rds-supabase-web-build` v0.1.0: full-stack development orchestrator for
   RDS Supabase — a one-sentence triggered end-to-end pipeline (requirements →
   resource preparation with dynamic control-plane MCP bring-up and OBS bucket

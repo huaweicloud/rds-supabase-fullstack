@@ -58,6 +58,20 @@ semantic versioning.
   marked as mandatory on both the create and select paths — missing any item
   blocks the stage-2 data-plane MCP dynamic install. The webapp.json instance
   contract gains a `source` field (`created` / `selected`).
+- Skill `rds-supabase-web-build` v0.2.0: stability overhaul — stage completion
+  moves from self-assertion to mechanical verification. New
+  `scripts/webapp-gate.py` (stdlib-only, ships with the skill) validates the
+  webapp.json contract, stage progression and ordering, credential-like value
+  leakage, mandatory-gate artifacts and trace hygiene; stage playbooks
+  restructured into input → action-sequence → output-assertion form with
+  🤖(gate)/🔍(agent) assertion markers, per-stage tool allow/deny lists, and a
+  golden-path example per stage. New execution discipline in SKILL.md: stage
+  header declaration, one-stage-per-turn, wait protocol (30s polling cadence,
+  20-attempt cap), two-strike failure escalation (no third blind retry), and
+  per-action trace records in .hwsupabase/trace.jsonl. Mandatory gates ③④ are
+  materialized as rule→location mapping checklists
+  (.hwsupabase/gates/3-rules-checklist.md, 4-sdk-contract-checklist.md) that
+  the gate script enforces.
 
 - Skill `rds-supabase-frontend` v0.1.0 (renamed from `huawei-supabase-frontend`):
   private OBS + CDN static frontend

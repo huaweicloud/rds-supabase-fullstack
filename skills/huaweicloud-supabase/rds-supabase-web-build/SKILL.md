@@ -3,7 +3,7 @@ name: rds-supabase-web-build
 description: 'RDS Supabase 全栈开发编排技能：AI Agent 通过自然语言创建并托管 Web 应用网站的端到端工作流——前端代码生成、后端 init.sql（DDL/GRANT/RLS/RPC）生成与部署、前端静态资源 OBS+CDN 全托管、端到端上线与生命周期管理（更新/回滚/下线）。Use when：创建 Web 网站、搭建 AI 应用、全栈应用从零到上线、已有 RDS Supabase 应用的迭代更新与托管维护。编排管理面 MCP（实例生命周期）与数据面 MCP（动态安装）及 rds-supabase-mgr-mcp / rds-supabase-mcp / rds-supabase-usage / rds-supabase-frontend / rds-supabase-postgres-best-practices 五个专项技能。v1 后端边界为数据层；复杂业务逻辑（支付/第三方调用/长任务）不在 v1 范围，SSR 后端部署不支持。'
 license: MIT
 metadata:
-  version: "0.1.2"
+  version: "0.2.0"
 ---
 
 # RDS Supabase 全栈开发编排（web-build）
@@ -88,6 +88,26 @@ requirements_confirmed → instance_ready → mcp_connected → backend_deployed
 
 **生命周期循环**（更新/回滚/下线/密钥轮换）：见 references/lifecycle.md。
 
+## 执行纪律（高稳执行核心）
+
+以下为**硬约束**：把"可靠执行流程"从模型自觉交给"机制核验 + 用户锚点"。违反即视为阶段失败。
+
+1. **阶段头宣言**（每阶段开始必输出，固定格式）：
+
+   ```
+   ┌─ 阶段 ③ 后端生成部署（前一态 mcp_connected）
+   │ 允许：best-practices 对照、init.sql 生成、execute_sql 部署
+   │ 禁止：前端代码、OBS 操作、跳过对照表
+   └─ 完成断言：advisors 无新增 + REST 200（详细断言见 workflow-stages.md）
+   ```
+
+2. **单回复单阶段**：一次用户交互最多推进一个阶段（门槛全过且下一阶段无用户决策点除外）
+3. **等待协议**：>30s 的长操作按固定节奏轮询（job 每 30 秒、上限 20 次）；等待期间禁止发起无关操作
+4. **两次法则**：同一动作连续失败 2 次 → 强制停止报告用户，**禁止第三次盲试**
+5. **工具白名单**：每阶段允许/禁止集合见 workflow-stages.md；越界须先获用户同意并记 trace
+6. **gate 机械核验**：阶段完成前运行本技能 `scripts/webapp-gate.py`（`check-stage --stage <标记>`；③④ 另跑 `check-gate --number 3|4`），**PASS 才能输出阶段报告与推进**；FAIL 按缺项整改后重跑
+7. **trace**：每个 MCP/CLI 工具调用后追加 `.hwsupabase/trace.jsonl` 一行（无敏感值；格式见 project-state.md）
+
 ## 可用工具
 
 | 平面 | MCP | 关键能力 |
@@ -109,9 +129,10 @@ requirements_confirmed → instance_ready → mcp_connected → backend_deployed
 
 ## 输出格式
 
-- **阶段报告**（每阶段完成时）：目标、执行动作、门槛验证结果、下一阶段
+- **阶段头宣言**（每阶段第一条输出）：阶段号、前一态、允许/禁止动作、完成断言（格式见执行纪律）
+- **阶段报告**（每阶段完成时）：目标、执行动作、门槛验证结果（**引用 gate verdict**）、下一阶段预告 + 需要用户准备什么
 - **上线报告**（⑥）：三级交付语义（本地已验证/环境已准备/线上验收通过）+ stable_url + 前端版本记录引用；格式见 references/launch-checklist.md
-- **失败/断点报告**：当前阶段、失败原因、已恢复/待人工项、webapp.json 状态
+- **失败/断点报告**：当前阶段、失败原因（含两次法则触发）、已恢复/待人工项、webapp.json 状态
 
 ## 验证方法
 
@@ -143,6 +164,7 @@ requirements_confirmed → instance_ready → mcp_connected → backend_deployed
 | ③ 生成 init.sql 前 | 【强制门】rds-supabase-postgres-best-practices 技能（+ init-sql-guide） | 质量规则逐条对照 |
 | ④ 生成前端前 | 【强制门】rds-supabase-usage 技能 | SDK 正确用法，避免运行时报错 |
 | ⑥ 上线验证前 | references/launch-checklist.md | 三层清单与上线报告格式 |
+| 每阶段完成前 | scripts/webapp-gate.py（check-stage；③④ 另跑 check-gate） | 🤖 断言机械核验，PASS 才算完成 |
 | launched 之后的更新/回滚/下线/密钥轮换 | references/lifecycle.md | 生命周期工作流 |
 
 一次会话的典型加载量：SKILL.md + project-state.md + workflow-stages.md 当前阶段小节 + 阶段强制门技能（如有）。routing-table.md 仅在路由不明时查询；不在早期阶段预加载 launch-checklist.md 与 lifecycle.md。
@@ -154,4 +176,5 @@ requirements_confirmed → instance_ready → mcp_connected → backend_deployed
 - references/project-state.md（webapp.json 契约；首次读写前读）
 - references/routing-table.md（跨技能/MCP 路由矩阵；路由不明时查）
 - references/launch-checklist.md（端到端上线清单；⑥ 验证前读）
+- scripts/webapp-gate.py（阶段门槛机械核验；每阶段完成前运行）
 - assets/framework.svg（整体交互链路框架图；需要总览/沟通时查看，非常驻加载）

@@ -7,6 +7,12 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.7.6: install-section wording polished —
+  the README section is renamed from the noun-pile-up "一句话自然语言安装"
+  to "一句话安装" (matching INSTALL.md), the short-form instruction now reads
+  as a natural sentence (按本技能 README 的「一句话安装」指引…) instead of the
+  awkward 「…」节 construct, and the redundant "所有 Skill 技能" is corrected
+  to "所有技能" with the project-level directory spelled out.
 - Skill `rds-supabase-web-build` v0.7.5: install location is now a hard
   constraint — the skill pack goes only into the current project's
   project-level skill directory (opencode <project>/.opencode/skills/,

@@ -10,13 +10,13 @@
 
 五区带自上而下：编排条（web-build + webapp.json 状态机）→ 步骤一–八流水线 → 步骤路由卡（技能/双 MCP）→ 云资源底座（RDS Supabase 实例 + OBS/CDN）→ 终端用户运行态链路。
 
-## 一句话自然语言安装
+## 一句话安装
 
 安装阶段**只安装 rds-supabase 技能包**（全部技能，从本 GitHub 源码仓克隆/添加）——不安装、不配置任何 MCP 与凭据。把下面这句话直接发给你的 AI Agent 即可：
 
-> 从 https://github.com/huaweicloud/rds-supabase-fullstack 克隆仓库，把 `skills/huaweicloud-supabase/` 下所有 Skill 技能完整安装进项目技能目录，装完汇报已装技能清单与一句话建站触发语。
+> 从 https://github.com/huaweicloud/rds-supabase-fullstack 克隆仓库，把 `skills/huaweicloud-supabase/` 下所有技能完整安装进项目级技能目录，装完汇报已装技能清单与一句话建站触发语。
 
-简短版本（本技能已在 Agent 上下文时）：**"参照 README 的「一句话自然语言安装」节，完整安装 rds-supabase 技能包（全部技能），装完汇报安装结果。"**
+简短版本（本技能已在 Agent 上下文时）：**"按本技能 README 的「一句话安装」指引，把 rds-supabase 技能包（全部技能）完整安装到项目级技能目录，装完汇报安装结果。"**
 
 Agent 执行要点：
 

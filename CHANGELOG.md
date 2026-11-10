@@ -7,6 +7,17 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.7.3: network escape hatch for downloads.
+  When git access fails or stalls (proxy exhausted, two consecutive failures
+  or 30s without progress), both the skill-pack install and the dynamic MCP
+  installs switch immediately — no endless retries — to the repository ZIP
+  archive (curl --fail --max-time 120, or a direct browser download which
+  often rides a different accelerated path), then proceed with local
+  `uv run --directory` for the MCP servers. The ZIP archive is an official
+  source of this repository (commit-pinned form `.../archive/<commit>.zip`),
+  so source locking is preserved and the PyPI ban stands. Stated in the
+  README one-sentence install, INSTALL.md (new method C), SKILL.md stage-3/4
+  command blocks and the source-lock note, and the stage-3/4 playbook.
 - Skill `rds-supabase-web-build` v0.7.2: the stage-3 control-plane env spec
   now states the credential modes explicitly — REST token
   (HUAWEICLOUD_AUTH_TOKEN, default SUPABASE_TRANSPORT=rest) or AK/SK,

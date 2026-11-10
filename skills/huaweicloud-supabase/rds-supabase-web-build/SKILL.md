@@ -3,7 +3,7 @@ name: rds-supabase-web-build
 description: 'RDS Supabase 全栈开发编排技能：AI Agent 通过自然语言创建并托管 Web 应用网站的端到端工作流——前端代码生成、后端 init.sql（DDL/GRANT/RLS/RPC）生成与部署、前端静态资源 OBS+CDN 全托管、端到端上线与生命周期管理（更新/回滚/下线）。Use when：创建 Web 网站、搭建 AI 应用、全栈应用从零到上线、已有 RDS Supabase 应用的迭代更新与托管维护。编排管理面与数据面两台 MCP（均由工作流步骤动态安装：管理面→步骤三、数据面→步骤四）及 rds-supabase-mgr-mcp / rds-supabase-mcp / rds-supabase-usage / rds-supabase-frontend / rds-supabase-postgres-best-practices 五个专项技能。v1 后端边界为数据层；复杂业务逻辑（支付/第三方调用/长任务）不在 v1 范围，SSR 后端部署不支持。'
 license: MIT
 metadata:
-  version: "0.7.2"
+  version: "0.7.3"
 ---
 
 # RDS Supabase 全栈开发编排（web-build）
@@ -102,6 +102,16 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
    uv run --directory server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr
    ```
 
+   **网络逃生通道**：uvx git 拉取失败或停滞（含代理后仍不通；连续失败 2 次或 30 秒无进展即判失败）→ **立即切换** ZIP 归档 + 本地运行，不反复重试：
+
+   ```bash
+   curl -L --fail --max-time 120 -o rds-supabase-fullstack.zip \
+     https://github.com/huaweicloud/rds-supabase-fullstack/archive/refs/heads/main.zip
+   unzip rds-supabase-fullstack.zip
+   uv run --directory rds-supabase-fullstack-main/server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr
+   ```
+
+   ZIP 归档属本仓官方源（`.../archive/<commit>.zip` 为 pin 等价形式），不违反来源锁定；仍禁 PyPI/第三方源。
    env：`SUPABASE_RDS_ENDPOINT` / `HUAWEICLOUD_PROJECT_ID` / 凭据。**凭据模式二选一**：REST token（`HUAWEICLOUD_AUTH_TOKEN`，`SUPABASE_TRANSPORT` 默认 rest）或 **AK/SK（必须设置 `SUPABASE_TRANSPORT=sdk_core`**，读取 `HUAWEICLOUD_ACCESS_KEY`/`HUAWEICLOUD_SECRET_KEY`/可选 `HUAWEICLOUD_SECURITY_TOKEN`）——用户已填 AK/SK 而未设 `sdk_core` 时管理面将按 REST 模式启动并因缺 Token 失败；devkit 优先；或 `diagnostics discover` 勾选；或半自动方案：配置模板含占位符，由用户填入实际值
 3. 实例**先问新建/已有**：已有 → `list_supabase_applications` 列表勾选 + 状态核验；新建 → 创建（仅 Single）+ 配置 EIP/安全组 8443/SSL
 4. **凭据获取（两条路径均必须执行，不得遗漏）**：网关 URL + Anon/Service Role Key → 受保护文件（步骤四安装所必需）
@@ -118,6 +128,16 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
    uv run --directory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase
    ```
 
+   **网络逃生通道**：uvx git 拉取失败或停滞（含代理后仍不通；连续失败 2 次或 30 秒无进展即判失败）→ **立即切换** ZIP 归档 + 本地运行，不反复重试：
+
+   ```bash
+   curl -L --fail --max-time 120 -o rds-supabase-fullstack.zip \
+     https://github.com/huaweicloud/rds-supabase-fullstack/archive/refs/heads/main.zip
+   unzip rds-supabase-fullstack.zip
+   uv run --directory rds-supabase-fullstack-main/server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase
+   ```
+
+   ZIP 归档属本仓官方源（`.../archive/<commit>.zip` 为 pin 等价形式），不违反来源锁定；仍禁 PyPI/第三方源。
    env：`SUPABASE_URL` / `SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY`（agent 生成含占位符的配置模板 → 用户从受保护文件复制实际值填入 → 客户端重载）
 
    **访问协议跟随实例 SSL 状态**：实例开启 SSL → `https://`；未开启 SSL → `http://`（**不强制 HTTPS 交互**）。步骤三将 `instance.ssl_enabled`（true/false）记入 webapp.json；gate `--verify` 据此放行 http——`ssl_enabled=false` 时 HTTP 即预期访问方式
@@ -240,7 +260,7 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 
 - **凭据红线**：密钥永不写入 webapp.json/会话内容/工具返回；agent 不读取交付文件；devkit 注入优先、半自动备选路径；anon key 进入前端产物属预期，Service Role Key 绝不进入
 - **凭据项目级隔离（红线）**：登录态与凭据**只存放于当前项目内**——`<项目根>/.hwsupabase/secrets/`（0600、属主本人、目录排除 Git）。**禁止**写入全局或系统环境变量（shell profile、launchd/系统级 env、会话 `export`）；**禁止**新建或覆写个人级配置（`~/.config/huaweicloud/credentials.json`、`~/.obsutilconfig`）——已有个人级文件属既有工具与其他项目，**不迁移、不删除、不覆写**。MCP 进程凭据经进程内 env 或项目内凭据文件注入（`HUAWEICLOUD_MCP_CREDENTIALS_FILE` / `HUAWEICLOUD_DEVKIT_CREDENTIALS_FILE` 指向项目内 0600 文件；`SUPABASE_REQUESTS_FILE=<项目>/.hwsupabase/requests.json`，Key 交付落盘 secrets/）。本项目凭据轮换只影响本项目 `.hwsupabase/`，不污染其他项目开发
-- **MCP 安装来源锁定**：两台 MCP 服务器只从**本仓**安装（uvx git 模板 `git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=...`，或本地 `uv run --directory server/... <入口脚本>`）；禁止从 PyPI/第三方仓库搜索安装——存在同名第三方 "supabase" MCP 包，会导致连接到完全错误的服务器
+- **MCP 安装来源锁定**：两台 MCP 服务器只从**本仓**安装（uvx git 模板 `git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=...`，本地 `uv run --directory server/... <入口脚本>`，或**网络逃生通道**：git 不可达时立即切换 ZIP 归档下载解压 + 本地运行——`https://github.com/huaweicloud/rds-supabase-fullstack/archive/refs/heads/main.zip`，连续失败 2 次或 30 秒无进展即切换，不反复重试；`.../archive/<commit>.zip` 为 pin 等价形式）；禁止从 PyPI/第三方仓库搜索安装——存在同名第三方 "supabase" MCP 包，会导致连接到完全错误的服务器
 - **配置完备性检查**（步骤三第一动作）：管理面需凭据 + `HUAWEICLOUD_PROJECT_ID` + `SUPABASE_RDS_ENDPOINT`；frontend/OBS 需 AK/SK + `HUAWEICLOUD_REGION`。缺失项以清单**以清单形式提示用户填写**（不猜测不跳过）；endpoint 无法推导（discover 失败/非标准区域）→ 用户显式指定
 - **边界外处置**：复杂业务逻辑（支付/第三方调用/长任务）超出 v1 数据层边界——明确告知用户并停止，不擅自以 RPC 模拟
 - 文件上传（Storage）v1 默认不含：步骤二 识别并说明（可选扩展路径：管理面 `update_supabase_storage` 配 OBS 凭据）

@@ -55,6 +55,19 @@ git clone https://github.com/huaweicloud/rds-supabase-fullstack
 cp -r rds-supabase-fullstack/skills/huaweicloud-supabase/* <项目技能目录>/
 ```
 
+方式 C（**网络逃生通道**——git 不可达时立即切换，不反复重试）：克隆失败或停滞
+（含代理后仍不通；连续失败 2 次或 30 秒无进展即判失败）→ 下载仓库 ZIP 归档解压使用：
+
+```bash
+curl -L --fail --max-time 120 -o rds-supabase-fullstack.zip \
+  https://github.com/huaweicloud/rds-supabase-fullstack/archive/refs/heads/main.zip
+unzip rds-supabase-fullstack.zip
+cp -r rds-supabase-fullstack-main/skills/huaweicloud-supabase/* <项目技能目录>/
+```
+
+浏览器直接打开该 ZIP URL 下载亦可（浏览器常走不同加速通道）。ZIP 归档属本仓
+官方源，不违反来源锁定；版本 pin 等价形式为 `.../archive/<commit>.zip`。
+
 安装的全部技能：`rds-supabase-web-build`（编排总指挥）、`rds-supabase-mgr-mcp`、
 `rds-supabase-mcp`、`rds-supabase-usage`、`rds-supabase-frontend`、
 `rds-supabase-postgres-best-practices`、`rds-supabase-function-graph`（云函数）。

@@ -98,6 +98,15 @@ semantic versioning.
   playbook inlines the full data-plane uvx command and README URL, and the
   routing table's control-plane anchor becomes an absolute URL instead of a
   repo-relative path that dangles when the repo is not cloned.
+- Skill `rds-supabase-web-build` v0.3.0: clean separation of concerns between
+  the human-facing README and the agent-facing SKILL.md. The framework
+  diagram, the one-sentence natural-language install section and the MCP
+  install-source table (full URLs, copy-ready uvx commands) move to a new
+  skill README.md; SKILL.md now focuses purely on the business workflow —
+  scope, stage machine, execution discipline, gates, assertions and failure
+  handling — with a single pointer to the README/INSTALL for install matters.
+  The skills validator no longer forbids README.md in skill directories
+  (INSTALLATION_GUIDE.md and QUICK_REFERENCE.md remain forbidden).
 
 - Skill `rds-supabase-frontend` v0.1.0 (renamed from `huawei-supabase-frontend`):
   private OBS + CDN static frontend

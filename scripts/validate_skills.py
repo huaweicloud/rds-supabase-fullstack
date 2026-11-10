@@ -42,7 +42,7 @@ NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
 SECTION_RE = re.compile(r"^## \d+\. .+\((\w+)\)\s*$", re.MULTILINE)
 TRIGGER_MARKERS = ("use when", "load this skill", "triggers:", "触发", "之前加载", "何时")
-FORBIDDEN_FILES = {"README.md", "INSTALLATION_GUIDE.md", "QUICK_REFERENCE.md"}
+FORBIDDEN_FILES = {"INSTALLATION_GUIDE.md", "QUICK_REFERENCE.md"}
 
 
 def parse_frontmatter(text: str) -> dict:

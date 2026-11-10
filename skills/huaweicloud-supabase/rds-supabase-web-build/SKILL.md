@@ -3,7 +3,7 @@ name: rds-supabase-web-build
 description: 'RDS Supabase 全栈开发编排技能：AI Agent 通过自然语言创建并托管 Web 应用网站的端到端工作流——前端代码生成、后端 init.sql（DDL/GRANT/RLS/RPC）生成与部署、前端静态资源 OBS+CDN 全托管、端到端上线与生命周期管理（更新/回滚/下线）。Use when：创建 Web 网站、搭建 AI 应用、全栈应用从零到上线、已有 RDS Supabase 应用的迭代更新与托管维护。编排管理面 MCP（实例生命周期）与数据面 MCP（动态安装）及 rds-supabase-mgr-mcp / rds-supabase-mcp / rds-supabase-usage / rds-supabase-frontend / rds-supabase-postgres-best-practices 五个专项技能。v1 后端边界为数据层；复杂业务逻辑（支付/第三方调用/长任务）不在 v1 范围，SSR 后端部署不支持。'
 license: MIT
 metadata:
-  version: "0.2.3"
+  version: "0.3.0"
 ---
 
 # RDS Supabase 全栈开发编排（web-build）
@@ -11,10 +11,6 @@ metadata:
 ## 概述
 
 RDS Supabase 全栈开发的**总指挥技能**：用户以一句话（"建一个网站"/"搭一个 AI 应用"）触发，AI Agent 走完前端与后端的代码生成、部署运行、托管上线的完整链路。本技能是厚工作流编排者——拥有阶段状态机、通过门槛、失败处置与断点续作；各环节深度内容由专项技能承载，本技能只路由、不复制。
-
-整体交互链路总览（阶段 × 路由 × 双 MCP × 云资源 × 运行态）：
-
-![RDS Supabase 全栈开发编排 · 交互链路框架图](assets/framework.svg)
 
 双工作流总图：
 
@@ -35,21 +31,6 @@ RDS Supabase 全栈开发的**总指挥技能**：用户以一句话（"建一�
 - **数据面**：`mcp_server_rds_supabase`（38 工具）——init.sql 执行、结构查询、RLS/advisors
 - **后端轨**：产出 init.sql（DDL/GRANT/RLS/RPC/种子），运行于 RDS Supabase（PostgREST/GoTrue）
 - **前端轨**：产出静态站点（默认 React+Vite+TS + supabase-js），托管于 OBS+CDN
-
-## 一句话自然语言安装
-
-把下面这句话直接发给你的 AI Agent，即可安装整套 Supabase 技能（6 个技能 + 双 MCP，无需先递交任何文档）：
-
-> 从 https://github.com/huaweicloud/rds-supabase-fullstack 克隆仓库，把 `skills/huaweicloud-supabase/` 下六个技能目录安装进你的技能目录，并只从本仓安装管理面 MCP（uvx `--from git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr`，入口脚本 `mcp-huaweicloud-rds-supabase-mgr`；凭据 devkit 优先、缺失项列清单让我填写、初始只读；**禁止**从 PyPI 或第三方仓搜索同名包），数据面 MCP **不装**（建站流程 ② 阶段动态安装），装完汇报技能清单、管理面工具数与一句话建站触发语。
-
-短版（本技能已在 Agent 上下文时）：**"按 SKILL.md 一句话自然语言安装节，装好 rds-supabase-web-build 全套并汇报。"**
-
-Agent 执行要点（完整指导与排错见 [INSTALL.md](INSTALL.md)）：
-
-1. **技能**：`npx skills add huaweicloud/rds-supabase-fullstack`，或复制 `skills/huaweicloud-supabase/` 六个技能目录到技能目录
-2. **管理面 MCP**：仅本仓来源（uvx git 模板 / 本地 `uv run --directory`；生产建议 pin `@<commit>`）；凭据注入顺序 devkit → `diagnostics discover` 勾选 → 半自动兜底；初始 `HUAWEICLOUD_MCP_READ_ONLY=true` + `SUPABASE_ENABLE_WRITES=false`
-3. **数据面 MCP**：**刻意不装**——实例在 ① 阶段创建后，② 阶段按 rds-supabase-mcp 技能 `references/install.md` 动态安装（完整 uvx 命令与 README URL 见下方"可用工具"的安装来源表）
-4. **汇报**：已装技能清单、管理面工具数与只读状态、触发语句示例（如"帮我建一个博客网站"）
 
 ## 适用范围
 
@@ -130,23 +111,7 @@ requirements_confirmed → instance_ready → mcp_connected → backend_deployed
 | 管理面 | mcp_server_rds_supabase_mgr（29 工具） | 实例创建/配置（EIP/安全组/SSL）、ApiKey 交付、`update_supabase_auth_config`（回调配置）、删除；两阶段确认 + 执行账本 |
 | 数据面 | mcp_server_rds_supabase（38 工具） | `execute_sql`（单一事务，五步部署执行者）、结构查询、RLS/advisors、用户管理；只读拦截/审计脱敏 |
 
-**MCP 安装来源（唯一允许的完整 URL）**——动态安装时直接照抄，本地未克隆仓库也不必搜索：
-
-| MCP | 入口脚本 | README（完整 URL） |
-|---|---|---|
-| 管理面（① 拉起） | `mcp-huaweicloud-rds-supabase-mgr` | https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase_mgr/README.md |
-| 数据面（② 动态安装） | `mcp-server-huaweicloud-rds-supabase` | https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase/README.md |
-
-```bash
-# 管理面（① 阶段拉起）
-uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr
-# 数据面（② 阶段，实例凭据就绪后动态安装）
-uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack --subdirectory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase
-```
-
-本地已克隆仓库时可用 `uv run --directory server/<目录> <入口脚本>` 等价替代（生产建议 pin `@<commit>`）。**注意：技能目录里没有 `server/` 子目录属正常**——服务器不在技能包内，凡见仓内路径引用一律以上表 URL 为准；除上述两种来源外的一切途径（含 PyPI/第三方仓同名包）禁止。
-
-完整路由矩阵见 references/routing-table.md。
+MCP 动态安装的**唯一来源与完整 URL 命令内联于 workflow-stages.md ①②**（进入阶段执行时读取）；人类可读的安装指南与来源表见 [README.md](README.md) 与 [INSTALL.md](INSTALL.md)。完整路由矩阵见 references/routing-table.md。
 
 ## 参数确认
 
@@ -208,4 +173,3 @@ uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack --subdirect
 - references/routing-table.md（跨技能/MCP 路由矩阵；路由不明时查）
 - references/launch-checklist.md（端到端上线清单；⑥ 验证前读）
 - scripts/webapp-gate.py（阶段门槛机械核验；每阶段完成前运行）
-- assets/framework.svg（整体交互链路框架图；需要总览/沟通时查看，非常驻加载）

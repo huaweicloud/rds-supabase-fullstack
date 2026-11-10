@@ -51,6 +51,8 @@
 
 SDK 签名模式（AK/SK）见 [examples/mcp-sdk.example.json](../examples/mcp-sdk.example.json)：设置 `"SUPABASE_TRANSPORT": "sdk_core"`，改用 `HUAWEICLOUD_ACCESS_KEY` / `HUAWEICLOUD_SECRET_KEY`（临时凭据另加 `HUAWEICLOUD_SECURITY_TOKEN`）。
 
+入口与项目 ID 可在配置前自动发现：`uv run python -m mcp_server_supabase.diagnostics discover` 用现有凭据查询 IAM 项目清单（REST 模式自查 Token 作用域）并按区域推导候选入口，输出 `suggested_env` 供勾选；追加 `--probe` 做一次只读可达性探测。显式配置的 `SUPABASE_RDS_ENDPOINT` 优先。安全组工具与 RDS 共用同一原生入口，无需单独配置。
+
 首次接入建议保持只读（上表默认值）。uvx 首次运行解析依赖并缓存，之后启动为秒级；需要更新到仓库最新版本时在命令中加入 `--refresh`。旧入口脚本名 `mcp_server_supabase` 与规范入口 `mcp-huaweicloud-rds-supabase-mgr` 等价，保留过渡。
 
 ## 4. 安装专项 Skill
@@ -85,11 +87,10 @@ uv run python -m mcp_server_supabase.diagnostics readonly --allow-cloud-read
 
 | 配置 | 用途 |
 |---|---|
-| SUPABASE_RDS_ENDPOINT | 当前局点的原生RDS HTTPS入口，不是Console地址或/rest代理 |
-| HUAWEICLOUD_PROJECT_ID | 与局点一致的项目ID |
+| SUPABASE_RDS_ENDPOINT | 当前局点的原生RDS HTTPS入口，不是Console地址或/rest代理；可由 `diagnostics discover` 从凭据推导 |
+| HUAWEICLOUD_PROJECT_ID | 与局点一致的项目ID；可由 `diagnostics discover` 查询勾选 |
 | HUAWEICLOUD_ACCESS_KEY、HUAWEICLOUD_SECRET_KEY | 具备所需权限的AK/SK |
 | HUAWEICLOUD_SECURITY_TOKEN | 仅临时凭据时使用匹配的STS token |
-| SUPABASE_VPC_ENDPOINT | 安全组场景独立的原生VPC入口，由环境负责人确认 |
 | REQUESTS_CA_BUNDLE | 需要自定义CA时指定可信本地PEM文件 |
 
 入口、IAM权限及API开放情况以实际局点为准。不要把浏览器可登录Console等同于Python SDK能够访问。MCP子进程必须继承配置；更新后重启客户端。模型服务代理和云API网络分开处理，不统一设置全局NO_PROXY=*，不关闭TLS验证。SDK模式仅设置SSL_CERT_FILE不能保证采用该CA。

@@ -7,7 +7,7 @@ def register(server):
     @server.tool()
     @guard(risk=ToolRisk.READ)
     async def list_supabase_security_groups(limit:int=10,marker:str|None=None)->dict:
-        """Read a VPC security-group page using the independently configured SUPABASE_VPC_ENDPOINT."""
+        """Read a VPC security-group page from the shared native RDS origin."""
         return await service.list_groups(limit,marker)
 
     @server.tool()

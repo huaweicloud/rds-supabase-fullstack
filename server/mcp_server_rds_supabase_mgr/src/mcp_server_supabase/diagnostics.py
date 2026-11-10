@@ -46,6 +46,21 @@ def configuration_report():
             'note':'Configuration syntax only; network, permissions and server identity are not verified.'}
 
 
+def _discovery_checks():
+    """Credential gate for discover: the RDS endpoint and project may stay unresolved."""
+    transport = os.getenv('SUPABASE_TRANSPORT', 'rest')
+    checks = {'transport_valid': transport in ('rest', 'sdk_core')}
+    if transport == 'sdk_core':
+        ak, sk, sts = (os.getenv(key, '') for key in
+            ('HUAWEICLOUD_ACCESS_KEY', 'HUAWEICLOUD_SECRET_KEY', 'HUAWEICLOUD_SECURITY_TOKEN'))
+        checks['sdk_credentials_present_and_valid'] = bool(ak and sk and
+            all('\r' not in value and '\n' not in value for value in (ak, sk, sts)))
+    else:
+        token = os.getenv('HUAWEICLOUD_AUTH_TOKEN', '')
+        checks['token_present_and_valid'] = bool(token and '\r' not in token and '\n' not in token)
+    return checks
+
+
 def payload(result):
     if result.structured_content is not None:
         return result.structured_content
@@ -106,8 +121,9 @@ async def protocol_report(mode, application_id=None, job_id=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('mode',choices=('check','offline','readonly'))
+    parser.add_argument('mode',choices=('check','offline','readonly','discover'))
     parser.add_argument('--allow-cloud-read',action='store_true')
+    parser.add_argument('--probe',action='store_true')
     parser.add_argument('--application-id')
     parser.add_argument('--job-id')
     args = parser.parse_args()
@@ -116,6 +132,17 @@ def main():
         if args.mode == 'check':
             report = configuration_report()
             code = 0 if report['cloud_ready'] else 2
+        elif args.mode == 'discover':
+            checks = _discovery_checks()
+            if not all(checks.values()):
+                report = {'mode':'discover','passed':False,'checks':checks,'network_attempted':False,
+                          'error':'Credentials missing or transport invalid; configure '
+                                  'HUAWEICLOUD_AUTH_TOKEN or sdk_core AK/SK first.'}
+                code = 2
+            else:
+                from mcp_server_supabase.service.discovery import discover
+                report = asyncio.run(discover(probe=args.probe))
+                code = 0 if report.get('passed') else 1
         elif args.mode == 'readonly' and not args.allow_cloud_read:
             report['error'] = 'Cloud reads require --allow-cloud-read and an authorized test identity.'
             code = 2

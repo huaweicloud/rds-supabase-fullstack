@@ -22,10 +22,10 @@ class RestClient:
         self.token = token
         self.allow_loopback = allow_loopback
 
-    async def request(self, method, path, body=None, query=None):
-        return await asyncio.to_thread(self._request, method, path, body, query)
+    async def request(self, method, path, body=None, query=None, headers=None):
+        return await asyncio.to_thread(self._request, method, path, body, query, headers)
 
-    def _request(self, method, path, body, query):
+    def _request(self, method, path, body, query, headers):
         url = urlsplit(self.endpoint)
         local = self.allow_loopback and url.hostname in ("127.0.0.1", "localhost")
         if (url.scheme != "https" and not (local and url.scheme == "http")) or not url.hostname or url.username or url.password or url.query or url.fragment or url.path not in ("", "/"):
@@ -33,12 +33,15 @@ class RestClient:
         token = self.token if self.token is not None else os.getenv("HUAWEICLOUD_AUTH_TOKEN", "")
         if not token or any(x in token for x in ("\r", "\n")):
             raise McpToolError("MCP_PERMISSION_DENIED", "Missing or invalid auth token")
-        route = path.replace("{project}", segment(self.project))
+        route = path.replace("{project}", segment(self.project)) if "{project}" in path else path
         if query:
             route += "?" + urlencode(query, doseq=True)
+        request_headers = {"X-Auth-Token": token, "Content-Type": "application/json"}
+        if headers:
+            request_headers.update(headers)
         connection = (http.client.HTTPConnection if local and url.scheme == "http" else http.client.HTTPSConnection)(url.hostname, url.port, timeout=30)
         try:
-            connection.request(method, route, None if body is None else json.dumps(body), {"X-Auth-Token": token, "Content-Type": "application/json"})
+            connection.request(method, route, None if body is None else json.dumps(body), request_headers)
             response = connection.getresponse()
             raw = response.read(1048577)
             if len(raw) > 1048576:

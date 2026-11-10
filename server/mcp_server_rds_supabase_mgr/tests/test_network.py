@@ -12,7 +12,7 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
         from mcp_server_supabase.service.network import Network
         from mcp_server_supabase.service.plans import PlanStore
         self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
-        self.client=AsyncMock();self.client.endpoint='https://vpc.example.invalid';self.client.project='project';self.client.token='fixture'
+        self.client=AsyncMock();self.client.endpoint='https://rds.example.invalid';self.client.project='project';self.client.token='fixture'
         self.ops=Network(self.client,PlanStore(Path(self.tmp.name)/'state.db'))
         self.env=patch.dict(os.environ,{'SUPABASE_ENABLE_WRITES':'true','HUAWEICLOUD_MCP_READ_ONLY':'false'});self.env.start();self.addCleanup(self.env.stop)
 
@@ -75,3 +75,11 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
         self.client.request.return_value=(200,{'security_group':{'id':GROUP}})
         await self.ops.show_group(GROUP)
         self.assertTrue(self.client.request.call_args.args[1].endswith(GROUP))
+
+    async def test_uses_shared_rds_origin_without_vpc_override(self):
+        from mcp_server_supabase.service.network import Network
+        with patch.dict(os.environ,{'SUPABASE_VPC_ENDPOINT':'https://stale.example.invalid'}), \
+             patch('mcp_server_supabase.service.operations.configured_client',return_value=self.client):
+            ops=Network(plans=self.ops.plans)
+        self.assertIs(ops.client,self.client)
+        self.assertEqual(ops.client.endpoint,'https://rds.example.invalid')

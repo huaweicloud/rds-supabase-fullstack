@@ -4,7 +4,7 @@
 
 ## 版本
 
-0.3.8a2（开发预发行版，未完成六场景全量生产验收）
+0.4.0a1（开发预发行版，未完成六场景全量生产验收）
 
 ## 概述
 
@@ -42,7 +42,7 @@ RDS 管理接口操作 Supabase 应用。SQL 与数据操作属独立数据面�
 - EIP 绑定/解绑
 - 应用账号改密（经本地受保护请求引用，不收集明文）
 
-**安全组（独立 VPC 入口）**
+**安全组（共享原生 RDS 入口）**
 
 - 安全组与规则查询、创建组、指定 TCP 端口规则增删
 
@@ -89,7 +89,7 @@ RDS 管理接口操作 Supabase 应用。SQL 与数据操作属独立数据面�
 | `plan_supabase_ssl` | SSL 切换规划 | READ | 证书步骤与缺口，无提交 |
 | `change_supabase_eip` | EIP 绑定/解绑（需确认） | WRITE | 绑定需 ID+IPv4；解绑须省略绑定参数 |
 | `change_supabase_application_password` | 应用改密（需确认） | DANGEROUS | 经本地 request_ref，不收集明文 |
-| `list_supabase_security_groups` | 安全组列表 | READ | 独立 VPC 入口 |
+| `list_supabase_security_groups` | 安全组列表 | READ | 共享原生 RDS 入口 |
 | `show_supabase_security_group` | 安全组详情 | READ | |
 | `create_supabase_security_group` | 创建安全组（需确认） | WRITE | 创建组不等于应用已可访问 |
 | `add_supabase_security_group_rule` | 添加入站规则（需确认） | DANGEROUS | 指定 TCP 端口（默认 8443） |
@@ -144,9 +144,16 @@ uv run python tests/smoke_stdio.py
 ```bash
 uv run python -m mcp_server_supabase.diagnostics check       # 只检查配置格式与依赖
 uv run python -m mcp_server_supabase.diagnostics offline     # 离线 stdio 自检
+# 从凭据自动发现项目与候选 RDS 入口（REST token 或 AK/SK 二选一）：
+uv run python -m mcp_server_supabase.diagnostics discover
+uv run python -m mcp_server_supabase.diagnostics discover --probe   # 追加只读可达性探测
 # 仅在已授权测试环境执行真实只读检查：
 uv run python -m mcp_server_supabase.diagnostics readonly --allow-cloud-read
 ```
+
+`discover` 联调 IAM 查询项目清单（REST 模式自查 Token 的项目作用域；sdk_core 模式列出
+AK/SK 可见项目），按区域推导候选入口并列出 `suggested_env` 供勾选；显式配置的
+`SUPABASE_RDS_ENDPOINT` 优先。探测可达不等于权限与生产验收。
 
 诊断 CLI 不提交云写操作，摘要不含资源值与凭据。
 
@@ -160,14 +167,13 @@ uv run python -m mcp_server_supabase.diagnostics readonly --allow-cloud-read
 
 | 变量 | 必填 | 说明 | 默认值 |
 |---|---|---|---|
-| `SUPABASE_RDS_ENDPOINT` | 是 | 原生 RDS HTTPS 服务入口（不含路径/查询/用户信息；非 Console 或 /rest 代理） | - |
+| `SUPABASE_RDS_ENDPOINT` | 是 | 原生 RDS HTTPS 服务入口（不含路径/查询/用户信息；非 Console 或 /rest 代理）。可由 `diagnostics discover` 从凭据推导生成 | - |
 | `HUAWEICLOUD_PROJECT_ID` | 是 | 目标项目 ID（与局点一致） | - |
 | `HUAWEICLOUD_AUTH_TOKEN` | REST 模式必填 | 外部预置的服务 Token，每次请求读取 | - |
 | `SUPABASE_TRANSPORT` | 否 | 设为 `sdk_core` 启用华为 SDK Core 签名模式 | REST token |
 | `HUAWEICLOUD_ACCESS_KEY` | sdk_core 模式必填 | 账号 AK | - |
 | `HUAWEICLOUD_SECRET_KEY` | sdk_core 模式必填 | 账号 SK | - |
 | `HUAWEICLOUD_SECURITY_TOKEN` | 否 | STS 临时凭据 token | - |
-| `SUPABASE_VPC_ENDPOINT` | 否 | 安全组场景独立原生 VPC 入口 | - |
 | `SUPABASE_ENABLE_WRITES` | 否 | 云写开关；`true` 才能执行云侧写操作 | `false` |
 | `HUAWEICLOUD_MCP_READ_ONLY` | 否 | `true` 拦截所有 WRITE/DANGEROUS 工具 | `false` |
 | `SUPABASE_STATE_FILE` | 否 | 本地执行账本（SQLite）路径；跨重启保持同一账本 | 用户本地状态目录 |

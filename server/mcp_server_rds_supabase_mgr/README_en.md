@@ -51,7 +51,7 @@ Database / RDS Supabase fully-managed lifecycle (control plane)
 - Application password change (via protected local request references; no
   plaintext collection)
 
-**Security groups (dedicated VPC endpoint)**
+**Security groups (shared native RDS origin)**
 
 - Query security groups and rules, create groups, add/remove TCP port rules
 
@@ -102,7 +102,7 @@ Database / RDS Supabase fully-managed lifecycle (control plane)
 | `plan_supabase_ssl` | SSL toggle planning | READ | Certificate steps and gaps, no submission |
 | `change_supabase_eip` | EIP bind/unbind (confirm required) | WRITE | Bind needs ID + IPv4; unbind must omit binding args |
 | `change_supabase_application_password` | Application password change (confirm required) | DANGEROUS | Via local request_ref, no plaintext |
-| `list_supabase_security_groups` | List security groups | READ | Dedicated VPC endpoint |
+| `list_supabase_security_groups` | List security groups | READ | Shared native RDS origin |
 | `show_supabase_security_group` | Security group detail | READ | |
 | `create_supabase_security_group` | Create security group (confirm required) | WRITE | Creating a group does not make the app reachable |
 | `add_supabase_security_group_rule` | Add inbound rule (confirm required) | DANGEROUS | TCP port specified (default 8443) |
@@ -157,9 +157,18 @@ uv run python tests/smoke_stdio.py
 ```bash
 uv run python -m mcp_server_supabase.diagnostics check       # config syntax and dependencies only
 uv run python -m mcp_server_supabase.diagnostics offline     # offline stdio self-check
+# Auto-discover projects and candidate RDS origins from credentials (REST token or AK/SK):
+uv run python -m mcp_server_supabase.diagnostics discover
+uv run python -m mcp_server_supabase.diagnostics discover --probe   # add a read-only reachability probe
 # Real read-only checks only in an authorized test environment:
 uv run python -m mcp_server_supabase.diagnostics readonly --allow-cloud-read
 ```
+
+`discover` queries IAM for the project list (REST mode inspects the token's
+project scope; sdk_core mode lists the projects visible to the AK/SK), derives
+candidate origins per region and emits a `suggested_env` block for selection;
+an explicitly configured `SUPABASE_RDS_ENDPOINT` always wins. A reachable probe
+is not permission or production acceptance.
 
 The diagnostics CLI never submits cloud writes and reports summary checks
 only — no raw resource values or credentials.
@@ -175,14 +184,13 @@ trusted host environment and are never tool arguments.
 
 | Variable | Required | Description | Default |
 |---|---|---|---|
-| `SUPABASE_RDS_ENDPOINT` | Yes | Native RDS HTTPS service origin (no path/query/userinfo; not the Console or a /rest proxy) | - |
+| `SUPABASE_RDS_ENDPOINT` | Yes | Native RDS HTTPS service origin (no path/query/userinfo; not the Console or a /rest proxy). Can be derived from credentials via `diagnostics discover` | - |
 | `HUAWEICLOUD_PROJECT_ID` | Yes | Target project ID (matching the site) | - |
 | `HUAWEICLOUD_AUTH_TOKEN` | REST mode | Externally provisioned service token, read per request | - |
 | `SUPABASE_TRANSPORT` | No | Set `sdk_core` to use Huawei SDK Core signing | REST token |
 | `HUAWEICLOUD_ACCESS_KEY` | sdk_core mode | Account AK | - |
 | `HUAWEICLOUD_SECRET_KEY` | sdk_core mode | Account SK | - |
 | `HUAWEICLOUD_SECURITY_TOKEN` | No | STS temporary credential token | - |
-| `SUPABASE_VPC_ENDPOINT` | No | Dedicated native VPC endpoint for security-group scenarios | - |
 | `SUPABASE_ENABLE_WRITES` | No | Cloud-write opt-in; cloud writes require `true` | `false` |
 | `HUAWEICLOUD_MCP_READ_ONLY` | No | `true` intercepts all WRITE/DANGEROUS tools | `false` |
 | `SUPABASE_STATE_FILE` | No | Local execution ledger (SQLite); keep one ledger across restarts | User-local state dir |

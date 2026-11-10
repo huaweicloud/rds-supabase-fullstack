@@ -55,6 +55,22 @@ class DiagnosticsTests(unittest.TestCase):
         self.assertGreaterEqual(len(report['checks']),5)
         self.assertNotIn('private-marker',result.stdout+result.stderr)
 
+    def test_discover_requires_credentials_without_network(self):
+        result=self.run_cli('discover')
+        self.assertEqual(result.returncode,2)
+        report=json.loads(result.stdout)
+        self.assertFalse(report['passed'])
+        self.assertFalse(report['network_attempted'])
+        self.assertNotIn('private-',result.stdout+result.stderr)
+
+    def test_discover_rejects_unknown_transport_without_network(self):
+        result=self.run_cli('discover',config={'SUPABASE_TRANSPORT':'unknown','HUAWEICLOUD_AUTH_TOKEN':'private-marker'})
+        self.assertEqual(result.returncode,2)
+        report=json.loads(result.stdout)
+        self.assertFalse(report['passed'])
+        self.assertFalse(report['network_attempted'])
+        self.assertNotIn('private-marker',result.stdout+result.stderr)
+
     def test_sdk_check_requires_ak_sk_not_token(self):
         config={'SUPABASE_TRANSPORT':'sdk_core','SUPABASE_RDS_ENDPOINT':'https://example.invalid',
             'HUAWEICLOUD_PROJECT_ID':'test-project','HUAWEICLOUD_ACCESS_KEY':'private-ak',

@@ -42,10 +42,10 @@ class SdkCoreClient:
         # Existing plan interface binds this opaque identity snapshot, never the raw secrets.
         self.token=hashlib.sha256(json.dumps(['sdk_core',self._ak,self._sk,self._security_token]).encode()).hexdigest()
 
-    async def request(self, method, path, body=None, query=None):
-        return await asyncio.to_thread(self._request,method,path,body,query)
+    async def request(self, method, path, body=None, query=None, headers=None):
+        return await asyncio.to_thread(self._request,method,path,body,query,headers)
 
-    def _request(self, method, path, body, query):
+    def _request(self, method, path, body, query, headers):
         sdk=None
         try:
             url=urlsplit(self.endpoint)
@@ -54,12 +54,18 @@ class SdkCoreClient:
                 raise McpToolError('MCP_INVALID_ARGS','Configure a verified HTTPS service origin')
             if not self._ak or not self._sk or any(c in v for v in (self._ak,self._sk,self._security_token) for c in ('\r','\n')):
                 raise McpToolError('MCP_PERMISSION_DENIED','Missing or invalid SDK credentials')
-            credentials=BasicCredentials(self._ak,self._sk,segment(self.project))
+            # Project-scoped signing only for service paths carrying the placeholder;
+            # placeholder-free paths (e.g. IAM global queries) sign at domain scope.
+            route = path.replace('{project}', segment(self.project)) if '{project}' in path else path
+            project_id = segment(self.project) if '{project}' in path else (self.project or None)
+            credentials=BasicCredentials(self._ak,self._sk,project_id)
             if self._security_token:credentials.with_security_token(self._security_token)
             config=HttpConfig(timeout=(10,30),retry_times=0,allow_redirects=False)
             sdk=ClientBuilder(QuietSdkClient).with_credentials(credentials).with_endpoint(self.endpoint).with_http_config(config).build()
-            response=sdk.do_http_request(method,path.replace('{project}',segment(self.project)),
-                query_params=list((query or {}).items()),header_params={'Content-Type':'application/json'},
+            request_headers={'Content-Type':'application/json'}
+            if headers:request_headers.update(headers)
+            response=sdk.do_http_request(method,route,
+                query_params=list((query or {}).items()),header_params=request_headers,
                 body=body,response_type=WireResponse)
             if not 200 <= response.status_code < 300:raise http_failure(response.status_code)
             raw=response.raw_content or b'{}'

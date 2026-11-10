@@ -1,11 +1,10 @@
-"""Native VPC v3 operations; independent endpoint, ledger and response contracts."""
+"""Native VPC v3 operations on the shared native RDS origin; independent ledger and response contracts."""
 import ipaddress
 import os
 import re
 import uuid
 from huaweicloud_mcp_core.errors import McpToolError
 from huaweicloud_mcp_core.guardrails import assert_not_protected
-from mcp_server_supabase.client.sdk_core import configured_client
 from mcp_server_supabase.failures import RecoveryError
 from mcp_server_supabase.service.operations import Operations, safe
 
@@ -19,12 +18,7 @@ def identifier(value):
     return value
 
 class Network(Operations):
-    def __init__(self,client=None,plans=None):
-        if client is None:
-            client=configured_client()
-            # Never silently send a VPC request to the RDS endpoint.
-            client.endpoint=os.getenv('SUPABASE_VPC_ENDPOINT','')
-        super().__init__(client,plans)
+    """VPC requests share the configured RDS origin, project identity and ledger."""
 
     async def list_groups(self,limit=10,marker=None):
         if type(limit) is not int or not 1<=limit<=100:

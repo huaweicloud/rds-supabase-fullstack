@@ -18,7 +18,11 @@ semantic versioning.
   orchestrator: stage state machine with gates, resumability via
   .hwsupabase/webapp.json, routing-only integration with the five specialist
   skills. Credentials never touch the agent (devkit-first injection with a
-  semi-automatic fallback). v1 backend boundary: data layer only; complex
+  semi-automatic fallback). Explicit progressive document-loading strategy:
+  SKILL.md stays resident; the five references load on stage/operation timing
+  (manifest contract before first read/write, stage playbook on stage entry,
+  routing matrix on demand, launch checklist at verification, lifecycle after
+  launch). v1 backend boundary: data layer only; complex
   business logic (payments / third-party calls / long tasks) is out of scope;
   FunctionGraph routing deferred to v2.
 

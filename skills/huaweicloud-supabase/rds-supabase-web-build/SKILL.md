@@ -124,10 +124,27 @@ requirements_confirmed → instance_ready → mcp_connected → backend_deployed
 - 管理面操作遵循其两阶段确认与执行账本；未知结果不重放、不删账本
 - 阶段门槛不通过不前进；强制门（③④）不可跳过
 
+## 文档加载策略
+
+本技能共 6 份文档（SKILL.md + 5 references），**渐进加载**：SKILL.md 随技能触发常驻（双工作流总图、状态机、门槛与红线足以推进到任一阶段入口）；references 按时机加载，未进入对应阶段或操作**不预读**。
+
+| 时机 | 加载 | 目的 |
+|---|---|---|
+| 会话开始（技能触发后第一动作） | 项目根 `.hwsupabase/webapp.json`（若存在） | 判断断点：从 `last_completed_stage` 下一阶段重入 |
+| 首次读写 webapp.json 前 | references/project-state.md | 契约字段与不变量 |
+| 进入任一阶段（⓪–⑥）执行前 | references/workflow-stages.md 对应阶段小节 | 该阶段输入/动作/门槛/失败处置 |
+| 任务归属技能/文档不明时 | references/routing-table.md | 正向/负向路由矩阵 |
+| ③ 生成 init.sql 前 | 【强制门】rds-supabase-postgres-best-practices 技能（+ init-sql-guide） | 质量规则逐条对照 |
+| ④ 生成前端前 | 【强制门】rds-supabase-usage 技能 | SDK 正确用法，避免运行时报错 |
+| ⑥ 上线验证前 | references/launch-checklist.md | 三层清单与上线报告格式 |
+| launched 之后的更新/回滚/下线/密钥轮换 | references/lifecycle.md | 生命周期工作流 |
+
+一次会话的典型加载量：SKILL.md + project-state.md + workflow-stages.md 当前阶段小节 + 阶段强制门技能（如有）。routing-table.md 仅在路由不明时查询；不在早期阶段预加载 launch-checklist.md 与 lifecycle.md。
+
 ## 参考文档
 
-- references/workflow-stages.md（⓪–⑥ 阶段 playbook）
-- references/lifecycle.md（更新/回滚/下线/密钥轮换）
-- references/project-state.md（webapp.json 契约）
-- references/routing-table.md（跨技能/MCP 路由矩阵）
-- references/launch-checklist.md（端到端上线清单）
+- references/workflow-stages.md（⓪–⑥ 阶段 playbook；进入对应阶段前读）
+- references/lifecycle.md（更新/回滚/下线/密钥轮换；launched 后读）
+- references/project-state.md（webapp.json 契约；首次读写前读）
+- references/routing-table.md（跨技能/MCP 路由矩阵；路由不明时查）
+- references/launch-checklist.md（端到端上线清单；⑥ 验证前读）

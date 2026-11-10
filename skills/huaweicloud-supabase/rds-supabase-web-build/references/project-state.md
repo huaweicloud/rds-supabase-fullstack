@@ -1,6 +1,6 @@
 # 项目状态契约（webapp.json）
 
-跨会话断点续作的载体。文件：项目根 `.hwsupabase/webapp.json`（目录排除 Git）。与 rds-supabase-frontend 技能的发布记录契约（`.hwsupabase/frontend/`）同根互补：**引用不复制**——前端版本/验收/回退记录以 frontend 契约为唯一权威。
+跨会话断点续作的载体。文件：项目根 `.hwsupabase/webapp.json`（目录排除 Git）。与 rds-supabase-frontend 技能的发布记录契约（`.hwsupabase/frontend/`）同根互补：**引用不复制**——前端版本/验收/回退记录以 frontend 契约为唯一权威。加载时机：首次读写 webapp.json 前。
 
 ## 通用规则
 

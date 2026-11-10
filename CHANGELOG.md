@@ -107,6 +107,13 @@ semantic versioning.
   handling — with a single pointer to the README/INSTALL for install matters.
   The skills validator no longer forbids README.md in skill directories
   (INSTALLATION_GUIDE.md and QUICK_REFERENCE.md remain forbidden).
+- Skill `rds-supabase-web-build` v0.3.1: the SKILL.md workflow is now rendered
+  as explicit per-stage step blocks (### ⓪–⑥, numbered actions, breakpoint
+  per stage, fixed stage cadence: declaration → actions → manifest write →
+  gate → report) instead of a dense table. The two dynamic-MCP-install steps
+  inline the complete copy-ready commands (git uvx template and local
+  `uv run --directory`, plus the exact env variable names) at the exact point
+  they are used, so the agent never has to search for how to install.
 
 - Skill `rds-supabase-frontend` v0.1.0 (renamed from `huawei-supabase-frontend`):
   private OBS + CDN static frontend

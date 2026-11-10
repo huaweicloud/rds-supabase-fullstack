@@ -12,7 +12,7 @@ Agent 按下述步骤执行即可；人类也可照读自查。安装阶段**只
 
 | 项 | 何时 | 说明 |
 |---|---|---|
-| **技能包（6 个技能）** | 现在，一次性（安装阶段的全部内容） | 从本 GitHub 源码仓克隆/添加到 Agent 技能目录 |
+| **技能包（全部技能）** | 现在，一次性（安装阶段的全部内容） | 从本 GitHub 源码仓克隆/添加到项目技能目录 |
 | 管理面 MCP（29 工具） | 工作流**步骤三**动态启动 | 由技能在工作流中安装（同样只从本仓，见下表）；凭据/Region/接入点/PROJECT_ID 由**步骤一**环境检查与配置处理 |
 | 数据面 MCP（38 工具） | 工作流**步骤四**动态安装 | 依赖实例网关 URL 与 API Key——实例在步骤三才创建/选定，届时凭据已就绪 |
 
@@ -46,16 +46,16 @@ Agent 执行以下 3 步。
 npx skills add huaweicloud/rds-supabase-fullstack
 ```
 
-方式 B（手动复制）：克隆仓库，把 `skills/huaweicloud-supabase/` 下六个技能目录复制到
-Agent 技能目录（opencode：`~/.config/opencode/skills/`；Claude Code：`~/.claude/skills/`；
+方式 B（手动复制）：克隆仓库，把 `skills/huaweicloud-supabase/` 下所有技能目录完整复制到
+项目技能目录（opencode：`~/.config/opencode/skills/`；Claude Code：`~/.claude/skills/`；
 其余宿主按其技能机制，Agent 自知位置）：
 
 ```bash
 git clone https://github.com/huaweicloud/rds-supabase-fullstack
-cp -r rds-supabase-fullstack/skills/huaweicloud-supabase/* <你的技能目录>/
+cp -r rds-supabase-fullstack/skills/huaweicloud-supabase/* <项目技能目录>/
 ```
 
-安装的六个技能：`rds-supabase-web-build`（编排总指挥）、`rds-supabase-mgr-mcp`、
+安装的全部技能：`rds-supabase-web-build`（编排总指挥）、`rds-supabase-mgr-mcp`、
 `rds-supabase-mcp`、`rds-supabase-usage`、`rds-supabase-frontend`、
 `rds-supabase-postgres-best-practices`。
 

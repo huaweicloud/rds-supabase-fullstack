@@ -12,15 +12,15 @@
 
 ## 一句话自然语言安装
 
-安装阶段**只安装 rds-supabase 技能包**（六个技能，从本 GitHub 源码仓克隆/添加）——不安装、不配置任何 MCP 与凭据。把下面这句话直接发给你的 AI Agent 即可：
+安装阶段**只安装 rds-supabase 技能包**（全部技能，从本 GitHub 源码仓克隆/添加）——不安装、不配置任何 MCP 与凭据。把下面这句话直接发给你的 AI Agent 即可：
 
-> 从 https://github.com/huaweicloud/rds-supabase-fullstack 克隆仓库，把 `skills/huaweicloud-supabase/` 下六个技能目录安装进你的技能目录，装完汇报已装技能清单与一句话建站触发语。
+> 从 https://github.com/huaweicloud/rds-supabase-fullstack 克隆仓库，把 `skills/huaweicloud-supabase/` 下所有 Skill 技能完整安装进项目技能目录，装完汇报已装技能清单与一句话建站触发语。
 
-简短版本（本技能已在 Agent 上下文时）：**"按 README 一句话自然语言安装节，安装 rds-supabase 技能包（六技能）并汇报。"**
+简短版本（本技能已在 Agent 上下文时）：**"按 README 一句话自然语言安装节，安装 rds-supabase 技能包（全部技能）并汇报。"**
 
 Agent 执行要点：
 
-1. **技能包（安装阶段的全部内容）**：`npx skills add huaweicloud/rds-supabase-fullstack`，或复制 `skills/huaweicloud-supabase/` 六个技能目录到技能目录
+1. **技能包（安装阶段的全部内容）**：`npx skills add huaweicloud/rds-supabase-fullstack`，或把 `skills/huaweicloud-supabase/` 下所有技能完整安装到项目技能目录
 2. **MCP 与凭据**：安装阶段**不涉及**——两台 MCP 服务器由技能工作流动态安装（管理面 → 步骤三、数据面 → 步骤四，同样只从本仓，见下表）；凭据、Region、接入点、PROJECT_ID 由步骤一环境检查与配置处理
 3. **汇报**：已装技能清单、触发语句示例（如"帮我建一个博客网站"）
 

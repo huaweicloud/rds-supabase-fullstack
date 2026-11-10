@@ -217,6 +217,11 @@ semantic versioning.
   first reply, and re-render the complete table at the head of every
   step report (current step ✅, next step 🔄), giving the user a direct,
   always-current perception of the whole flow.
+- Skill `rds-supabase-web-build` v0.6.4: install wording no longer
+  hardcodes the skill count — the one-sentence install now installs all
+  skills under `skills/huaweicloud-supabase/` completely into the project
+  skill directory; the count-free wording is applied consistently across
+  the README install section, INSTALL.md and the SKILL.md prerequisites.
 
 - Skill `rds-supabase-frontend` v0.1.0 (renamed from `huawei-supabase-frontend`):
   private OBS + CDN static frontend

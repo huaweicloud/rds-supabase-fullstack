@@ -21,20 +21,21 @@
 
 1. 声明步骤一
 2. **凭据检查**：devkit 登录态，或 AK/SK（或服务 Token）位于受保护文件；缺失 → 计入缺失清单
-3. **Region（局点）确认**：`HUAWEICLOUD_REGION` 已选择——OBS 接入点推导与桶区域的前提；缺失 → 计入缺失清单
-4. **RDS 接入点**：`SUPABASE_RDS_ENDPOINT` 已配置 → 直接采用；未配置且凭据就绪 → 运行 `diagnostics discover`（`uv run --directory server/mcp_server_rds_supabase_mgr python -m mcp_server_supabase.diagnostics discover`，可加 `--probe`）→ 从 `suggested_env` 勾选并采纳；无法推导（非标准区域命名 / probe 不可达 / 报错）→ 要求用户显式指定
-5. **OBS 接入点**：按 Region 推导（`obs.<region>.myhuaweicloud.com`，KooCLI/SDK 自动解析）；无法推导 → 要求用户显式指定
-6. **PROJECT_ID**：已配置 → 采用；未配置 → `diagnostics discover` 勾选；无法获取 → 要求用户显式指定
-7. **缺失清单处置**：存在缺失项 → 以**对接卡片**表格呈现（检查项 | 状态 ✅/❌/⏳ | 获取方式，格式见 SKILL.md 输出格式），显式提醒用户逐项设置并等待补齐（不得猜测、不得跳过、不得以默认值代替）；补齐后重新检查
-8. 全部就绪 → 写 webapp.json（stages: environment_ready）→ gate → 步骤报告
+3. **uv（含 uvx）可用**——步骤三/四动态安装 MCP 的前提（`uv --version` 验证）；缺失 → 计入缺失清单并提醒用户安装（`curl -LsSf https://astral.sh/uv/install.sh | sh`）
+4. **Region（局点）确认**：`HUAWEICLOUD_REGION` 已选择——OBS 接入点推导与桶区域的前提；缺失 → 计入缺失清单
+5. **RDS 接入点**：`SUPABASE_RDS_ENDPOINT` 已配置 → 直接采用；未配置且凭据就绪 → 运行 `diagnostics discover`（`uv run --directory server/mcp_server_rds_supabase_mgr python -m mcp_server_supabase.diagnostics discover`，可加 `--probe`）→ 从 `suggested_env` 勾选并采纳；无法推导（非标准区域命名 / probe 不可达 / 报错）→ 要求用户显式指定
+6. **OBS 接入点**：按 Region 推导（`obs.<region>.myhuaweicloud.com`，KooCLI/SDK 自动解析）；无法推导 → 要求用户显式指定
+7. **PROJECT_ID**：已配置 → 采用；未配置 → `diagnostics discover` 勾选；无法获取 → 要求用户显式指定
+8. **缺失清单处置**：存在缺失项 → 以**对接卡片**表格呈现（检查项 | 状态 ✅/❌/⏳ | 获取方式，格式见 SKILL.md 输出格式），显式提醒用户逐项设置并等待补齐（不得猜测、不得跳过、不得以默认值代替）；补齐后重新检查
+9. 全部就绪 → 写 webapp.json（stages: environment_ready）→ gate → 步骤报告
 
-**输出断言**：🔍 凭据、Region、RDS 接入点、OBS 接入点、PROJECT_ID 全部已配置或已解析（缺失清单为空）｜🤖 gate PASS
+**输出断言**：🔍 凭据、uv、Region、RDS 接入点、OBS 接入点、PROJECT_ID 全部已配置或已解析（缺失清单为空）｜🤖 gate PASS
 
 **工具白名单**：允许：`diagnostics discover`（只读 IAM 查询）、读写 webapp.json；禁止：一切业务 MCP 工具（管理面尚未启动，实例操作不得提前执行）
 
 **黄金路径**：
 ```
-声明步骤一 → devkit 已登录（凭据 ✓）→ REGION=cn-north-4 ✓
+声明步骤一 → devkit 已登录（凭据 ✓）→ uv --version ✓ → REGION=cn-north-4 ✓
 → discover --probe → 勾选 p-123 / 采纳 https://rds.cn-north-4.myhuaweicloud.com ✓
 → OBS 接入点按 Region 推导 obs.cn-north-4.myhuaweicloud.com ✓ → PROJECT_ID=p-123 ✓
 → 缺失清单为空 → 写 webapp.json(environment_ready) → gate PASS → 步骤报告（下一步骤预告：需求澄清）

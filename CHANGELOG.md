@@ -194,6 +194,16 @@ semantic versioning.
   node bulletins announce long-running actions before and after
   (action · object · outcome). Trace contract documents tool naming and the
   two audits; 27 tests cover the gate suite including the new checks.
+- Skill `rds-supabase-web-build` v0.6.1: install scope corrected to the skill
+  pack only. The one-sentence natural-language install and INSTALL.md now
+  install just the six skills from this GitHub repository — no MCP servers,
+  no credentials and no mcpServers placeholders at install time. Both MCP
+  servers are installed dynamically by the skill's own workflow steps
+  (control plane → stage 3, data plane → stage 4), still repo-source-locked
+  with copy-ready commands in the README/INSTALL reference table; the stage-1
+  environment check gains a uv/uvx availability item (prerequisite for the
+  dynamic MCP installs) with install guidance, and the prerequisites section
+  states that the skill pack is the sole install artifact.
 
 - Skill `rds-supabase-frontend` v0.1.0 (renamed from `huawei-supabase-frontend`):
   private OBS + CDN static frontend

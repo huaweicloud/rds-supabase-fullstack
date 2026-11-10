@@ -3,7 +3,7 @@ name: rds-supabase-web-build
 description: 'RDS Supabase 全栈开发编排技能：AI Agent 通过自然语言创建并托管 Web 应用网站的端到端工作流——前端代码生成、后端 init.sql（DDL/GRANT/RLS/RPC）生成与部署、前端静态资源 OBS+CDN 全托管、端到端上线与生命周期管理（更新/回滚/下线）。Use when：创建 Web 网站、搭建 AI 应用、全栈应用从零到上线、已有 RDS Supabase 应用的迭代更新与托管维护。编排管理面 MCP（实例生命周期）与数据面 MCP（动态安装）及 rds-supabase-mgr-mcp / rds-supabase-mcp / rds-supabase-usage / rds-supabase-frontend / rds-supabase-postgres-best-practices 五个专项技能。v1 后端边界为数据层；复杂业务逻辑（支付/第三方调用/长任务）不在 v1 范围，SSR 后端部署不支持。'
 license: MIT
 metadata:
-  version: "0.2.1"
+  version: "0.2.2"
 ---
 
 # RDS Supabase 全栈开发编排（web-build）
@@ -35,6 +35,21 @@ RDS Supabase 全栈开发的**总指挥技能**：用户以一句话（"建一�
 - **数据面**：`mcp_server_rds_supabase`（38 工具）——init.sql 执行、结构查询、RLS/advisors
 - **后端轨**：产出 init.sql（DDL/GRANT/RLS/RPC/种子），运行于 RDS Supabase（PostgREST/GoTrue）
 - **前端轨**：产出静态站点（默认 React+Vite+TS + supabase-js），托管于 OBS+CDN
+
+## 一句话自然语言安装
+
+把下面这句话直接发给你的 AI Agent，即可安装整套 Supabase 技能（6 个技能 + 双 MCP，无需先递交任何文档）：
+
+> 从 https://github.com/huaweicloud/rds-supabase-fullstack 克隆仓库，把 `skills/huaweicloud-supabase/` 下六个技能目录安装进你的技能目录，并只从本仓安装管理面 MCP（uvx `--from git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr`，入口脚本 `mcp-huaweicloud-rds-supabase-mgr`；凭据 devkit 优先、缺失项列清单让我填写、初始只读；**禁止**从 PyPI 或第三方仓搜索同名包），数据面 MCP **不装**（建站流程 ② 阶段动态安装），装完汇报技能清单、管理面工具数与一句话建站触发语。
+
+短版（本技能已在 Agent 上下文时）：**"按 SKILL.md 一句话自然语言安装节，装好 rds-supabase-web-build 全套并汇报。"**
+
+Agent 执行要点（完整指导与排错见 [INSTALL.md](INSTALL.md)）：
+
+1. **技能**：`npx skills add huaweicloud/rds-supabase-fullstack`，或复制 `skills/huaweicloud-supabase/` 六个技能目录到技能目录
+2. **管理面 MCP**：仅本仓来源（uvx git 模板 / 本地 `uv run --directory`；生产建议 pin `@<commit>`）；凭据注入顺序 devkit → `diagnostics discover` 勾选 → 半自动兜底；初始 `HUAWEICLOUD_MCP_READ_ONLY=true` + `SUPABASE_ENABLE_WRITES=false`
+3. **数据面 MCP**：**刻意不装**——实例在 ① 阶段创建后，② 阶段按 rds-supabase-mcp 技能 `references/install.md` 动态安装
+4. **汇报**：已装技能清单、管理面工具数与只读状态、触发语句示例（如"帮我建一个博客网站"）
 
 ## 适用范围
 

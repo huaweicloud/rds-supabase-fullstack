@@ -74,13 +74,21 @@ semantic versioning.
   the gate script enforces.
 - Skill `rds-supabase-web-build` v0.2.1: RLS verification semantics made
   precise — REST acceptance now requires anon data visibility to match the
-  design (public tables return rows, protected tables return an empty set;
-  RLS rejection is a restricted result, never a 4xx/5xx status code), and a
+  design (public tables return rows, protected tables return an empty set; RLS
+  rejection is a restricted result, never a 4xx/5xx status code), and a
   mandatory multi-user isolation spot check joins the stage-6 connectivity
   layer (two test accounts created via data-plane user management must see
   none of each other's rows). The uvx install templates now carry a
   production pin recommendation (`@<commit>` on the `--from` git URL) in
   both the install guide and the stage-1 playbook.
+- Skill `rds-supabase-web-build` v0.2.2: SKILL.md gains a self-bootstrapping
+  natural-language install section — a single paste-ready sentence installs
+  the whole suite (six skills from `skills/huaweicloud-supabase/` plus the
+  control-plane MCP, repo-source-locked, credentials devkit-first with a
+  fill-in checklist, data-plane MCP deliberately deferred to stage 2) without
+  handing the agent any file first; a short variant covers the case where the
+  skill is already in context, and a four-point execution digest links to
+  INSTALL.md for the full guide and troubleshooting.
 
 - Skill `rds-supabase-frontend` v0.1.0 (renamed from `huawei-supabase-frontend`):
   private OBS + CDN static frontend

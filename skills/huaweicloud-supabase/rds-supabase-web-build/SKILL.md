@@ -12,6 +12,8 @@ metadata:
 
 RDS Supabase 全栈开发的**总指挥技能**：用户以一句话（"建一个网站"/"搭一个 AI 应用"）触发，AI Agent 走完前端与后端的代码生成、部署运行、托管上线的完整链路。本技能是厚工作流编排者——拥有阶段状态机、通过门槛、失败处置与断点续作；各环节深度内容由专项技能承载，本技能只路由、不复制。
 
+整体交互链路总览（阶段 × 路由 × 双 MCP × 云资源 × 运行态）：**[框架流程图（SVG）](assets/framework.svg)**
+
 双工作流总图：
 
 ```
@@ -148,3 +150,4 @@ requirements_confirmed → instance_ready → mcp_connected → backend_deployed
 - references/project-state.md（webapp.json 契约；首次读写前读）
 - references/routing-table.md（跨技能/MCP 路由矩阵；路由不明时查）
 - references/launch-checklist.md（端到端上线清单；⑥ 验证前读）
+- assets/framework.svg（整体交互链路框架图；需要总览/沟通时查看，非常驻加载）

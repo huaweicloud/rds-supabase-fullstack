@@ -77,6 +77,8 @@ def make_project(tables=("public.posts", "public.users"), exposed=("public.posts
                      ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"],
                      "credential_source": "protected_file", "region": "cn-north-4"},
         "obs": {"bucket_name": "demo", "source": "created", "naming_basis": "app_name_slug"},
+        "mcp": {"registration_scope": "project",
+                "config_paths": {"mgr": ".opencode/mcp.json", "data": ".opencode/mcp.json"}},
         "backend": {"current_batch": "b1", "deployments": [deployment],
                     "teardown_ref": ".hwsupabase/teardown.sql"},
         "frontend": {"record_ref": ".hwsupabase/frontend/prod/environment.json",
@@ -208,6 +210,50 @@ class ObsContractTests(unittest.TestCase):
         project = self._edit_obs(lambda obs: obs.update(source="selected", naming_basis=None))
         result = run_gate(project, "check-contract")
         self.assertEqual(result.returncode, 0, result.stdout)
+
+
+class McpRegistrationTests(unittest.TestCase):
+    def _edit_mcp(self, mutate):
+        project = make_project()
+        path = project / ".hwsupabase" / "webapp.json"
+        data = json.loads(path.read_text())
+        mutate(data["mcp"])
+        path.write_text(json.dumps(data))
+        return project
+
+    def test_fail_mcp_user_scope(self):
+        project = self._edit_mcp(lambda m: m.update(registration_scope="user"))
+        result = run_gate(project, "check-contract")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("registration_scope", result.stdout)
+
+    def test_fail_mcp_absolute_path(self):
+        project = self._edit_mcp(lambda m: m["config_paths"].update(mgr="/Users/fitz/.claude.json"))
+        result = run_gate(project, "check-contract")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("config_paths.mgr", result.stdout)
+
+    def test_fail_mcp_home_tilde_path(self):
+        project = self._edit_mcp(lambda m: m["config_paths"].update(data="~/.config/opencode/opencode.json"))
+        result = run_gate(project, "check-contract")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("config_paths.data", result.stdout)
+
+    def test_fail_mcp_missing_from_instance_ready(self):
+        project = make_project()
+        path = project / ".hwsupabase" / "webapp.json"
+        data = json.loads(path.read_text())
+        del data["mcp"]
+        path.write_text(json.dumps(data))
+        result = run_gate(project, "check-stage", "--stage", "instance_ready")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("config_paths.mgr", result.stdout)
+
+    def test_fail_mcp_data_missing_from_mcp_connected(self):
+        project = self._edit_mcp(lambda m: m["config_paths"].pop("data"))
+        result = run_gate(project, "check-stage", "--stage", "mcp_connected")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("config_paths.data", result.stdout)
 
 
 class TeardownTests(unittest.TestCase):

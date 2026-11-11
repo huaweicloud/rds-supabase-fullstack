@@ -40,7 +40,7 @@ Agent 执行要点：
 
 ## MCP 安装来源（工作流动态安装时使用；唯一允许的完整 URL）
 
-两台 MCP 不在安装阶段出现，由技能工作流按需动态安装（管理面 → 步骤三、数据面 → 步骤四）。动态安装时可直接复制使用，本地未克隆仓库也不必搜索：
+两台 MCP 不在安装阶段出现，由技能工作流按需动态安装（管理面 → 步骤三、数据面 → 步骤四）。动态安装时可直接复制使用，本地未克隆仓库也不必搜索。**注册位置强约束**：动态安装后只注册进**当前项目的项目级 MCP 配置**（Claude Code `.mcp.json`、CodeArts `.codeartsdoer/`、OfficeAce 项目级配置、opencode `opencode.json`；禁止一切用户级/系统级位置——详见 rds-supabase-mcp 技能 references/install.md）：
 
 | MCP | 入口脚本 | README（完整 URL） |
 |---|---|---|

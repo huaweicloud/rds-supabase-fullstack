@@ -82,6 +82,17 @@
 
 1. 声明步骤三；复核步骤一环境配置（凭据 / Region / RDS·OBS 接入点 / PROJECT_ID）仍就绪，发现缺项 → 返回步骤一补齐
 2. **管理面就绪**：检测已连接 MCP（devkit 预初始化）；无则动态启动——**安装来源只允许本仓**：uvx 模板 `git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr`（入口 `mcp-huaweicloud-rds-supabase-mgr`；**生产建议 pin `@<commit>` 锁定版本，避免默认分支变更引入未验证行为**）或本地 `uv run --directory <仓>/server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr`；**禁止**从 PyPI/第三方仓搜索安装（存在同名第三方包）。启动 env **凭据模式二选一**：REST token（`HUAWEICLOUD_AUTH_TOKEN`，默认 `SUPABASE_TRANSPORT=rest`）或 **AK/SK（必须设置 `SUPABASE_TRANSPORT=sdk_core`**，读取 `HUAWEICLOUD_ACCESS_KEY`/`HUAWEICLOUD_SECRET_KEY`/可选 `HUAWEICLOUD_SECURITY_TOKEN`——用户已填 AK/SK 而未设 `sdk_core` 将按 REST 模式启动并失败）。**网络逃生通道**：uvx git 拉取失败或停滞（含代理后仍不通；连续失败 2 次或 30 秒无进展即判失败）→ **立即切换** ZIP 归档（`TMP=$(mktemp -d)`，`curl -L --fail --max-time 120 -o "$TMP/rds.zip" https://github.com/huaweicloud/rds-supabase-fullstack/archive/refs/heads/main.zip && unzip -q "$TMP/rds.zip" -d "$TMP"`；浏览器直接下载该 URL 亦**落临时目录**）+ 本地模板 `uv run --directory "$TMP/rds-supabase-fullstack-main/server/mcp_server_rds_supabase_mgr" mcp-huaweicloud-rds-supabase-mgr`——**下载物一律落唯一临时目录（mktemp -d），不污染项目目录/家目录；MCP 运行期间保留、停止后清理**——ZIP 属本仓官方源，不违反来源锁定，仍禁 PyPI/第三方源。启动后遵循 mgr-mcp 技能两阶段确认与执行账本
+   **注册位置（项目级强约束）**——MCP 启动后只注册进当前项目的项目级 MCP 配置（当前项目之外不可见；用户级/系统级注册 = 本机所有项目可见可用 = 边界溢出，严禁）：
+
+   | 宿主 | 项目级 MCP 配置（唯一允许） | 条目结构 | 禁止（用户级/系统级） |
+   |---|---|---|---|
+   | Claude Code | `<项目根>/.mcp.json`（project scope） | `mcpServers` 键 | `~/.claude.json`（user scope）、Claude Desktop `claude_desktop_config.json`、系统 managed 配置 |
+   | CodeArts | `<项目根>/.codeartsdoer/` 下项目级 MCP 配置（与技能目录同根） | 按宿主项目级结构 | `~/.codeartsdoer/` 个人级（同名不同根） |
+   | OfficeAce | 项目根下该宿主项目级 MCP 配置（Agent 自知位置，以项目根为界） | 按宿主项目级结构 | `~` 家目录与系统目录下的一切该宿主配置 |
+   | opencode | `<项目根>/opencode.json` 或 `.opencode/` 内配置 | `mcp` 键 | `~/.config/opencode/` 全局配置 |
+   | 其余宿主 | 该宿主项目级机制（Agent 自知位置，以项目根为界） | 按宿主项目级结构 | 同上 |
+
+   规则：宿主仅有用户级机制 → **停止并报告，不注册**（宁缺毋溢出）；配置含凭据 → 该文件列入 `.gitignore`、0600，凭据由用户从 secrets/ 复制填入（agent 不经手明文）；**严禁 `uv tool install`/`pip install` 装入用户级/系统级环境**——`uvx` 为一次性缓存运行（共享构建缓存非安装非注册，不落命令行入口），本地克隆 `.venv` 只落仓内目录；**注册后核验落位**：确认条目存在于项目级配置且未触碰任何用户级/系统级位置 → 客户端重载 → 连接验证 → 写 webapp.json `mcp` 段（`registration_scope`/`config_paths.mgr`，契约见 project-state.md）
 3. **实例接入方式——交互式勾选（强制，禁止跳过）**：以选择清单形式向用户呈现「使用已有 Supabase 应用 / 新建 Supabase 应用」，**未获用户显式选择不得推进，不得代为默认**（步骤二费用预估在先，本步骤执行用户已确认的方案）：
    - **使用已有**：`list_supabase_applications` → 列表展示（application_id/名称/状态/规格）供用户勾选 → `show_supabase_application` 核验（normal/running、无进行中任务、网关可达）→ **随即执行第 4 项（凭据获取）**：网关 URL 与两类密钥为步骤四数据面 MCP 动态安装的必需输入，不得遗漏
    - **新建**：`plan_supabase_creation` + `create_supabase_application`（仅 Single；关联已有 PG 或新 PG）→ 配置 EIP、安全组（8443 入站）、SSL → 等待协议轮询 job；创建完成后**同样必须执行第 4 项**（凭据获取）；创建安全组 ≠ 可访问，须规则放通并核验
@@ -90,9 +101,9 @@
    - **使用已有**：列出租户桶 → **候选过滤：仅保留满足静态托管要求的公开读桶**——匿名 GetObject 未获授权的非公开桶一律剔除，**不得出现在候选列表中**；候选展示（桶名/区域/存储类别）供用户勾选 → 核验选中桶区域与项目 Region 一致、具备静态网站托管能力
    - **新建**：**桶名默认与应用名称保持一致**——应用名称英文化：转小写，非 ASCII 与非法字符映射为连字符、连续连字符压缩为单个、去除首尾连字符、长度裁剪至 3–63；**名称冲突（同名桶已存在）→ 追加短 uuid 后缀**（连字符连接，形如 `my-webapp-3f2a1b9c`；再次冲突则重新生成后缀并复核唯一性）；最终桶名经用户确认后由 frontend 技能创建并配置公开读策略
    - 域名/证书条件核对，不齐备则步骤七前补齐
-6. 写 webapp.json（instance 段 + `obs` 段：`bucket_name`/`source`/`naming_basis`，契约见 project-state.md）→ gate → 步骤报告
+6. 写 webapp.json（instance 段 + `obs` 段：`bucket_name`/`source`/`naming_basis` + `mcp` 段：`registration_scope`/`config_paths.mgr`，契约见 project-state.md）→ gate → 步骤报告
 
-**输出断言**：🔍 实例 running 且实际可访问，接入方式经用户显式勾选确认｜🔍 桶就绪且接入方式经用户显式勾选确认（公开读核验通过）｜🤖 gate PASS（instance 契约 + `source` 枚举 + obs 契约）
+**输出断言**：🔍 实例 running 且实际可访问，接入方式经用户显式勾选确认｜🔍 桶就绪且接入方式经用户显式勾选确认（公开读核验通过）｜🔍 管理面 MCP 注册落位项目级配置（核验通过，未触碰用户级/系统级）｜🤖 gate PASS（instance 契约 + `source` 枚举 + obs 契约 + mcp 契约）
 
 **工具白名单**：允许：管理面 list/show/plan/create/wait/ApiKey 交付、`diagnostics discover`、frontend 技能 KooCLI（OBS 桶）；禁止：数据面 MCP（尚未安装）、一切 SQL 执行
 
@@ -102,7 +113,8 @@
 → list_supabase_applications → 用户勾选 app-123 → show_supabase_application 核验 normal
 → list_supabase_api_keys + deliver → 受保护文件（agent 不见明文）
 → 呈现 OBS 桶接入方式选择清单：用户勾选「新建」→ 桶名取应用名英文化 webapp-demo（无冲突，用户确认）
-→ frontend 技能建桶 + 公开读策略 → 写 webapp.json(instance.source=selected, obs.source=created)
+→ frontend 技能建桶 + 公开读策略 → 管理面 MCP 注册项目级配置（如 .opencode/mcp.json）+ 核验未触碰用户级/系统级
+→ 写 webapp.json(instance.source=selected, obs.source=created, mcp.registration_scope=project)
 → gate PASS → 步骤报告（步骤三）（下一步骤预告：重载客户端后安装数据面 MCP）
 ```
 
@@ -120,18 +132,20 @@
 2. 按 `rds-supabase-mcp 技能 references/install.md` 动态安装；**来源只允许本仓**——完整命令：`uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack --subdirectory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase`（或本地克隆 `uv run --directory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase`；服务器文档：https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase/README.md ）。**网络逃生通道**：uvx git 拉取失败或停滞（含代理后仍不通；连续失败 2 次或 30 秒无进展即判失败）→ **立即切换** ZIP 归档（`TMP=$(mktemp -d)`，`curl -L --fail --max-time 120 -o "$TMP/rds.zip" https://github.com/huaweicloud/rds-supabase-fullstack/archive/refs/heads/main.zip && unzip -q "$TMP/rds.zip" -d "$TMP"`；浏览器直接下载该 URL 亦**落临时目录**）+ 本地模板 `uv run --directory "$TMP/rds-supabase-fullstack-main/server/mcp_server_rds_supabase" mcp-server-huaweicloud-rds-supabase`——**下载物一律落唯一临时目录（mktemp -d），不污染项目目录/家目录；MCP 运行期间保留、停止后清理**——ZIP 属本仓官方源，不违反来源锁定。禁止搜索 PyPI 同名包
 3. 凭据注入双路径：**devkit 优先**（已注入 → 直接验证）。数据面**无 `SUPABASE_TRANSPORT` 参数、不使用华为云 AK/SK**——凭据为网关三件套（`SUPABASE_URL` + 两把 Key）；**半自动备选路径**（agent 生成含占位符的 mcpServers 配置模板 → 用户从**项目内**受保护文件 `.hwsupabase/secrets/` 复制实际值填入 → 客户端重载；agent 全程不接触明文）。**注入作用域限于 MCP 进程**（进程 env 或项目内 0600 凭据文件）——不 `export` 到 shell 会话、不写入 shell profile 或任何全局/个人级配置
 4. **访问协议跟随实例 SSL 状态**（`SUPABASE_URL` 取值规则）：开启 SSL → `https://`；未开启 → `http://`（**不强制 HTTPS 交互**；步骤三已将 `instance.ssl_enabled` 记入 webapp.json，gate `--verify` 对 `ssl_enabled=false` 放行 http）
-5. 验证：`get_project_url` 返回 == 网关地址；`list_tables` 正常应答
-6. 写 webapp.json（stages: mcp_connected）→ gate → 步骤报告
+5. **注册纪律（与步骤三同表同禁令）**：数据面 MCP **只注册进当前项目的项目级 MCP 配置**（宿主仅有用户级机制 → 停止并报告，不注册；含凭据的配置文件列入 `.gitignore`、0600）；注册后核验落位 → 客户端重载 → 写 webapp.json `mcp.config_paths.data`
+6. 验证：`get_project_url` 返回 == 网关地址；`list_tables` 正常应答
+7. 写 webapp.json（stages: mcp_connected + `mcp.config_paths.data`）→ gate → 步骤报告
 
-**输出断言**：🔍 `get_project_url` 与网关一致 + `list_tables` 应答（连通性以工具结果证明）｜🤖 gate PASS
+**输出断言**：🔍 `get_project_url` 与网关一致 + `list_tables` 应答（连通性以工具结果证明）｜🔍 数据面 MCP 注册落位项目级配置（核验通过，未触碰用户级/系统级）｜🤖 gate PASS
 
 **工具白名单**：允许：数据面 `get_project_url`、`list_tables`（仅验证）；禁止：`execute_sql`（步骤五才用）、一切写工具
 
 **黄金路径**：
 ```
 声明步骤四 → 渲染 install.md 模板（占位符）→ 用户从受保护文件复制实际值填入 → 客户端重载
+→ 数据面 MCP 注册进项目级配置（如 .opencode/mcp.json）+ 核验未触碰用户级/系统级
 → get_project_url == https://gw.example:8443 ✓（本例 SSL 开启；未开启时为 http://，gate 按 ssl_enabled=false 放行）→ list_tables 应答 ✓
-→ 写 webapp.json(mcp_connected) → gate PASS → 步骤报告（步骤四）
+→ 写 webapp.json(mcp_connected, mcp.config_paths.data) → gate PASS → 步骤报告（步骤四）
 ```
 
 **失败处置**：401/403 → 核对凭据注入路径；连接失败 → 网关地址/安全组规则；重载后仍失败 → 检查旧环境残留（连续失败中止规则：连续 2 次失败即停下报告）。**断点**：`mcp_connected`

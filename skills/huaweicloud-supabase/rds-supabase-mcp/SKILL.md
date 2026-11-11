@@ -4,7 +4,7 @@ description: '华为云 RDS Supabase 管理技能：服务 Web 全栈开发流�
 license: MIT
 metadata:
   tags: [huawei-cloud, rds, supabase, postgresql, mcp, database, baas]
-  version: "2.6.0"
+  version: "2.6.1"
 ---
 
 # 华为云 RDS Supabase 管理

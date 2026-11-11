@@ -106,7 +106,7 @@ MCP 与凭据不在安装阶段出现，首次建站时技能从步骤一环境�
 
 ## MCP 项目地址与安装方式（工作流动态安装时使用；只允许本仓来源）
 
-两台 MCP 由技能工作流动态安装（管理面 → 步骤三、数据面 → 步骤四）。下表供届时直接
+两台 MCP 由技能工作流动态安装（管理面 → 步骤三、数据面 → 步骤四）；届时**只注册进当前项目的项目级 MCP 配置**（Claude Code `.mcp.json`、CodeArts `.codeartsdoer/`、OfficeAce 项目级配置、opencode `opencode.json`——禁止 `~/.claude.json`、Claude Desktop、`~/.config/opencode/` 等一切用户级/系统级位置，详见 rds-supabase-mcp 技能 references/install.md）。下表供届时直接
 复制使用，本地未克隆仓库也不必搜索：
 
 | MCP | 仓内路径 | 入口脚本 | git uvx 模板 | 本地克隆运行 |

@@ -33,6 +33,7 @@
 | project | object | 见下 |
 | instance | object/null | 未进入步骤三时为 `null` |
 | obs | object/null | 未进入步骤三时为 `null` |
+| mcp | object/null | 未进入步骤三时为 `null` |
 | backend | object/null | 未部署时为 `null` |
 | frontend | object/null | 未生成时为 `null` |
 | stages | object | 见下 |
@@ -64,6 +65,13 @@
 | bucket_name | string | 选定或新建的桶名：3–63 字符，仅小写字母、数字与连字符，以字母或数字开头与结尾 |
 | source | string | `created`（本流程新建，桶名经用户确认）或 `selected`（步骤三用户自公开读候选勾选） |
 | naming_basis | string/null | `created` 时必填：`app_name_slug`（应用名英文化）或 `app_name_slug_uuid`（英文化后名称冲突，追加短 uuid 后缀）；`selected` 时为 `null` |
+
+### mcp
+
+| 字段 | 类型 | 规则 |
+|---|---|---|
+| registration_scope | string | 固定 `project`——两台 MCP 只注册进当前项目的项目级 Agent 配置，其他项目不可见（用户级/系统级注册属边界溢出，禁止）；gate 校验枚举 |
+| config_paths | object | 必含 `mgr`（instance_ready 起必填）与 `data`（mcp_connected 起必填），值为**项目根相对路径**（以 `.` 开头，如 `.opencode/mcp.json`）；禁止绝对路径、`~` 与 `..`——gate 机器核验，即项目级隔离的结构化保障 |
 
 ### backend
 

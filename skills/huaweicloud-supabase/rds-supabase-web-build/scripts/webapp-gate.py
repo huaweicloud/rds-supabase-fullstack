@@ -129,6 +129,26 @@ def check_contract(data, missing):
                 missing.append("obs.naming_basis must be 'app_name_slug' or 'app_name_slug_uuid' when source is 'created'")
             if obs.get("source") == "selected" and obs.get("naming_basis") is not None:
                 missing.append("obs.naming_basis must be null when source is 'selected'")
+    mcp = data.get("mcp")
+    if mcp is not None:
+        if not isinstance(mcp, dict):
+            missing.append("mcp must be an object or null")
+        else:
+            if mcp.get("registration_scope") != "project":
+                missing.append("mcp.registration_scope must be 'project' "
+                               "(project-level MCP registration only; user/system scope is forbidden)")
+            paths = mcp.get("config_paths")
+            if not isinstance(paths, dict):
+                missing.append("mcp.config_paths must be an object")
+            else:
+                for plane in ("mgr", "data"):
+                    value = paths.get(plane)
+                    if value is None:
+                        continue
+                    if not (isinstance(value, str) and value.startswith(".") and not value.startswith("..")
+                            and "~" not in value and not os.path.isabs(value)):
+                        missing.append(f"mcp.config_paths.{plane} must be a project-relative path starting "
+                                       "with '.' (absolute paths, '~' and '..' are forbidden)")
     backend = data.get("backend")
     if backend is not None:
         if not isinstance(backend, dict) or not isinstance(backend.get("deployments"), list):
@@ -203,6 +223,15 @@ def check_stage(data, stage, missing, project_dir=None):
     if stage in ("instance_ready", "mcp_connected", "backend_deployed", "frontend_built",
                  "hosting_published", "launched") and not isinstance(data.get("obs"), dict):
         missing.append("obs section missing from instance_ready onward")
+    if stage in ("instance_ready", "mcp_connected", "backend_deployed", "frontend_built",
+                 "hosting_published", "launched"):
+        mcp = data.get("mcp")
+        if not isinstance(mcp, dict) or not isinstance((mcp.get("config_paths") or {}).get("mgr"), str):
+            missing.append("mcp.config_paths.mgr must be a project-level config path from instance_ready onward")
+    if stage in ("mcp_connected", "backend_deployed", "frontend_built", "hosting_published", "launched"):
+        mcp = data.get("mcp")
+        if not isinstance(mcp, dict) or not isinstance((mcp.get("config_paths") or {}).get("data"), str):
+            missing.append("mcp.config_paths.data must be a project-level config path from mcp_connected onward")
     if stage in ("frontend_built", "hosting_published", "launched") and not isinstance(data.get("frontend"), dict):
         missing.append("frontend section missing from frontend_built onward")
     if stage in ("backend_deployed", "frontend_built", "hosting_published", "launched"):

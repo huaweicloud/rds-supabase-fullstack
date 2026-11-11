@@ -7,6 +7,34 @@ semantic versioning.
 
 ### Changed
 
+- Skills `rds-supabase-web-build` v0.9.2 + `rds-supabase-mcp` v2.6.1: the
+  dynamically installed MCPs are now strictly project-scoped. Registration
+  goes ONLY into the current project's project-level MCP config, adapted
+  per host — Claude Code `<project>/.mcp.json` (mcpServers), CodeArts
+  `<project>/.codeartsdoer/`, OfficeAce the host's project-level config
+  (bounded by the project root), opencode `<project>/opencode.json` or
+  `.opencode/` (mcp key) — with every user-level and system-level location
+  explicitly forbidden (~/.claude.json user scope, Claude Desktop
+  claude_desktop_config.json, ~/.config/opencode/ global config,
+  ~/.codeartsdoer/ personal twin, system managed configs). User-level
+  registration would expose this project's MCPs and credentials to every
+  other project on the machine — a boundary leak. Hosts offering only
+  user-level registration: stop and report, do not register. Hard rules
+  added across install.md, SKILL.md, workflow-stages.md and lifecycle.md:
+  verify the entry landed in project-level config and no user/system
+  location was touched before client reload; credential-bearing config
+  files go into .gitignore at 0600; uv tool install / pip install into
+  user- or system-level environments are forbidden (uvx is a one-shot
+  cached run, not an installation, leaving no registry entry or CLI
+  binary); teardown of the registration at decommission. webapp.json
+  gains a mandatory mcp section (registration_scope: project;
+  config_paths.mgr/data as project-relative dot paths) — webapp-gate
+  machine-verifies the scope enum and rejects absolute, '~' and '..'
+  paths; mcp.config_paths.mgr is required from instance_ready onward and
+  .data from mcp_connected onward. Five new tests cover the contract.
+  install.md's old guidance (opencode.jsonc / claude_desktop_config.json /
+  .cursor/mcp.json as "common locations") removed — those are user-level
+  sinks.
 - Skill `rds-supabase-web-build` v0.9.1: backend development now produces a
   one-click cleanup script alongside init.sql. Step 5 generates
   .hwsupabase/teardown.sql in the same pass as init.sql — single-transaction

@@ -76,7 +76,9 @@ def make_project(tables=("public.posts", "public.users"), exposed=("public.posts
                         "obs_endpoint": "obs.cn-north-4.myhuaweicloud.com",
                         "project_id": "p-123", "credential_source": "project_secrets"},
         "project": {"name": "demo", "description": None, "requirements_summary": "blog",
-                    "baas_capabilities": ["database", "auth", "rpc"]},
+                    "baas_capabilities": ["database", "auth", "rpc"],
+                    "design_requirements": {"style": "简约现代", "aesthetics": "standard",
+                                            "complexity": "medium", "ui_notes": None}},
         "instance": {"supabase_application_id": "app-1", "source": "selected",
                      "gateway_url": "http://127.0.0.1:9", "credential_env_names":
                      ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"],
@@ -168,6 +170,28 @@ class ContractTests(unittest.TestCase):
         result = run_gate(project, "check-contract")
         self.assertEqual(result.returncode, 1)
         self.assertIn("status", result.stdout)
+
+
+class DesignRequirementsTests(unittest.TestCase):
+    def test_fail_design_requirements_missing(self):
+        project = make_project()
+        path = project / ".hwsupabase" / "webapp.json"
+        data = json.loads(path.read_text())
+        del data["project"]["design_requirements"]
+        path.write_text(json.dumps(data))
+        result = run_gate(project, "check-stage", "--stage", "requirements_confirmed")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("design_requirements", result.stdout)
+
+    def test_fail_design_requirements_invalid_level(self):
+        project = make_project()
+        path = project / ".hwsupabase" / "webapp.json"
+        data = json.loads(path.read_text())
+        data["project"]["design_requirements"]["aesthetics"] = "fancy"
+        path.write_text(json.dumps(data))
+        result = run_gate(project, "check-contract")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("aesthetics", result.stdout)
 
 
 class ObsContractTests(unittest.TestCase):

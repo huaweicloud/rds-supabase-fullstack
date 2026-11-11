@@ -3,7 +3,7 @@ name: rds-supabase-web-build
 description: 'RDS Supabase 全栈开发编排技能：AI Agent 通过自然语言创建并托管 Web 应用网站的端到端工作流——需求澄清与设计、前端代码生成、后端声明式配置（DDL/GRANT/RLS/RPC）生成与部署、本地 L0 测试验证、前端静态资源 OBS+CDN 全托管、端到端上线与生命周期管理（更新/回滚/下线）。Use when：创建 Web 网站、搭建 AI 应用、全栈应用从零到上线、已有 RDS Supabase 应用的迭代更新与托管维护。编排管理面与数据面两台 MCP（均由工作流步骤动态安装：管理面→步骤三、数据面→步骤四）及 rds-supabase-mgr-mcp / rds-supabase-mcp / rds-supabase-usage / rds-supabase-frontend / rds-supabase-postgres-best-practices / rds-supabase-function-graph 六个专项技能。v1 后端边界为数据层；复杂业务逻辑由 function-graph 技能（云函数）承接，SSR 后端部署不支持。'
 license: MIT
 metadata:
-  version: "0.11.3"
+  version: "0.11.4"
 ---
 
 # RDS Supabase 全栈开发编排（web-build）
@@ -90,9 +90,10 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 ### 步骤二 · 需求澄清与设计 → 断点 `requirements_confirmed`
 
 1. **多轮澄清或 SDD 规格驱动**：围绕「场景 × 功能 × 边界」多轮收敛——目标用户与使用情境、页面清单、数据模型、认证需求、**文件/图片/视频管理诉求**、AI 能力（pgvector 检索/Realtime）；纪律：**不遗留**（清单逐项确认）、**不发散**（偏离场景的诉求记录为备注不入主线）、**聚焦不走偏**（每轮复述共识与用户校准）
-2. **BaaS 能力提炼与满足性评估**：映射 RDS Supabase 能力清单（数据建模/CRUD、Data-Function RPC、认证、**Storage 文件存储**、Realtime、pgvector）逐项评估，记入 `project.baas_capabilities`；**存在文件/图片/视频管理诉求 → 标记 `storage` → 步骤三必须完成专用私有 OBS 桶准备与 `update_supabase_storage` 对接（禁止复用前端托管桶——公开读桶复用即权限越界与隐私暴露）**
-3. 边界外识别（复杂业务逻辑→FunctionGraph；SSR 不支持）+ 费用预估清单（实例、前端托管桶、Storage 桶分别列示）→ 用户确认
-4. 写 webapp.json（requirements_summary + baas_capabilities）→ gate PASS
+2. **网站设计指标——交互式逐项确认**：以设计指标卡呈现五维综合设计要求，经用户确认后记入 `project.design_requirements`——**网站风格**（简约现代/商务专业/活泼年轻/暗色科技/自定义描述，结合目标用户推荐）；**界面设计**（导航结构、响应式优先级默认移动优先、组件库偏好）；**美观度**（`prototype` 原型级 / `standard` 标准级（默认）/ `premium` 精品级——动效与细节打磨）；**复杂度**（`simple` ≤3 页 / `medium` 4–8 页（默认）/ `rich` >8 页富交互——与页面清单联动核对）；**功能性交互反馈**（loading/错误提示/空状态，默认全套基础反馈——与功能矩阵联动）
+3. **BaaS 能力提炼与满足性评估**：映射 RDS Supabase 能力清单（数据建模/CRUD、Data-Function RPC、认证、**Storage 文件存储**、Realtime、pgvector）逐项评估，记入 `project.baas_capabilities`；**存在文件/图片/视频管理诉求 → 标记 `storage` → 步骤三必须完成专用私有 OBS 桶准备与 `update_supabase_storage` 对接（禁止复用前端托管桶——公开读桶复用即权限越界与隐私暴露）**
+4. 边界外识别（复杂业务逻辑→FunctionGraph；SSR 不支持）+ 费用预估清单（实例、前端托管桶、Storage 桶分别列示）→ 用户确认
+5. 写 webapp.json（requirements_summary + baas_capabilities + design_requirements）→ gate PASS
 
 ### 步骤三 · 资源准备 → 断点 `instance_ready`
 
@@ -168,7 +169,7 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 ### 步骤六 · 前端生成 → 断点 `frontend_built`
 
 1. **【强制门】** 读 usage（SDK 正确用法，避免运行时报错）
-2. 生成源码（默认 React+Vite+TS + supabase-js；仅 anon key 进产物）+ **SDK 契约对照表** `gates/4-sdk-contract-checklist.md`（gate 校验）
+2. 生成源码（默认 React+Vite+TS + supabase-js；**按 `project.design_requirements` 执行**——风格/美观度分级决定视觉与细节投入，复杂度分级约束页面与交互规模；仅 anon key 进产物）+ **SDK 契约对照表** `gates/4-sdk-contract-checklist.md`（gate 校验）
 3. `npm run build` + 本地冒烟（首页渲染 / 1 条 RLS 查询 / 1 次 auth 流）→ 写 webapp.json → gate PASS
 
 ### 步骤七 · 本地测试验证 → 断点 `local_verified`

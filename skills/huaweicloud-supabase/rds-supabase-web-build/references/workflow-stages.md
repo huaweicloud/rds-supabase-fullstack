@@ -67,7 +67,14 @@
    - 功能：网站类型与页面清单 / 数据模型草案（实体、关系、对外暴露表）/ 认证需求 / **文件、图片、视频管理诉求** / AI 能力（pgvector 语义检索、Realtime 订阅）
    - 边界：明确不做什么与非功能约束
    - 纪律：**不遗留**（清单逐项确认后才过关）、**不发散**（偏离场景的诉求记录为备注、不入主线）、**聚焦不走偏**（每轮结束复述当前共识与用户校准；无新增即收敛）
-3. **BaaS 能力提炼与满足性评估**（映射矩阵逐项记录）：
+3. **网站设计指标——交互式逐项确认**（以设计指标卡呈现，维度 | 选项 | 默认/建议，经用户确认后记入 `project.design_requirements`）：
+   - **网站风格**：简约现代 / 商务专业 / 活泼年轻 / 暗色科技 / 自定义描述——结合目标用户与使用情境给出推荐项
+   - **界面设计**：导航结构（顶部导航 / 侧边栏 / 混合）、响应式优先级（**移动优先**（默认）/ 桌面优先）、组件库偏好（默认项目技术栈自带，用户指定则从其指定）
+   - **美观度分级**：`prototype`（原型级——默认样式、能用即可，适合快速验证）/ `standard`（标准级——整洁统一、基础美化、完整响应式，**默认**）/ `premium`（精品级——视觉层次、动效与细节打磨、设计感优先）
+   - **复杂度分级**：`simple`（≤3 页、基础交互）/ `medium`（4–8 页、表单与状态反馈，**默认**）/ `rich`（>8 页、实时更新/拖拽等富交互）——**与页面清单联动核对**，不一致以用户确认结果修正
+   - **功能性交互反馈**：loading 状态 / 错误提示 / 空状态呈现要求（默认全套基础反馈）——**与功能矩阵联动**
+   未逐项确认不得推进；用户仅说"随意/你来定" → 采用默认值并向用户复述确认
+4. **BaaS 能力提炼与满足性评估**（映射矩阵逐项记录）：
 
    | 诉求 | RDS Supabase 能力 | 满足性 |
    |---|---|---|
@@ -78,13 +85,13 @@
    | 实时订阅 | Realtime | 满足（可选） |
    | 语义检索 | pgvector | 满足（可选） |
 
-4. **Storage 专项判定**：存在文件/图片/视频管理诉求 → 能力清单记入 `storage` → **步骤三必须完成专用私有 OBS 桶准备与 `update_supabase_storage` 对接**；**禁止复用前端托管桶**（该桶为公开读，复用即权限越界与隐私暴露）
-5. 边界外识别明确告知（不擅自模拟）：复杂业务逻辑（支付/第三方/长任务）→ 路由 rds-supabase-function-graph 技能（云函数）；SSR 不支持
-6. 费用预估清单（实例规格/时长、**前端托管桶与 Storage 桶分别列示**、CDN 流量、域名证书）→ 用户确认
-7. 写 webapp.json：`project.requirements_summary`（脱敏）+ `project.baas_capabilities`（能力清单，枚举 database/auth/rpc/storage/realtime/vector）+ history 追加 passed 事件
-8. 跑 gate（check-stage --stage requirements_confirmed）→ 步骤报告
+5. **Storage 专项判定**：存在文件/图片/视频管理诉求 → 能力清单记入 `storage` → **步骤三必须完成专用私有 OBS 桶准备与 `update_supabase_storage` 对接**；**禁止复用前端托管桶**（该桶为公开读，复用即权限越界与隐私暴露）
+6. 边界外识别明确告知（不擅自模拟）：复杂业务逻辑（支付/第三方/长任务）→ 路由 rds-supabase-function-graph 技能（云函数）；SSR 不支持
+7. 费用预估清单（实例规格/时长、**前端托管桶与 Storage 桶分别列示**、CDN 流量、域名证书；**美观度 premium 或复杂度 rich 提示相应工作量影响**）→ 用户确认
+8. 写 webapp.json：`project.requirements_summary`（脱敏）+ `project.baas_capabilities`（能力清单，枚举 database/auth/rpc/storage/realtime/vector）+ `project.design_requirements`（style/aesthetics/complexity/ui_notes）+ history 追加 passed 事件
+9. 跑 gate（check-stage --stage requirements_confirmed）→ 步骤报告
 
-**输出断言**：🔍 用户逐项确认需求摘要、数据模型与能力清单（不默认、不放大模糊表述）｜🤖 gate PASS
+**输出断言**：🔍 用户逐项确认需求摘要、数据模型、能力清单**与网站设计指标**（不默认、不放大模糊表述；设计五维全部有确认值）｜🤖 gate PASS
 
 **工具白名单**：允许：读写 webapp.json；禁止：**一切 MCP 工具**
 
@@ -92,8 +99,9 @@
 ```
 用户：帮我建一个博客网站，支持登录评论和文章配图上传
 → 声明步骤二 → 多轮澄清（页面清单 / Posts-Comments-Users 模型 / 邮箱登录 / 文章配图上传 = 文件管理诉求 / 无 AI 检索）
+→ 设计指标卡确认：风格=简约现代 · 界面=移动优先 · 美观度=standard · 复杂度=medium · 交互反馈=全套基础
 → 能力矩阵：database + auth + rpc + storage（配图上传 → storage 标记）
-→ 边界与费用清单（实例 / 前端托管桶 / Storage 私有桶 分列）确认 → 写 webapp.json(requirements_summary + baas_capabilities)
+→ 边界与费用清单（实例 / 前端托管桶 / Storage 私有桶 分列）确认 → 写 webapp.json(requirements_summary + baas_capabilities + design_requirements)
 → gate PASS → 步骤报告（步骤二）（下一步骤预告：凭据与区域信息；步骤三将准备 Storage 私有桶并对接）
 ```
 

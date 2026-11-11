@@ -61,6 +61,16 @@
 | description | string/null | 一句话描述 |
 | requirements_summary | string | 步骤二 确认的需求摘要（脱敏，不含凭据与用户数据） |
 | baas_capabilities | string[] | 步骤二 提炼的 BaaS 能力需求清单（枚举 `database`/`auth`/`rpc`/`storage`/`realtime`/`vector`，非空）；含 `storage` 时步骤三必须完成 Storage 桶准备与对接（gate 校验 storage 段存在且 connected） |
+| design_requirements | object | 五维设计指标（见下表）；requirements_confirmed 起必填，gate 校验枚举 |
+
+#### design_requirements 字段
+
+| 字段 | 类型 | 规则 |
+|---|---|---|
+| style | string | 网站风格（自由描述：简约现代/商务专业/活泼年轻/暗色科技/自定义） |
+| aesthetics | string | 美观度分级：`prototype`（原型级）/ `standard`（标准级，默认）/ `premium`（精品级） |
+| complexity | string | 复杂度分级：`simple`（≤3 页）/ `medium`（4–8 页，默认）/ `rich`（>8 页富交互） |
+| ui_notes | string/null | 界面设计补充：导航结构、响应式优先级（默认移动优先）、组件库偏好、品牌色/素材 |
 
 ### instance
 

@@ -7,6 +7,26 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.11.4: step 2 now clarifies the
+  website's comprehensive design metrics through an interactive
+  five-dimension card, confirmed item by item before anything is built
+  — style (minimal-modern / business / playful / dark-tech / custom,
+  recommended from the target users and context), UI design
+  (navigation structure, responsive priority defaulting to
+  mobile-first, component-library preference), aesthetics level
+  (prototype / standard(default) / premium — motion and detail
+  polish), complexity level (simple ≤3 pages / medium 4–8(default) /
+  rich >8 with rich interactions, cross-checked against the page
+  inventory), and functional interaction feedback (loading / error /
+  empty states, full basic set by default). "You decide" answers adopt
+  the defaults but are read back for confirmation. Recorded as
+  project.design_requirements (style/aesthetics/complexity/ui_notes)
+  and machine-enforced: the gate validates the enums and requires the
+  object from requirements_confirmed onward; step 6 consumes the
+  metrics when generating the frontend (aesthetics drives visual
+  investment, complexity bounds page and interaction scale); premium/
+  rich choices surface their effort impact in the cost estimate. Two
+  new tests.
 - Skill `rds-supabase-web-build` v0.11.3: step 1 ends with a five-item
   final verification before environment_ready is written — REGION,
   AK/SK, PROJECT_ID, RDS_ENDPOINT and OBS_ENDPOINT must all be proven

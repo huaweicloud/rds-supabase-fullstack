@@ -106,6 +106,20 @@ def check_contract(data, missing):
         if not (isinstance(caps, list) and caps and all(isinstance(c, str) and c in valid for c in caps)):
             missing.append("project.baas_capabilities must be a non-empty list drawn from "
                            "database/auth/rpc/storage/realtime/vector")
+    design = (data.get("project") or {}).get("design_requirements")
+    if design is not None:
+        if not isinstance(design, dict):
+            missing.append("project.design_requirements must be an object")
+        else:
+            if not (isinstance(design.get("style"), str) and design.get("style")):
+                missing.append("design_requirements.style must be a non-empty string")
+            if design.get("aesthetics") not in ("prototype", "standard", "premium"):
+                missing.append("design_requirements.aesthetics must be prototype/standard/premium")
+            if design.get("complexity") not in ("simple", "medium", "rich"):
+                missing.append("design_requirements.complexity must be simple/medium/rich")
+            notes = design.get("ui_notes")
+            if notes is not None and not isinstance(notes, str):
+                missing.append("design_requirements.ui_notes must be a string or null")
     env = data.get("environment")
     if env is not None:
         if not isinstance(env, dict):
@@ -274,6 +288,11 @@ def check_stage(data, stage, missing, project_dir=None):
                  "backend_deployed", "frontend_built", "local_verified", "hosting_published",
                  "launched") and not isinstance(data.get("environment"), dict):
         missing.append("environment section missing from environment_ready onward")
+    if stage in ("requirements_confirmed", "instance_ready", "mcp_connected", "backend_deployed",
+                 "frontend_built", "local_verified", "hosting_published", "launched") \
+            and not isinstance((data.get("project") or {}).get("design_requirements"), dict):
+        missing.append("project.design_requirements missing from requirements_confirmed onward "
+                       "(five design dimensions confirmed in step 2)")
     if stage in ("instance_ready", "mcp_connected", "backend_deployed", "frontend_built",
                  "local_verified", "hosting_published", "launched") and not isinstance(data.get("instance"), dict):
         missing.append("instance section missing from instance_ready onward")

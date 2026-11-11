@@ -422,6 +422,11 @@ class StorageCapabilityTests(unittest.TestCase):
         result = run_gate(project, "check-stage", "--stage", "instance_ready")
         self.assertEqual(result.returncode, 0, result.stdout)
 
+    def test_pass_storage_existing_connection(self):
+        project = self._with_storage({"bucket_name": "demo-storage", "source": "existing", "connected": True})
+        result = run_gate(project, "check-stage", "--stage", "instance_ready")
+        self.assertEqual(result.returncode, 0, result.stdout)
+
 
 def make_published(ssl_enabled, stable_url):
     project = make_project()

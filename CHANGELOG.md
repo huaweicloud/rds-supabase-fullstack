@@ -7,6 +7,22 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.11.5: the step-3 storage integration
+  is now strictly condition-driven instead of a blanket bucket
+  preparation. No backend OBS bucket is ever created unconditionally —
+  creation happens only when the storage capability is required AND the
+  selected instance is not yet connected. The decision chain: existing
+  application selected → first verify its storage connection state via
+  the management plane (app details/query tool; user confirmation when
+  no direct query path) — already connected to OBS → reuse the existing
+  connection, no new bucket, no duplicate integration
+  (storage.source=existing); not connected (or a new instance was
+  created) → the bucket-preparation flow with the interactive
+  reuse/create choice (reuse requires the private-bucket policy
+  assessment; creation is a dynamically created PRIVATE bucket with
+  least privilege; both forbidden from reusing the frontend hosting
+  bucket). State contract and gate follow (source enum gains
+  existing); one new test.
 - Skill `rds-supabase-web-build` v0.11.4: step 2 now clarifies the
   website's comprehensive design metrics through an interactive
   five-dimension card, confirmed item by item before anything is built

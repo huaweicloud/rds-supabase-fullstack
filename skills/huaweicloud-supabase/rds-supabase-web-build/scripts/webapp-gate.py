@@ -196,8 +196,8 @@ def check_contract(data, missing):
             if not (isinstance(storage.get("bucket_name"), str) and BUCKET.match(storage["bucket_name"])):
                 missing.append("storage.bucket_name must be a valid bucket name "
                                "(3-63 chars, lowercase letters/digits/hyphens, letter-or-digit ends)")
-            if storage.get("source") not in ("created", "selected"):
-                missing.append("storage.source must be 'created' or 'selected'")
+            if storage.get("source") not in ("created", "selected", "existing"):
+                missing.append("storage.source must be 'created', 'selected' or 'existing'")
             if not isinstance(storage.get("connected"), bool):
                 missing.append("storage.connected must be a boolean")
             obs_bucket = (data.get("obs") or {}).get("bucket_name")

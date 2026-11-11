@@ -137,14 +137,18 @@
    - **使用已有**：列出租户桶 → **候选过滤：仅保留满足静态托管要求的公开读桶**——匿名 GetObject 未获授权的非公开桶一律剔除，**不得出现在候选列表中**；候选展示（桶名/区域/存储类别）供用户勾选 → 核验选中桶区域与项目 Region 一致、具备静态网站托管能力
    - **新建**：**桶名默认与应用名称保持一致**——应用名称英文化：转小写，非 ASCII 与非法字符映射为连字符、连续连字符压缩为单个、去除首尾连字符、长度裁剪至 3–63；**名称冲突（同名桶已存在）→ 追加短 uuid 后缀**（连字符连接，形如 `my-webapp-3f2a1b9c`；再次冲突则重新生成后缀并复核唯一性）；最终桶名经用户确认后由 frontend 技能创建——**创建前展示桶配置卡**（存储类别**多 AZ 优先**，区域不支持时降级单 AZ 并说明；**阻止公网访问必须关闭**——该开关开启则匿名读被拒、静态托管不可用；**桶策略固定公共读**：仅匿名 GetObject，不可改为其他），经用户确认后创建，**创建后回读核验三项实际生效**
    - 域名条件核对；**证书仅当实例 SSL 开启（前端 HTTPS 入口）时必需**——SSL 未开启则前端以 HTTP 发布、无需证书；不齐备项于步骤八前补齐
-6. **Storage 桶准备与对接（仅当步骤二能力清单含 `storage`）**：交互式勾选「使用已有桶 / 新建桶」（纪律同实例与前端桶：未获用户显式选择不得推进，不得代为默认）：
-   - **使用已有**：先做**桶策略安全评估**——桶必须私有（无公开读、无匿名 GetObject、无公开列举、无通配匿名授权）；存在任一公开项即判定策略不合理 → 停止并说明，建议转新建或先修正桶策略
-   - **新建**：**一律私有桶**（禁止公开读），按最小权限配置；桶名建议 `<应用slug>-storage`
-   - **两类均禁止复用前端托管桶**（`obs.bucket_name`——公开读桶复用即权限越界与隐私暴露）
-   - 选定后经管理面 `update_supabase_storage` 完成对接（凭据 bucket/AK/SK 经 request_ref、两阶段确认；首次启用需 SK，见 mgr-mcp 技能）→ 核验对接生效
+6. **Storage 存储对接（仅当步骤二能力清单含 `storage`——无后端文件存储诉求则本项整体跳过，不创建任何后端桶；**步骤三不无条件创建后端 OBS 桶**，创建仅发生在「存储诉求存在 且 所选实例尚未对接」时）**：
+   - **对接状态先行判定（承接第 3 项应用接入方式的勾选结果，不另行选择、不改变该二选一流程）**：
+     - 勾选「使用已有 Supabase 应用」→ 先经管理面确认该应用的 Storage 对接状态（应用详情/查询工具；无直接查询途径时向用户呈现并经确认）：**已对接 OBS → 复用既有对接**（记录既有桶信息，**不新建桶、不重复对接**，`storage.source=existing`）；**未对接 → 进入下方桶准备流程**
+     - 勾选「新建实例」→ 实例创建完成后进入下方桶准备流程
+   - **桶准备流程（仅未对接时；交互式勾选「使用已有桶 / 新建桶」，纪律同实例与前端桶：未获用户显式选择不得推进，不得代为默认）**：
+     - **使用已有桶**：先做**桶策略安全评估**——桶必须私有（无公开读、无匿名 GetObject、无公开列举、无通配匿名授权）；存在任一公开项即判定策略不合理 → 停止并说明，建议转新建或先修正桶策略
+     - **新建桶**：**动态创建私有桶**（访问类型固定为私有，禁止公开读），按最小权限配置；桶名建议 `<应用slug>-storage`
+     - **两类均禁止复用前端托管桶**（`obs.bucket_name`——公开读桶复用即权限越界与隐私暴露）
+   - 桶选定后经管理面 `update_supabase_storage` 完成对接（凭据 bucket/AK/SK 经 request_ref、两阶段确认；首次启用需 SK，见 mgr-mcp 技能）→ 核验对接生效
 7. 写 webapp.json（instance 段 + `obs` 段：`bucket_name`/`source`/`naming_basis` + `mcp` 段：`registration_scope`/`config_paths.mgr` + `storage` 段（能力含 storage 时）：`bucket_name`/`source`/`connected`，契约见 project-state.md）→ gate → 步骤报告
 
-**输出断言**：🔍 实例 running 且实际可访问，接入方式经用户显式勾选确认｜🔍 桶就绪且接入方式经用户显式勾选确认（公开读核验通过）｜🔍 Storage 桶（如诉求存在）私有、未复用前端托管桶且对接生效｜🔍 管理面 MCP 连接验证通过（查询工具一次调用 OK，默认直连未走代理）｜🔍 管理面 MCP 注册落位项目级配置（核验通过，未触碰用户级/系统级）｜🤖 gate PASS（instance 契约 + `source` 枚举 + obs 契约 + mcp 契约 + storage 契约）
+**输出断言**：🔍 实例 running 且实际可访问，接入方式经用户显式勾选确认｜🔍 桶就绪且接入方式经用户显式勾选确认（公开读核验通过）｜🔍 Storage 对接（如诉求存在）：已对接应用**复用既有对接**；未对接才**动态创建私有桶**（未复用前端托管桶）且对接生效｜🔍 管理面 MCP 连接验证通过（查询工具一次调用 OK，默认直连未走代理）｜🔍 管理面 MCP 注册落位项目级配置（核验通过，未触碰用户级/系统级）｜🤖 gate PASS（instance 契约 + `source` 枚举 + obs 契约 + mcp 契约 + storage 契约）
 
 **工具白名单**：允许：管理面 list/show/plan/create/wait/ApiKey 交付、`diagnostics discover`、frontend 技能 KooCLI（OBS 桶）；禁止：数据面 MCP（尚未安装）、一切 SQL 执行
 
@@ -154,7 +158,7 @@
 → list_supabase_applications → 用户勾选 app-123 → show_supabase_application 核验 normal
 → list_supabase_api_keys + deliver → 受保护文件（agent 不见明文）
 → 呈现 OBS 桶接入方式选择清单：用户勾选「新建」→ 桶名取应用名英文化 webapp-demo（无冲突，用户确认）
-→ frontend 技能建桶 + 公开读策略 → 能力清单含 storage（文章配图）→ Storage 桶勾选「新建」demo-storage（私有桶）→ update_supabase_storage 对接（两阶段确认）✓
+→ frontend 技能建桶 + 公开读策略 → 能力清单含 storage（文章配图）→ 已选应用 Storage 对接状态核验：未对接 → 桶准备勾选「新建」demo-storage（私有桶）→ update_supabase_storage 对接（两阶段确认）✓
 → 管理面 MCP 注册项目级配置（如 .opencode/mcp.json）+ 核验未触碰用户级/系统级
 → 写 webapp.json(instance.source=selected, obs.source=created, mcp.registration_scope=project, storage.connected=true)
 → gate PASS → 步骤报告（步骤三）（下一步骤预告：重载客户端后安装数据面 MCP）

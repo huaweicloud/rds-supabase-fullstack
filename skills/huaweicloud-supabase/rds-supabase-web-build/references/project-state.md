@@ -97,7 +97,7 @@
 | 字段 | 类型 | 规则 |
 |---|---|---|
 | bucket_name | string | Storage 对接专用私有桶名（3–63 字符规范同 obs）；**必须与前端托管桶 `obs.bucket_name` 不同**（公开读桶复用即权限越界）——gate 机器核验 |
-| source | string | `created`（本流程新建私有桶）或 `selected`（用户勾选既有桶，**桶策略安全评估通过**：无公开读/匿名 GetObject/公开列举） |
+| source | string | `created`（本流程**动态新建私有桶**——仅当存储诉求存在且实例未对接）/ `selected`（用户勾选既有桶，**桶策略安全评估通过**：无公开读/匿名 GetObject/公开列举）/ `existing`（所选实例**已对接 OBS**，复用既有对接——不新建桶、不重复对接） |
 | connected | boolean | 管理面 `update_supabase_storage` 对接完成；能力清单含 `storage` 时自 instance_ready 起必须为 `true`（gate 校验） |
 
 ### mcp

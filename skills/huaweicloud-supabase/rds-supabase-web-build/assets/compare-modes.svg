@@ -47,11 +47,13 @@
   <line x1="767" y1="228" x2="767" y2="256" stroke="#64748B" stroke-width="2" marker-end="url(#ah)"/>
   <text x="775" y="255" font-size="10.5" fill="#475569">npm run build</text>
   <line x1="1012" y1="228" x2="1012" y2="256" stroke="#64748B" stroke-width="2" marker-end="url(#ah)"/>
-  <text x="1020" y="255" font-size="10.5" fill="#475569">execute_sql</text>
+  <text x="1004" y="255" text-anchor="end" font-size="10.5" fill="#475569">数据面 MCP</text>
 
   <!-- ======== 部署态 ======== -->
   <rect x="80" y="262" width="500" height="118" rx="12" fill="#FEF2F2" stroke="#FECACA"/>
   <rect x="640" y="262" width="500" height="118" rx="12" fill="#F0FDF4" stroke="#BBF7D0"/>
+  <rect x="655" y="270" width="470" height="20" rx="10" fill="#DCFCE7"/>
+  <text x="890" y="284" text-anchor="middle" font-size="10.5" font-weight="600" fill="#166534">rds-supabase Skill 编排 · 管理面 + 数据面 MCP</text>
 
   <rect x="95" y="278" width="225" height="90" rx="10" fill="#FFFFFF" stroke="#CBD5E1"/>
   <text x="207" y="316" text-anchor="middle" font-size="14" font-weight="700" fill="#1E293B">前端部署</text>
@@ -61,18 +63,19 @@
   <text x="452" y="316" text-anchor="middle" font-size="14" font-weight="700" fill="#1E293B">后端部署</text>
   <text x="452" y="344" text-anchor="middle" font-size="11.5" fill="#475569">CICD · ECS ×2 · 网络 · 发布</text>
 
-  <rect x="655" y="278" width="225" height="90" rx="10" fill="#FFFFFF" stroke="#CBD5E1"/>
-  <text x="767" y="316" text-anchor="middle" font-size="14" font-weight="700" fill="#1E293B">前端部署</text>
-  <text x="767" y="344" text-anchor="middle" font-size="11.5" fill="#475569">直传 OBS · 零服务器</text>
+  <rect x="655" y="298" width="225" height="74" rx="10" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <text x="767" y="328" text-anchor="middle" font-size="14" font-weight="700" fill="#1E293B">前端部署</text>
+  <text x="767" y="352" text-anchor="middle" font-size="11.5" fill="#475569">直传 OBS · 零服务器</text>
 
-  <rect x="900" y="278" width="225" height="90" rx="10" fill="#FFFFFF" stroke="#CBD5E1"/>
-  <text x="1012" y="316" text-anchor="middle" font-size="14" font-weight="700" fill="#1E293B">后端部署</text>
-  <text x="1012" y="344" text-anchor="middle" font-size="11.5" fill="#475569">execute_sql · 单事务</text>
+  <rect x="900" y="298" width="225" height="74" rx="10" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <text x="1012" y="328" text-anchor="middle" font-size="14" font-weight="700" fill="#1E293B">后端部署</text>
+  <text x="1012" y="352" text-anchor="middle" font-size="11.5" fill="#475569">execute_sql · 单事务</text>
 
   <line x1="207" y1="368" x2="207" y2="392" stroke="#64748B" stroke-width="2" marker-end="url(#ah)"/>
   <line x1="452" y1="368" x2="452" y2="392" stroke="#64748B" stroke-width="2" marker-end="url(#ah)"/>
-  <line x1="767" y1="368" x2="767" y2="392" stroke="#64748B" stroke-width="2" marker-end="url(#ah)"/>
-  <line x1="1012" y1="368" x2="1012" y2="392" stroke="#64748B" stroke-width="2" marker-end="url(#ah)"/>
+  <line x1="767" y1="372" x2="767" y2="392" stroke="#64748B" stroke-width="2" marker-end="url(#ah)"/>
+  <line x1="1012" y1="372" x2="1012" y2="392" stroke="#64748B" stroke-width="2" marker-end="url(#ah)"/>
+  <text x="890" y="391" text-anchor="middle" font-size="10.5" fill="#475569">gate 机器核验</text>
 
   <!-- ======== 运行态 ======== -->
   <rect x="80" y="396" width="500" height="290" rx="12" fill="#FEF2F2" stroke="#FECACA"/>

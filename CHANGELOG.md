@@ -7,6 +7,12 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.8.5: the managed side of the comparison
+  canvas now shows tool participation at the transitions — a tooling strip
+  in the deployment row (rds-supabase Skill orchestration + control-plane
+  and data-plane MCP), the backend dev-to-deploy arrow labeled 数据面 MCP,
+  and the deploy-to-runtime transition labeled gate 机器核验. The report
+  caption states the same. Geometry re-verified clean.
 - Skill `rds-supabase-web-build` v0.8.4: the comparison diagrams are merged
   into ONE left-right canvas (assets/compare-modes.svg) — traditional mode
   on the left, managed mode on the right, both flowing through the same

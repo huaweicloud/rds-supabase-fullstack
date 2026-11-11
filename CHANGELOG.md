@@ -7,6 +7,13 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.9.9: the install trigger sentence in
+  INSTALL.md now carries the document's full GitHub URL (按照 <INSTALL.md
+  URL>，安装 rds-supabase 技能包) so agents without local context can
+  fetch the guide directly, and states the post-install deliverables
+  explicitly — 装完列出技能列表，并告诉我如何触发 (matching the
+  step-3 completion report: installed skill list, trigger examples,
+  convention notes).
 - Skill `rds-supabase-web-build` v0.9.8: drop `npx skills add` from
   INSTALL.md — the repo is not published to that channel, so the command
   cannot work. It is now explicitly forbidden (agents must not attempt

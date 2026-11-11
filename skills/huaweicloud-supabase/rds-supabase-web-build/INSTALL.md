@@ -2,7 +2,7 @@
 
 面向 AI Agent 的安装指导。用户对 Agent 说：
 
-> 按 INSTALL.md 安装 rds-supabase 技能包，装完告诉我怎么触发。
+> 按照 https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/skills/huaweicloud-supabase/rds-supabase-web-build/INSTALL.md ，安装 rds-supabase 技能包；装完列出技能列表，并告诉我如何触发。
 
 Agent 按本文四节执行；人类可照读自查。安装范围**仅技能包**——不安装、不配置任何 MCP、凭据与云资源。
 

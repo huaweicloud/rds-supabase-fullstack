@@ -7,6 +7,21 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.9.3: the hosted frontend entry protocol
+  now follows the instance SSL state, mirroring the step-4 data-plane rule.
+  ssl_enabled=true → stable_url must be HTTPS (domain and certificate
+  ready); ssl_enabled=false → HTTP entry, no certificate, HTTPS forbidden —
+  an HTTPS page calling the HTTP gateway is mixed content and gets blocked
+  by browsers, leaving the site broken. The certificate prerequisite in
+  step 3 applies only when the frontend publishes over HTTPS; step 7
+  carries the rule at build/publish and callback-loop (site_url /
+  redirect_uris follow the same protocol); the launch checklist gains an
+  entry-protocol-consistency row and drops its blanket HTTPS wording.
+  webapp-gate machine-verifies from hosting_published onward: reads the
+  frontend record's stable_url via record_ref, requires the file and
+  stable_url to exist, and rejects protocol mismatches (HTTPS entry with
+  SSL disabled = mixed content; HTTP entry with SSL enabled). Four new
+  tests cover the contract.
 - Skills `rds-supabase-web-build` v0.9.2 + `rds-supabase-mcp` v2.6.1: the
   dynamically installed MCPs are now strictly project-scoped. Registration
   goes ONLY into the current project's project-level MCP config, adapted

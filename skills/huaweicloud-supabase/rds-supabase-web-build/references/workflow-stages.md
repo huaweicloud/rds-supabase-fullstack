@@ -100,7 +100,7 @@
 5. **OBS 桶接入方式——交互式勾选（强制，禁止跳过）**：以选择清单形式向用户呈现「使用已有 OBS 桶 / 新建 OBS 桶」，**未获用户显式选择不得推进，不得代为默认**（frontend 技能引导，凭据与 Region 均为步骤一所核对）：
    - **使用已有**：列出租户桶 → **候选过滤：仅保留满足静态托管要求的公开读桶**——匿名 GetObject 未获授权的非公开桶一律剔除，**不得出现在候选列表中**；候选展示（桶名/区域/存储类别）供用户勾选 → 核验选中桶区域与项目 Region 一致、具备静态网站托管能力
    - **新建**：**桶名默认与应用名称保持一致**——应用名称英文化：转小写，非 ASCII 与非法字符映射为连字符、连续连字符压缩为单个、去除首尾连字符、长度裁剪至 3–63；**名称冲突（同名桶已存在）→ 追加短 uuid 后缀**（连字符连接，形如 `my-webapp-3f2a1b9c`；再次冲突则重新生成后缀并复核唯一性）；最终桶名经用户确认后由 frontend 技能创建并配置公开读策略
-   - 域名/证书条件核对，不齐备则步骤七前补齐
+   - 域名条件核对；**证书仅当实例 SSL 开启（前端 HTTPS 入口）时必需**——SSL 未开启则前端以 HTTP 发布、无需证书；不齐备项于步骤七前补齐
 6. 写 webapp.json（instance 段 + `obs` 段：`bucket_name`/`source`/`naming_basis` + `mcp` 段：`registration_scope`/`config_paths.mgr`，契约见 project-state.md）→ gate → 步骤报告
 
 **输出断言**：🔍 实例 running 且实际可访问，接入方式经用户显式勾选确认｜🔍 桶就绪且接入方式经用户显式勾选确认（公开读核验通过）｜🔍 管理面 MCP 注册落位项目级配置（核验通过，未触碰用户级/系统级）｜🤖 gate PASS（instance 契约 + `source` 枚举 + obs 契约 + mcp 契约）
@@ -219,24 +219,24 @@
 
 **目的**：静态产物发布到步骤三预建桶，经 CDN 形成稳定入口，完成回调回路。
 
-**输入**：步骤六 产物源码；步骤三 预建桶与域名/证书；上一断点 `frontend_built`
+**输入**：步骤六 产物源码；步骤三 预建桶与域名（证书仅 HTTPS 入口——`ssl_enabled=true` 时必需）；上一断点 `frontend_built`
 
 **动作序列**：
 
 1. 声明步骤七
-2. frontend 技能：构建环境核对（Node/包管理器，不擅自升级）→ build → 上传步骤三预建桶 → CDN 刷新 → 版本记录（`.hwsupabase/frontend/` 契约）
+2. frontend 技能：构建环境核对（Node/包管理器，不擅自升级）→ build → 上传步骤三预建桶 → CDN 刷新 → 版本记录（`.hwsupabase/frontend/` 契约）。**托管入口协议跟随实例 SSL**：`ssl_enabled=true` → HTTPS 入口（域名/证书就绪）；`false` → HTTP 入口（无需证书，**不得 HTTPS**——HTTPS 页面调用 HTTP 网关属混合内容，被浏览器拦截，站点不可用）
 3. **回调回路（步骤七↻）**：域名确定 → 管理面 `update_supabase_auth_config` 配 site_url/redirect_uris（展示差异后确认）→ 前端按最终地址**重建再发布**。未执行此回路 = auth 登录回调 404
 4. frontend checks（entry/assets/routes/negative_paths/cache）
 5. 写 webapp.json（hosting_published）→ gate → 步骤报告
 
-**输出断言**：🔍 frontend checks 全必需项 passed + stable_url HTTPS｜🤖 gate PASS
+**输出断言**：🔍 frontend checks 全必需项 passed + stable_url 协议跟随实例 SSL（true→HTTPS / false→HTTP，gate 读 frontend record 机器核验一致性）｜🤖 gate PASS
 
 **工具白名单**：允许：管理面 `update_supabase_auth_config`、frontend 技能工具链（KooCLI/OBS/CDN/npm）；禁止：`execute_sql`、实例级管理面写（删除/改密等）
 
 **黄金路径**：
 ```
 声明步骤七 → 构建环境核对 → npm run build → 上传 obs://webapp-123/v1 → CDN 刷新
-→ 用户确定域名 https://demo.example.com → update_supabase_auth_config(site_url + redirect_uris，差异确认)
+→ 用户确定域名 https://demo.example.com（本例实例 SSL 开启故入口 https；未开启时入口为 http 且无需证书）→ update_supabase_auth_config(site_url + redirect_uris，差异确认)
 → 前端重建再发布 v2 → frontend checks 全 passed（entry 2xx / assets 2xx / routes / 404 路径 / cache 头）
 → 写 webapp.json(hosting_published) → gate PASS → 步骤报告（步骤七）
 ```

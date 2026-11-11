@@ -3,7 +3,7 @@ name: rds-supabase-web-build
 description: 'RDS Supabase 全栈开发编排技能：AI Agent 通过自然语言创建并托管 Web 应用网站的端到端工作流——前端代码生成、后端 init.sql（DDL/GRANT/RLS/RPC）生成与部署、前端静态资源 OBS+CDN 全托管、端到端上线与生命周期管理（更新/回滚/下线）。Use when：创建 Web 网站、搭建 AI 应用、全栈应用从零到上线、已有 RDS Supabase 应用的迭代更新与托管维护。编排管理面与数据面两台 MCP（均由工作流步骤动态安装：管理面→步骤三、数据面→步骤四）及 rds-supabase-mgr-mcp / rds-supabase-mcp / rds-supabase-usage / rds-supabase-frontend / rds-supabase-postgres-best-practices 五个专项技能。v1 后端边界为数据层；复杂业务逻辑（支付/第三方调用/长任务）不在 v1 范围，SSR 后端部署不支持。'
 license: MIT
 metadata:
-  version: "0.9.2"
+  version: "0.9.3"
 ---
 
 # RDS Supabase 全栈开发编排（web-build）
@@ -166,9 +166,9 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 
 ### 步骤七 · 构建与托管 → 断点 `hosting_published`
 
-1. frontend 技能：build → 上传步骤三预建桶 → CDN 刷新 → 版本记录
-2. **步骤七↻ 回调回路**：域名确定 → `update_supabase_auth_config` 配 site_url/redirect_uris（差异确认）→ 前端按最终地址**重建再发布**
-3. 验证：frontend checks 全必需项 passed + stable_url HTTPS → 写 webapp.json → gate PASS
+1. frontend 技能：build → 上传步骤三预建桶 → CDN 刷新 → 版本记录。**托管入口协议跟随实例 SSL**：`ssl_enabled=true` → HTTPS 入口（域名/证书就绪）；`false` → HTTP 入口（无需证书，**不得 HTTPS**——HTTPS 页面调用 HTTP 网关属混合内容，被浏览器拦截，站点不可用）
+2. **步骤七↻ 回调回路**：域名确定（协议跟随实例 SSL）→ `update_supabase_auth_config` 配 site_url/redirect_uris（差异确认）→ 前端按最终地址**重建再发布**
+3. 验证：frontend checks 全必需项 passed + **stable_url 协议跟随实例 SSL**（gate 读 frontend record 机器核验与 `ssl_enabled` 一致）→ 写 webapp.json → gate PASS
 
 ### 步骤八 · 端到端上线 → 断点 `launched`
 

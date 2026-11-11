@@ -232,6 +232,30 @@ def check_stage(data, stage, missing, project_dir=None):
         mcp = data.get("mcp")
         if not isinstance(mcp, dict) or not isinstance((mcp.get("config_paths") or {}).get("data"), str):
             missing.append("mcp.config_paths.data must be a project-level config path from mcp_connected onward")
+    if stage in ("hosting_published", "launched") and project_dir is not None:
+        record_ref = (data.get("frontend") or {}).get("record_ref")
+        if isinstance(record_ref, str):
+            path = Path(project_dir) / record_ref
+            if not path.is_file():
+                missing.append(f"frontend.record_ref file not found: {record_ref}")
+            else:
+                try:
+                    record = json.loads(path.read_text(encoding="utf-8"))
+                except (OSError, json.JSONDecodeError):
+                    record = None
+                if not isinstance(record, dict):
+                    missing.append(f"frontend.record_ref is not a JSON object: {record_ref}")
+                else:
+                    stable = record.get("stable_url")
+                    if not (isinstance(stable, str) and stable):
+                        missing.append("stable_url missing in frontend record (required from hosting_published)")
+                    else:
+                        ssl = (data.get("instance") or {}).get("ssl_enabled")
+                        if ssl is False and stable.startswith("https://"):
+                            missing.append("stable_url is HTTPS while instance SSL is disabled — mixed content "
+                                           "(HTTPS page calling the HTTP gateway) is blocked by browsers")
+                        elif ssl is True and stable.startswith("http://"):
+                            missing.append("stable_url is HTTP while instance SSL is enabled (HTTPS entry required)")
     if stage in ("frontend_built", "hosting_published", "launched") and not isinstance(data.get("frontend"), dict):
         missing.append("frontend section missing from frontend_built onward")
     if stage in ("backend_deployed", "frontend_built", "hosting_published", "launched"):

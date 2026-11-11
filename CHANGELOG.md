@@ -7,6 +7,26 @@ semantic versioning.
 
 ### Changed
 
+- Skills `rds-supabase-web-build` v0.10.2 + `rds-supabase-frontend` v0.2.3:
+  the temporary-access scenario now uses a deterministic custom-domain
+  procedure. The domain is fixed as <app-slug>.huaweicloud-rds.com
+  (same slug rules as bucket names, short-uuid suffix on empty/conflict
+  — reproducible, never random or asked). The flow: bind that domain to
+  the hosting bucket via OBS domain management (command verified against
+  hcloud obs --help / official docs, never guessed); resolve the OBS
+  endpoint's A-record IP (dig / Resolve-DnsName); append an IP→domain
+  mapping line to the OS-correct hosts file (Linux/macOS /etc/hosts,
+  Windows %SystemRoot%\System32\drivers\etc\hosts) with strict
+  safety rules — marker comment rds-supabase-web-build:<project> on
+  every line we add, append-only, idempotent skip on same-IP,
+  marker-line-only replacement on IP change, existing mappings never
+  touched, backup before edit, exact diff shown for user confirmation
+  before the privileged write. Verified with curl/browser; the callback
+  loop uses this domain as site_url (protocol still follows instance
+  SSL). Decommission removes only the marker lines and unbinds the
+  custom domain; the gate whitelist admits the DNS/hosts tools
+  (dig/nslookup/resolve-dns/curl/tee/printf/powershell) for
+  hosting_published and cleanup tools for decommissioned.
 - Skills `rds-supabase-web-build` v0.10.1 + `rds-supabase-frontend` v0.2.2:
   the hosting phase now demands an explicit user-confirmed hosting
   scenario, chosen interactively after asset upload and before entry

@@ -286,7 +286,17 @@
 1. 声明步骤九
 2. frontend 技能：构建环境核对（Node/包管理器，不擅自升级）→ build → 上传步骤三预建桶 → 版本记录（`.hwsupabase/frontend/` 契约；CDN 刷新仅正式模式）。**托管入口协议跟随实例 SSL**：`ssl_enabled=true` → HTTPS 入口（域名/证书就绪）；`false` → HTTP 入口（无需证书，**不得 HTTPS**——HTTPS 页面调用 HTTP 网关属混合内容，被浏览器拦截，站点不可用）
 3. **托管场景选择——交互式勾选（禁止跳过）**：产物上传后、入口配置前，以选择清单呈现两种场景方式，未获用户确认不得推进（不得代为默认）：
-   - **临时访问（原型验证/测试验证）**：适用无正式域名与备案的快速验证——用户已有或临时指定的自定义域名（如已持有域名的子域）绑定桶静态网站托管；**不购买域名、不办理 ICP 备案、不接 CDN**，流程精简、快速直观看到成效；向用户明示局限（非正式商用入口、可能不具备 HTTPS/加速能力）与升级路径（后续可转正式模式重走正式链路）
+   - **临时访问（原型验证/测试验证）**：适用无正式域名与备案的快速验证——**确定性自动配置**，不购买域名、不办理 ICP 备案、不接 CDN：
+     1. **域名确定（可复现，不随机不询问）**：`<应用名英文化>.huaweicloud-rds.com`——英文化 slug 规则同桶名（小写字母/数字/连字符、3–63）；slug 为空或与现存未清理映射冲突 → 追加短 uuid 后缀
+     2. **OBS 域名管理新增自定义域名**：为托管桶绑定上述域名（经 `hcloud obs --help` 确认域名管理子命令或 OBS API 设置桶自定义域名；执行前按官方帮助核实命令与字段，不猜测）
+     3. **本机 hosts 追加映射**（禁止破坏已有映射）：
+        - 解析 OBS endpoint（`environment.obs_endpoint`，缺省按 region 推导）的 A 记录 IP（`dig +short <endpoint>` / Windows `Resolve-DnsName`，多值取首个）
+        - hosts 定位：Linux/macOS `/etc/hosts`；Windows `%SystemRoot%\System32\drivers\etc\hosts`
+        - **只追加带标记行**：先完整读取并检索目标域名——已存在且 IP 相同 → 幂等跳过；已存在且 IP 不同 → **仅替换本流程标记行**（标记注释 `# rds-supabase-web-build:<项目名>`），其余任何行一律不动；**修改前备份** `hosts.rds-supabase.bak.<时间戳>`
+        - 命令：Linux/macOS `printf '\n# rds-supabase-web-build:<项目名>\n<IP> <域名>\n' | sudo tee -a /etc/hosts`；Windows（管理员 PowerShell）`Add-Content -Path "$env:SystemRoot\System32\drivers\etc\hosts" -Value '# rds-supabase-web-build:<项目名>','<IP> <域名>'`
+        - 系统文件操作：展示精确变更内容（仅新增/替换行）→ **经用户确认后执行**（或指导用户在管理员终端执行）
+     4. **验证与回路**：`curl -I http://<域名>/`（或浏览器打开）返回托管内容 → 步骤八↻ 回调回路以该域名为 site_url/redirect_uris（协议跟随实例 SSL）
+     - 明示局限：hosts 映射仅本机生效；OBS endpoint IP 可能变更（变更时**仅更新标记行**）；非正式商用入口；升级路径——转正式模式重走正式链路（下线时清理标记行并解绑自定义域名）
    - **正式上线（线上商用）**：购买域名 → 实名认证 → ICP 备案（中国大陆区域要求，审核时效以官方为准）→ 绑定自有域名 → 按需接入 CDN 加速与 HTTPS 证书（obs-cdn 路线）；费用与周期在确认清单中列示
    - 选择记入 webapp.json `frontend.hosting_mode`（`temporary`/`production`）；两种场景的入口协议均跟随实例 SSL
 4. **回调回路（步骤八↻）**：域名确定（按所选场景入口）→ 管理面 `update_supabase_auth_config` 配 site_url/redirect_uris（展示差异后确认）→ 前端按最终地址**重建再发布**。未执行此回路 = auth 登录回调 404

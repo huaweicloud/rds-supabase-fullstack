@@ -59,9 +59,11 @@ WHITELIST = {
     "frontend_built": ["list_*", "get_*", "npm*", "npx*", "node*", "webapp*", "gate*"],
     "local_verified": ["list_*", "get_*", "npm*", "npx*", "node*", "webapp*", "gate*"],
     "hosting_published": ["list_*", "show_*", "get_*", "update_*", "hcloud*", "obsutil*",
-                          "npm*", "npx*", "uv*", "webapp*", "gate*"],
+                          "npm*", "npx*", "uv*", "dig*", "nslookup*", "resolve-dns*",
+                          "curl*", "tee*", "printf*", "powershell*", "webapp*", "gate*"],
     "launched": ["get_*", "list_*", "*user*", "*admin*", "webapp*", "gate*"],
     "decommissioned": ["list_*", "show_*", "delete_*", "execute_sql", "hcloud*", "obsutil*",
+                       "dig*", "nslookup*", "curl*", "tee*", "sed*", "powershell*",
                        "webapp*", "gate*"],
 }
 

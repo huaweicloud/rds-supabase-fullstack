@@ -7,6 +7,13 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.8.6: tool docking in the comparison
+  canvas is now precise — the backend deployment card names both actors
+  (rds-supabase-mgr-mcp · 创建实例, rds-supabase-mcp · execute_sql 单事务),
+  the Supabase instance card states its origin (由 rds-supabase-mgr-mcp
+  动态创建), and the tooling strip focuses on the skill orchestration
+  (rds-supabase Skill 全程编排). The report caption spells out the same
+  docking; geometry re-verified clean.
 - Skill `rds-supabase-web-build` v0.8.5: the managed side of the comparison
   canvas now shows tool participation at the transitions — a tooling strip
   in the deployment row (rds-supabase Skill orchestration + control-plane

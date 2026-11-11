@@ -7,6 +7,14 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.8.7: the backend dev card in the
+  comparison canvas now speaks to general readers — the internal artifact
+  name init.sql is replaced by 声明式后端 with its contents spelled out:
+  数据建模（库表定义）, CRUD 自动生成 · Data-Function RPC, 权限配置 ·
+  初始化数据. The report's value proposition, section-1 caption, work-item
+  mapping row 1 and conclusion use the same declarative framing (init.sql
+  kept only as the parenthetical artifact name in the detailed mapping).
+  Geometry verified: zero overlaps.
 - Skill `rds-supabase-web-build` v0.8.6: tool docking in the comparison
   canvas is now precise — the backend deployment card names both actors
   (rds-supabase-mgr-mcp · 创建实例, rds-supabase-mcp · execute_sql 单事务),

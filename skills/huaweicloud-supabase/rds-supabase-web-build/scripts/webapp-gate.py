@@ -51,7 +51,7 @@ TRACE_REQUIRED = {"instance_ready", "mcp_connected", "backend_deployed", "fronte
 WHITELIST = {
     "environment_ready": ["diagnostics*", "uv*", "dig*", "nslookup*", "curl*", "webapp*", "gate*"],
     "requirements_confirmed": [],
-    "instance_ready": ["list_*", "show_*", "plan_*", "create_*", "wait_*", "cancel_*",
+    "instance_ready": ["list_*", "show_*", "get_*", "plan_*", "create_*", "wait_*", "cancel_*",
                        "inspect_*", "reconcile_*", "deliver_*", "change_*", "update_*",
                        "hcloud*", "obsutil*", "diagnostics*", "uv*", "webapp*", "gate*"],
     "mcp_connected": ["get_project_url", "list_tables", "uv*", "webapp*", "gate*"],

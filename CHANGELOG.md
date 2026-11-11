@@ -7,6 +7,24 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.11.2: deployment-timing and network
+  discipline for the management-plane MCP. Hard install gate: the mgr
+  MCP is dynamically installed only after credentials (AK/SK or token),
+  endpoint, region and project_id are all correctly obtained and
+  verified — any missing item loops back to step 1 instead of retrying
+  the install against a broken config (the classic cause of endless
+  credential/endpoint errors). Network rules: default is a DIRECT
+  connection to the region — proxies are the fallback, never the
+  default (forwarding chains are the common failure source in
+  intranet/dedicated-line environments; configuring a proxy first is
+  forbidden); after install, a connection check must confirm the MCP
+  is connected and one query tool (get_supabase_capabilities preferred
+  — one is enough) returns normally; only after a direct-connection
+  failure is confirmed (network, credential mode, endpoint checked in
+  order) may a proxy be explicitly configured, recorded, and re-verified.
+  Step 4 carries the same network discipline via its existing
+  verification items; the instance_ready whitelist admits get_* query
+  tools; step-3 assertion and failure handling follow. One new test.
 - Skill `rds-supabase-web-build` v0.11.1: the derived OBS endpoint in
   step 1 is now connection-tested before adoption. The derived
   obs.<region>.myhuaweicloud.com must pass DNS resolution (dig) and an

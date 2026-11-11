@@ -3,7 +3,7 @@ name: rds-supabase-web-build
 description: 'RDS Supabase 全栈开发编排技能：AI Agent 通过自然语言创建并托管 Web 应用网站的端到端工作流——需求澄清与设计、前端代码生成、后端声明式配置（DDL/GRANT/RLS/RPC）生成与部署、本地 L0 测试验证、前端静态资源 OBS+CDN 全托管、端到端上线与生命周期管理（更新/回滚/下线）。Use when：创建 Web 网站、搭建 AI 应用、全栈应用从零到上线、已有 RDS Supabase 应用的迭代更新与托管维护。编排管理面与数据面两台 MCP（均由工作流步骤动态安装：管理面→步骤三、数据面→步骤四）及 rds-supabase-mgr-mcp / rds-supabase-mcp / rds-supabase-usage / rds-supabase-frontend / rds-supabase-postgres-best-practices / rds-supabase-function-graph 六个专项技能。v1 后端边界为数据层；复杂业务逻辑由 function-graph 技能（云函数）承接，SSR 后端部署不支持。'
 license: MIT
 metadata:
-  version: "0.11.1"
+  version: "0.11.2"
 ---
 
 # RDS Supabase 全栈开发编排（web-build）
@@ -96,7 +96,7 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 ### 步骤三 · 资源准备 → 断点 `instance_ready`
 
 1. 复核步骤一环境配置（凭据 / Region / RDS·OBS 接入点 / PROJECT_ID）仍就绪；发现缺项 → 返回步骤一补齐
-2. **动态启动管理面 MCP**（已连接则跳过）。安装方式唯一二选一，**不得另寻来源**：
+2. **动态启动管理面 MCP**（已连接则跳过）。**安装时机硬门槛**：凭据（AK/SK 或 Token）、Endpoint、Region、PROJECT_ID 四项**全部正确获取并核验后才开始安装**——任一项缺失即返回步骤一补齐，不带着配置缺口反复尝试安装（否则将持续报凭据/接入点类故障）。安装方式唯一二选一，**不得另寻来源**：
 
    ```bash
    # git 模板（推荐）
@@ -118,6 +118,8 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 
    ZIP 归档属本仓官方源（`.../archive/<commit>.zip` 为 pin 等价形式），不违反来源锁定；仍禁 PyPI/第三方源。
    env：`SUPABASE_RDS_ENDPOINT` / `HUAWEICLOUD_PROJECT_ID` / 凭据——**值一律由项目内配置注入进程**（步骤一 `environment` 段与 `secrets/`），不读取会话/全局环境。**凭据模式二选一**：REST token（`HUAWEICLOUD_AUTH_TOKEN`，`SUPABASE_TRANSPORT` 默认 rest）或 **AK/SK（必须设置 `SUPABASE_TRANSPORT=sdk_core`**，读取 `HUAWEICLOUD_ACCESS_KEY`/`HUAWEICLOUD_SECRET_KEY`/可选 `HUAWEICLOUD_SECURITY_TOKEN`）——用户已填 AK/SK 而未设 `sdk_core` 时管理面将按 REST 模式启动并因缺 Token 失败；devkit 优先；或 `diagnostics discover` 勾选；或半自动方案：配置模板含占位符，由用户填入实际值
+
+   **网络与验证纪律**：**默认不走代理直连局点**（内网/专线环境经代理转发易引入链路故障；**禁止上来就走代理**——代理是兜底项而非默认项）；安装完成后执行**连接验证**：MCP 连接 OK 且任一**查询类工具**（优先 `get_supabase_capabilities`，一个即可）正常返回，验证通过才算安装成功；直连验证失败 → 先核对网络可达性、凭据模式（AK/SK 须 `sdk_core`）与 Endpoint，**确认直连不可达后**再显式配置代理并复验
 
    **注册纪律（项目级隔离）**：MCP 启动后**只注册进当前项目的项目级 MCP 配置**（Claude Code `<项目根>/.mcp.json`、CodeArts `<项目根>/.codeartsdoer/`、OfficeAce 项目根下项目级配置、opencode `<项目根>/opencode.json`；**禁止 `~/.claude.json` user scope、Claude Desktop `claude_desktop_config.json`、`~/.config/opencode/` 等一切用户级/系统级位置**——用户级注册会使本机其他项目可见可用，属边界溢出；宿主仅有用户级机制 → 停止报告，不注册）；含凭据的配置文件列入 `.gitignore`（0600）；**严禁 `uv tool install`/`pip install` 装入用户级/系统级**——uvx 仅一次性缓存运行；注册后核验落位再重载客户端（详细表见 workflow-stages.md 步骤三）
 3. **Supabase 应用接入方式——交互式勾选（禁止跳过）**：以选择清单呈现「使用已有应用 / 新建应用」二选一，未获用户显式选择不得推进，不得代为默认。**使用已有** → `list_supabase_applications` 候选列表（ID/名称/状态/规格）供用户勾选 + `show_supabase_application` 状态核验；**新建** → 创建（仅 Single）+ 配置 EIP/安全组 8443/SSL
@@ -152,7 +154,7 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 
    **访问协议跟随实例 SSL 状态**：实例开启 SSL → `https://`；未开启 SSL → `http://`（**不强制 HTTPS 交互**）。步骤三将 `instance.ssl_enabled`（true/false）记入 webapp.json；gate `--verify` 据此放行 http——`ssl_enabled=false` 时 HTTP 即预期访问方式
 
-   注册纪律与步骤三相同：数据面 MCP **只注册进当前项目的项目级配置**（同表同禁令；宿主仅有用户级机制 → 停止报告，不注册），严禁用户级/系统级
+   注册纪律与步骤三相同：数据面 MCP **只注册进当前项目的项目级配置**（同表同禁令；宿主仅有用户级机制 → 停止报告，不注册），严禁用户级/系统级；**网络纪律同步骤三**：默认直连不走代理（禁止上来就走代理），装后以查询工具验证连接
 2. 验证：`get_project_url` == 网关地址 + `list_tables` 应答 → 写 webapp.json → gate PASS
 
 ### 步骤五 · 后端生成部署 → 断点 `backend_deployed`

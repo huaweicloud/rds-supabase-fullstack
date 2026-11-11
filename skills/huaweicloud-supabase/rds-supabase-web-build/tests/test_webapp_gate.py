@@ -780,6 +780,15 @@ class WhitelistTests(unittest.TestCase):
         result = run_gate(project, "check-whitelist")
         self.assertEqual(result.returncode, 0, result.stdout)
 
+    def test_pass_get_tools_allowed_at_instance_ready(self):
+        project = make_project()
+        with (project / ".hwsupabase" / "trace.jsonl").open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps({"at": "2026-11-10T07:10:00Z", "stage": "instance_ready",
+                                     "tool": "get_supabase_capabilities", "intent": "connection check",
+                                     "status": "ok", "note": None}) + "\n")
+        result = run_gate(project, "check-whitelist")
+        self.assertEqual(result.returncode, 0, result.stdout)
+
     def test_fail_on_out_of_stage_tool(self):
         project = make_project()
         with (project / ".hwsupabase" / "trace.jsonl").open("a", encoding="utf-8") as handle:

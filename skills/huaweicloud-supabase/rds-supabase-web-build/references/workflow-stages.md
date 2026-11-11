@@ -103,7 +103,8 @@
 **动作序列**：
 
 1. 声明步骤三；复核步骤一环境配置（凭据 / Region / RDS·OBS 接入点 / PROJECT_ID）仍就绪，发现缺项 → 返回步骤一补齐
-2. **管理面就绪**：检测已连接 MCP（devkit 预初始化）；无则动态启动——**安装来源只允许本仓**：uvx 模板 `git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr`（入口 `mcp-huaweicloud-rds-supabase-mgr`；**生产建议 pin `@<commit>` 锁定版本，避免默认分支变更引入未验证行为**）或本地 `uv run --directory <仓>/server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr`；**禁止**从 PyPI/第三方仓搜索安装（存在同名第三方包）。启动 env **凭据模式二选一**（**值一律由项目内配置注入进程**——步骤一 `environment` 段与 `secrets/`，不读取会话/全局环境）：REST token（`HUAWEICLOUD_AUTH_TOKEN`，默认 `SUPABASE_TRANSPORT=rest`）或 **AK/SK（必须设置 `SUPABASE_TRANSPORT=sdk_core`**，读取 `HUAWEICLOUD_ACCESS_KEY`/`HUAWEICLOUD_SECRET_KEY`/可选 `HUAWEICLOUD_SECURITY_TOKEN`——用户已填 AK/SK 而未设 `sdk_core` 将按 REST 模式启动并失败）。**网络逃生通道**：uvx git 拉取失败或停滞（含代理后仍不通；连续失败 2 次或 30 秒无进展即判失败）→ **立即切换** ZIP 归档（`TMP=$(mktemp -d)`，`curl -L --fail --max-time 120 -o "$TMP/rds.zip" https://github.com/huaweicloud/rds-supabase-fullstack/archive/refs/heads/main.zip && unzip -q "$TMP/rds.zip" -d "$TMP"`；浏览器直接下载该 URL 亦**落临时目录**）+ 本地模板 `uv run --directory "$TMP/rds-supabase-fullstack-main/server/mcp_server_rds_supabase_mgr" mcp-huaweicloud-rds-supabase-mgr`——**下载物一律落唯一临时目录（mktemp -d），不污染项目目录/家目录；MCP 运行期间保留、停止后清理**——ZIP 属本仓官方源，不违反来源锁定，仍禁 PyPI/第三方源。启动后遵循 mgr-mcp 技能两阶段确认与执行账本
+2. **管理面就绪（安装时机硬门槛）**：**凭据（AK/SK 或 Token）、`SUPABASE_RDS_ENDPOINT`、Region、`HUAWEICLOUD_PROJECT_ID` 四项全部正确获取并核验后，才开始动态启动管理面 MCP**——任一项缺失或未核验 → 返回步骤一补齐后再来，不带着配置缺口反复尝试安装（否则将持续报凭据/接入点类故障）。检测已连接 MCP（devkit 预初始化）；无则动态启动——**安装来源只允许本仓**：uvx 模板 `git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr`（入口 `mcp-huaweicloud-rds-supabase-mgr`；**生产建议 pin `@<commit>` 锁定版本，避免默认分支变更引入未验证行为**）或本地 `uv run --directory <仓>/server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr`；**禁止**从 PyPI/第三方仓搜索安装（存在同名第三方包）。启动 env **凭据模式二选一**（**值一律由项目内配置注入进程**——步骤一 `environment` 段与 `secrets/`，不读取会话/全局环境）：REST token（`HUAWEICLOUD_AUTH_TOKEN`，默认 `SUPABASE_TRANSPORT=rest`）或 **AK/SK（必须设置 `SUPABASE_TRANSPORT=sdk_core`**，读取 `HUAWEICLOUD_ACCESS_KEY`/`HUAWEICLOUD_SECRET_KEY`/可选 `HUAWEICLOUD_SECURITY_TOKEN`——用户已填 AK/SK 而未设 `sdk_core` 将按 REST 模式启动并失败）。**网络逃生通道**：uvx git 拉取失败或停滞（含代理后仍不通；连续失败 2 次或 30 秒无进展即判失败）→ **立即切换** ZIP 归档（`TMP=$(mktemp -d)`，`curl -L --fail --max-time 120 -o "$TMP/rds.zip" https://github.com/huaweicloud/rds-supabase-fullstack/archive/refs/heads/main.zip && unzip -q "$TMP/rds.zip" -d "$TMP"`；浏览器直接下载该 URL 亦**落临时目录**）+ 本地模板 `uv run --directory "$TMP/rds-supabase-fullstack-main/server/mcp_server_rds_supabase_mgr" mcp-huaweicloud-rds-supabase-mgr`——**下载物一律落唯一临时目录（mktemp -d），不污染项目目录/家目录；MCP 运行期间保留、停止后清理**——ZIP 属本仓官方源，不违反来源锁定，仍禁 PyPI/第三方源。启动后遵循 mgr-mcp 技能两阶段确认与执行账本
+   **网络与验证纪律**：**默认不走代理直连局点**（内网/专线环境经代理转发常引入链路故障；**禁止上来就走代理**——代理是兜底项而非默认项）；安装完成后执行**连接验证**：确认 MCP 连接 OK，且任一**查询类工具**（优先 `get_supabase_capabilities`，一个即可）正常返回——验证通过才算安装成功；直连验证失败 → 依次核对网络可达性、凭据模式（AK/SK 须 `SUPABASE_TRANSPORT=sdk_core`）、Endpoint，**确认直连不可达后**再显式配置代理（记录所配代理）并复验
    **注册位置（项目级强约束）**——MCP 启动后只注册进当前项目的项目级 MCP 配置（当前项目之外不可见；用户级/系统级注册 = 本机所有项目可见可用 = 边界溢出，严禁）：
 
    | 宿主 | 项目级 MCP 配置（唯一允许） | 条目结构 | 禁止（用户级/系统级） |
@@ -130,7 +131,7 @@
    - 选定后经管理面 `update_supabase_storage` 完成对接（凭据 bucket/AK/SK 经 request_ref、两阶段确认；首次启用需 SK，见 mgr-mcp 技能）→ 核验对接生效
 7. 写 webapp.json（instance 段 + `obs` 段：`bucket_name`/`source`/`naming_basis` + `mcp` 段：`registration_scope`/`config_paths.mgr` + `storage` 段（能力含 storage 时）：`bucket_name`/`source`/`connected`，契约见 project-state.md）→ gate → 步骤报告
 
-**输出断言**：🔍 实例 running 且实际可访问，接入方式经用户显式勾选确认｜🔍 桶就绪且接入方式经用户显式勾选确认（公开读核验通过）｜🔍 Storage 桶（如诉求存在）私有、未复用前端托管桶且对接生效｜🔍 管理面 MCP 注册落位项目级配置（核验通过，未触碰用户级/系统级）｜🤖 gate PASS（instance 契约 + `source` 枚举 + obs 契约 + mcp 契约 + storage 契约）
+**输出断言**：🔍 实例 running 且实际可访问，接入方式经用户显式勾选确认｜🔍 桶就绪且接入方式经用户显式勾选确认（公开读核验通过）｜🔍 Storage 桶（如诉求存在）私有、未复用前端托管桶且对接生效｜🔍 管理面 MCP 连接验证通过（查询工具一次调用 OK，默认直连未走代理）｜🔍 管理面 MCP 注册落位项目级配置（核验通过，未触碰用户级/系统级）｜🤖 gate PASS（instance 契约 + `source` 枚举 + obs 契约 + mcp 契约 + storage 契约）
 
 **工具白名单**：允许：管理面 list/show/plan/create/wait/ApiKey 交付、`diagnostics discover`、frontend 技能 KooCLI（OBS 桶）；禁止：数据面 MCP（尚未安装）、一切 SQL 执行
 
@@ -146,7 +147,7 @@
 → gate PASS → 步骤报告（步骤三）（下一步骤预告：重载客户端后安装数据面 MCP）
 ```
 
-**失败处置**：环境缺项 → 返回步骤一补齐；创建结果未知 → 管理面账本 `inspect_supabase_plan`，不重复提交；配额/权限不足 → 停止报告缺项；公开读候选桶为空 → 呈现空清单并引导用户转入新建分支；新建桶名冲突 → 重新生成短 uuid 后缀并复核唯一性。**断点**：`instance_ready`
+**失败处置**：环境缺项 → 返回步骤一补齐；**MCP 安装反复失败 → 先回查四项前置（凭据/Endpoint/Region/PROJECT_ID）与凭据模式，再查网络——直连失败才考虑代理（禁止上来就走代理）**；创建结果未知 → 管理面账本 `inspect_supabase_plan`，不重复提交；配额/权限不足 → 停止报告缺项；公开读候选桶为空 → 呈现空清单并引导用户转入新建分支；新建桶名冲突 → 重新生成短 uuid 后缀并复核唯一性。**断点**：`instance_ready`
 
 ## 步骤四 · 数据面接入
 
@@ -157,7 +158,7 @@
 **动作序列**：
 
 1. 声明步骤四
-2. 按 `rds-supabase-mcp 技能 references/install.md` 动态安装；**来源只允许本仓**——完整命令：`uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack --subdirectory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase`（或本地克隆 `uv run --directory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase`；服务器文档：https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase/README.md ）。**网络逃生通道**：uvx git 拉取失败或停滞（含代理后仍不通；连续失败 2 次或 30 秒无进展即判失败）→ **立即切换** ZIP 归档（`TMP=$(mktemp -d)`，`curl -L --fail --max-time 120 -o "$TMP/rds.zip" https://github.com/huaweicloud/rds-supabase-fullstack/archive/refs/heads/main.zip && unzip -q "$TMP/rds.zip" -d "$TMP"`；浏览器直接下载该 URL 亦**落临时目录**）+ 本地模板 `uv run --directory "$TMP/rds-supabase-fullstack-main/server/mcp_server_rds_supabase" mcp-server-huaweicloud-rds-supabase`——**下载物一律落唯一临时目录（mktemp -d），不污染项目目录/家目录；MCP 运行期间保留、停止后清理**——ZIP 属本仓官方源，不违反来源锁定。禁止搜索 PyPI 同名包
+2. 按 `rds-supabase-mcp 技能 references/install.md` 动态安装；**来源只允许本仓**——完整命令：`uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack --subdirectory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase`（或本地克隆 `uv run --directory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase`；服务器文档：https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase/README.md ）。**网络逃生通道**：uvx git 拉取失败或停滞（含代理后仍不通；连续失败 2 次或 30 秒无进展即判失败）→ **立即切换** ZIP 归档（`TMP=$(mktemp -d)`，`curl -L --fail --max-time 120 -o "$TMP/rds.zip" https://github.com/huaweicloud/rds-supabase-fullstack/archive/refs/heads/main.zip && unzip -q "$TMP/rds.zip" -d "$TMP"`；浏览器直接下载该 URL 亦**落临时目录**）+ 本地模板 `uv run --directory "$TMP/rds-supabase-fullstack-main/server/mcp_server_rds_supabase" mcp-server-huaweicloud-rds-supabase`——**下载物一律落唯一临时目录（mktemp -d），不污染项目目录/家目录；MCP 运行期间保留、停止后清理**——ZIP 属本仓官方源，不违反来源锁定。禁止搜索 PyPI 同名包。**网络纪律同步骤三**：默认直连不走代理（禁止上来就走代理）；装后以既有验证项（`get_project_url` / `list_tables`，一个查询即可）确认连接 OK；直连失败才考虑代理
 3. 凭据注入（**来源与作用域**）：数据面**无 `SUPABASE_TRANSPORT` 参数、不使用华为云 AK/SK**——凭据为网关三件套（`SUPABASE_URL` + 两把 Key），**值一律取自项目内 `.hwsupabase/secrets/`**（半自动路径：agent 生成含占位符的 mcpServers 配置模板 → 用户从**项目内**受保护文件复制实际值填入 → 客户端重载；agent 全程不接触明文；**不从会话/全局环境读取**）。**注入作用域限于 MCP 进程**（进程 env 或项目内 0600 凭据文件）——不 `export` 到 shell 会话、不写入 shell profile 或任何全局/个人级配置
 4. **访问协议跟随实例 SSL 状态**（`SUPABASE_URL` 取值规则）：开启 SSL → `https://`；未开启 → `http://`（**不强制 HTTPS 交互**；步骤三已将 `instance.ssl_enabled` 记入 webapp.json，gate `--verify` 对 `ssl_enabled=false` 放行 http）
 5. **注册纪律（与步骤三同表同禁令）**：数据面 MCP **只注册进当前项目的项目级 MCP 配置**（宿主仅有用户级机制 → 停止并报告，不注册；含凭据的配置文件列入 `.gitignore`、0600）；注册后核验落位 → 客户端重载 → 写 webapp.json `mcp.config_paths.data`

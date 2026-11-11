@@ -7,6 +7,16 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.8.1: all repo download sites now land
+  in a unique temporary directory. git clones, ZIP-archive downloads and
+  unzip extractions (README escape hatch, INSTALL methods B/C, SKILL.md
+  stage-3/4 escape blocks, workflow-stages stage-3/4 inline commands) run
+  under `TMP=$(mktemp -d)` with quoted $TMP paths, so nothing pollutes the
+  project directory or the home directory. Browser downloads of the ZIP
+  URL must land in a temporary directory as well. Skill-pack installs
+  clean up immediately (`rm -rf "$TMP"`); MCP escape-hatch directories
+  stay retained while the server runs (uv run points into them) and are
+  cleaned after the MCP stops.
 - Skill `rds-supabase-web-build` v0.8.0: new human-facing deliverable
   USER_GUIDE_REPORT.md — a comparison report of the traditional
   frontend→backend→database self-built chain versus the Supabase+OBS

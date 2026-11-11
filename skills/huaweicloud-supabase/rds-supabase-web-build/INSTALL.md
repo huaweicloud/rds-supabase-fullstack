@@ -68,18 +68,22 @@ CodeArts 的两级目录**同名不同根**：随项目走的是 `<项目根>/.c
 Claude Code：`<项目根>/.claude/skills/`；其余宿主按其项目级技能机制，Agent 自知位置）：
 
 ```bash
-git clone https://github.com/huaweicloud/rds-supabase-fullstack
-cp -r rds-supabase-fullstack/skills/huaweicloud-supabase/* <项目技能目录>/
+TMP=$(mktemp -d)   # 克隆落临时目录，不污染项目目录与家目录
+git clone https://github.com/huaweicloud/rds-supabase-fullstack "$TMP/rds-supabase-fullstack"
+cp -r "$TMP/rds-supabase-fullstack/skills/huaweicloud-supabase/"* <项目技能目录>/
+rm -rf "$TMP"     # 复制完成即清理
 ```
 
 方式 C（**网络逃生通道**——git 不可达时立即切换，不反复重试）：克隆失败或停滞
 （含代理后仍不通；连续失败 2 次或 30 秒无进展即判失败）→ 下载仓库 ZIP 归档解压使用：
 
 ```bash
-curl -L --fail --max-time 120 -o rds-supabase-fullstack.zip \
+TMP=$(mktemp -d)   # 下载解压落临时目录，不污染项目目录与家目录
+curl -L --fail --max-time 120 -o "$TMP/rds-supabase-fullstack.zip" \
   https://github.com/huaweicloud/rds-supabase-fullstack/archive/refs/heads/main.zip
-unzip rds-supabase-fullstack.zip
-cp -r rds-supabase-fullstack-main/skills/huaweicloud-supabase/* <项目技能目录>/
+unzip -q "$TMP/rds-supabase-fullstack.zip" -d "$TMP"
+cp -r "$TMP/rds-supabase-fullstack-main/skills/huaweicloud-supabase/"* <项目技能目录>/
+rm -rf "$TMP"     # 安装完成即清理
 ```
 
 浏览器直接打开该 ZIP URL 下载亦可（浏览器常走不同加速通道）。ZIP 归档属本仓

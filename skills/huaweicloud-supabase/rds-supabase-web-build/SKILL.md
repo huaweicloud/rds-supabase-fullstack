@@ -3,7 +3,7 @@ name: rds-supabase-web-build
 description: 'RDS Supabase 全栈开发编排技能：AI Agent 通过自然语言创建并托管 Web 应用网站的端到端工作流——前端代码生成、后端 init.sql（DDL/GRANT/RLS/RPC）生成与部署、前端静态资源 OBS+CDN 全托管、端到端上线与生命周期管理（更新/回滚/下线）。Use when：创建 Web 网站、搭建 AI 应用、全栈应用从零到上线、已有 RDS Supabase 应用的迭代更新与托管维护。编排管理面与数据面两台 MCP（均由工作流步骤动态安装：管理面→步骤三、数据面→步骤四）及 rds-supabase-mgr-mcp / rds-supabase-mcp / rds-supabase-usage / rds-supabase-frontend / rds-supabase-postgres-best-practices 五个专项技能。v1 后端边界为数据层；复杂业务逻辑（支付/第三方调用/长任务）不在 v1 范围，SSR 后端部署不支持。'
 license: MIT
 metadata:
-  version: "0.8.0"
+  version: "0.8.1"
 ---
 
 # RDS Supabase 全栈开发编排（web-build）
@@ -105,10 +105,12 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
    **网络逃生通道**：uvx git 拉取失败或停滞（含代理后仍不通；连续失败 2 次或 30 秒无进展即判失败）→ **立即切换** ZIP 归档 + 本地运行，不反复重试：
 
    ```bash
-   curl -L --fail --max-time 120 -o rds-supabase-fullstack.zip \
+   TMP=$(mktemp -d)   # 下载物一律落唯一临时目录，不污染项目目录与家目录
+   curl -L --fail --max-time 120 -o "$TMP/rds-supabase-fullstack.zip" \
      https://github.com/huaweicloud/rds-supabase-fullstack/archive/refs/heads/main.zip
-   unzip rds-supabase-fullstack.zip
-   uv run --directory rds-supabase-fullstack-main/server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr
+   unzip -q "$TMP/rds-supabase-fullstack.zip" -d "$TMP"
+   uv run --directory "$TMP/rds-supabase-fullstack-main/server/mcp_server_rds_supabase_mgr" mcp-huaweicloud-rds-supabase-mgr
+   # 临时目录在 MCP 运行期间必须保留（uv run 指向它）；MCP 停止后 rm -rf "$TMP" 清理
    ```
 
    ZIP 归档属本仓官方源（`.../archive/<commit>.zip` 为 pin 等价形式），不违反来源锁定；仍禁 PyPI/第三方源。
@@ -131,10 +133,12 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
    **网络逃生通道**：uvx git 拉取失败或停滞（含代理后仍不通；连续失败 2 次或 30 秒无进展即判失败）→ **立即切换** ZIP 归档 + 本地运行，不反复重试：
 
    ```bash
-   curl -L --fail --max-time 120 -o rds-supabase-fullstack.zip \
+   TMP=$(mktemp -d)   # 下载物一律落唯一临时目录，不污染项目目录与家目录
+   curl -L --fail --max-time 120 -o "$TMP/rds-supabase-fullstack.zip" \
      https://github.com/huaweicloud/rds-supabase-fullstack/archive/refs/heads/main.zip
-   unzip rds-supabase-fullstack.zip
-   uv run --directory rds-supabase-fullstack-main/server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase
+   unzip -q "$TMP/rds-supabase-fullstack.zip" -d "$TMP"
+   uv run --directory "$TMP/rds-supabase-fullstack-main/server/mcp_server_rds_supabase" mcp-server-huaweicloud-rds-supabase
+   # 临时目录在 MCP 运行期间必须保留（uv run 指向它）；MCP 停止后 rm -rf "$TMP" 清理
    ```
 
    ZIP 归档属本仓官方源（`.../archive/<commit>.zip` 为 pin 等价形式），不违反来源锁定；仍禁 PyPI/第三方源。

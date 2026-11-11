@@ -24,13 +24,15 @@ Agent 执行要点：
 1a. **网络逃生通道（git 不可达时立即切换，不反复重试）**：克隆失败或停滞（代理后仍不通，连续失败 2 次或 30 秒无进展即判失败）→ 直接下载仓库 ZIP 归档并解压使用：
 
    ```bash
-   curl -L --fail --max-time 120 -o rds-supabase-fullstack.zip \
+   TMP=$(mktemp -d)   # 下载物一律落唯一临时目录，不污染项目目录与家目录
+   curl -L --fail --max-time 120 -o "$TMP/rds-supabase-fullstack.zip" \
      https://github.com/huaweicloud/rds-supabase-fullstack/archive/refs/heads/main.zip
-   unzip rds-supabase-fullstack.zip
-   # 取 rds-supabase-fullstack-main/skills/huaweicloud-supabase/ 下所有技能目录完整安装
+   unzip -q "$TMP/rds-supabase-fullstack.zip" -d "$TMP"
+   # 取 "$TMP/rds-supabase-fullstack-main/skills/huaweicloud-supabase/" 下所有技能目录完整安装
+   rm -rf "$TMP"     # 安装完成即清理
    ```
 
-   浏览器直接打开该 ZIP URL 下载亦可（浏览器常走不同加速通道）。ZIP 归档属本仓官方源，不违反来源锁定；版本 pin 等价形式为 `.../archive/<commit>.zip`。
+   浏览器直接打开该 ZIP URL 下载亦可（浏览器常走不同加速通道）——**下载物同样落临时目录**（如 `mktemp -d` 生成目录），不落项目目录/家目录。ZIP 归档属本仓官方源，不违反来源锁定；版本 pin 等价形式为 `.../archive/<commit>.zip`。
 2. **MCP 与凭据**：安装阶段**不涉及**——两台 MCP 服务器由技能工作流动态安装（管理面 → 步骤三、数据面 → 步骤四，同样只从本仓，见下表）；凭据、Region、接入点、PROJECT_ID 由步骤一环境检查与配置处理
 3. **汇报**：已装技能清单、触发语句示例（如"帮我建一个博客网站"）
 

@@ -7,6 +7,22 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.9.0: resource acquisition in step 3 now
+  requires explicit interactive selection, skipping forbidden, for BOTH
+  resources. The Supabase application access method (use existing /
+  create new) must be chosen by the user from a selection list before
+  proceeding — no defaulting on the user's behalf. The OBS bucket access
+  method follows the same rule: when reusing, only buckets qualifying for
+  static hosting are presented as candidates (non-public buckets are
+  filtered out of the list entirely); when creating, the bucket name
+  defaults to the application name transliterated to a lowercase
+  letter/digit/hyphen slug (3-63 chars), with a short uuid suffix appended
+  on name conflict, and the final name is user-confirmed before creation.
+  webapp.json gains a mandatory `obs` section from instance_ready onward
+  (bucket_name / source / naming_basis); webapp-gate validates the bucket
+  name pattern, the source enum, and the naming_basis coupling; six new
+  tests cover the contract. Wording across SKILL.md and workflow-stages.md
+  is professional and formal throughout.
 - Skill `rds-supabase-web-build` v0.8.8: complete tool-docking audit of the
   managed side. Frontend lane now carries its tools: dev card names
   supabase-js (the SDK integration, usage-skill governed), deploy card

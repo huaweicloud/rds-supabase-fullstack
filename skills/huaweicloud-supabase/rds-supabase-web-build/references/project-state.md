@@ -32,6 +32,7 @@
 | schema_version | integer | 固定 `1` |
 | project | object | 见下 |
 | instance | object/null | 未进入步骤三时为 `null` |
+| obs | object/null | 未进入步骤三时为 `null` |
 | backend | object/null | 未部署时为 `null` |
 | frontend | object/null | 未生成时为 `null` |
 | stages | object | 见下 |
@@ -55,6 +56,14 @@
 | credential_env_names | string[] | 固定 `["SUPABASE_URL","SUPABASE_ANON_KEY","SUPABASE_SERVICE_ROLE_KEY"]` |
 | credential_source | string | `devkit` 或 `protected_file` |
 | region | string/null | 区域（如适用） |
+
+### obs
+
+| 字段 | 类型 | 规则 |
+|---|---|---|
+| bucket_name | string | 选定或新建的桶名：3–63 字符，仅小写字母、数字与连字符，以字母或数字开头与结尾 |
+| source | string | `created`（本流程新建，桶名经用户确认）或 `selected`（步骤三用户自公开读候选勾选） |
+| naming_basis | string/null | `created` 时必填：`app_name_slug`（应用名英文化）或 `app_name_slug_uuid`（英文化后名称冲突，追加短 uuid 后缀）；`selected` 时为 `null` |
 
 ### backend
 

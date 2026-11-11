@@ -38,6 +38,7 @@ STAGES = ["environment_ready", "requirements_confirmed", "instance_ready", "mcp_
 TS = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 SHA = re.compile(r"^[0-9a-f]{64}$")
 CRED = re.compile(r"eyJ[A-Za-z0-9_-]{10,}|BEGIN (RSA|EC|OPENSSH) PRIVATE|AKID[A-Za-z0-9]{10,}")
+BUCKET = re.compile(r"^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$")
 GATE_FILES = {3: "3-rules-checklist.md", 4: "4-sdk-contract-checklist.md"}
 CRED_ENV_NAMES = ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"]
 # Stages whose completion requires at least one ok trace record (tool activity
@@ -113,6 +114,20 @@ def check_contract(data, missing):
             region = instance.get("region")
             if region is not None and not isinstance(region, str):
                 missing.append("instance.region must be a string or null")
+    obs = data.get("obs")
+    if obs is not None:
+        if not isinstance(obs, dict):
+            missing.append("obs must be an object or null")
+        else:
+            if not (isinstance(obs.get("bucket_name"), str) and BUCKET.match(obs["bucket_name"])):
+                missing.append("obs.bucket_name must be a valid bucket name "
+                               "(3-63 chars, lowercase letters/digits/hyphens, letter-or-digit ends)")
+            if obs.get("source") not in ("created", "selected"):
+                missing.append("obs.source must be 'created' or 'selected'")
+            if obs.get("source") == "created" and obs.get("naming_basis") not in ("app_name_slug", "app_name_slug_uuid"):
+                missing.append("obs.naming_basis must be 'app_name_slug' or 'app_name_slug_uuid' when source is 'created'")
+            if obs.get("source") == "selected" and obs.get("naming_basis") is not None:
+                missing.append("obs.naming_basis must be null when source is 'selected'")
     backend = data.get("backend")
     if backend is not None:
         if not isinstance(backend, dict) or not isinstance(backend.get("deployments"), list):
@@ -182,6 +197,9 @@ def check_stage(data, stage, missing):
     if stage in ("instance_ready", "mcp_connected", "backend_deployed", "frontend_built",
                  "hosting_published", "launched") and not isinstance(data.get("instance"), dict):
         missing.append("instance section missing from instance_ready onward")
+    if stage in ("instance_ready", "mcp_connected", "backend_deployed", "frontend_built",
+                 "hosting_published", "launched") and not isinstance(data.get("obs"), dict):
+        missing.append("obs section missing from instance_ready onward")
     if stage in ("frontend_built", "hosting_published", "launched") and not isinstance(data.get("frontend"), dict):
         missing.append("frontend section missing from frontend_built onward")
     if stage in ("backend_deployed", "frontend_built", "hosting_published", "launched"):

@@ -3,7 +3,7 @@ name: rds-supabase-web-build
 description: 'RDS Supabase 全栈开发编排技能：AI Agent 通过自然语言创建并托管 Web 应用网站的端到端工作流——前端代码生成、后端 init.sql（DDL/GRANT/RLS/RPC）生成与部署、前端静态资源 OBS+CDN 全托管、端到端上线与生命周期管理（更新/回滚/下线）。Use when：创建 Web 网站、搭建 AI 应用、全栈应用从零到上线、已有 RDS Supabase 应用的迭代更新与托管维护。编排管理面与数据面两台 MCP（均由工作流步骤动态安装：管理面→步骤三、数据面→步骤四）及 rds-supabase-mgr-mcp / rds-supabase-mcp / rds-supabase-usage / rds-supabase-frontend / rds-supabase-postgres-best-practices 五个专项技能。v1 后端边界为数据层；复杂业务逻辑（支付/第三方调用/长任务）不在 v1 范围，SSR 后端部署不支持。'
 license: MIT
 metadata:
-  version: "0.8.8"
+  version: "0.9.0"
 ---
 
 # RDS Supabase 全栈开发编排（web-build）
@@ -115,9 +115,9 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 
    ZIP 归档属本仓官方源（`.../archive/<commit>.zip` 为 pin 等价形式），不违反来源锁定；仍禁 PyPI/第三方源。
    env：`SUPABASE_RDS_ENDPOINT` / `HUAWEICLOUD_PROJECT_ID` / 凭据。**凭据模式二选一**：REST token（`HUAWEICLOUD_AUTH_TOKEN`，`SUPABASE_TRANSPORT` 默认 rest）或 **AK/SK（必须设置 `SUPABASE_TRANSPORT=sdk_core`**，读取 `HUAWEICLOUD_ACCESS_KEY`/`HUAWEICLOUD_SECRET_KEY`/可选 `HUAWEICLOUD_SECURITY_TOKEN`）——用户已填 AK/SK 而未设 `sdk_core` 时管理面将按 REST 模式启动并因缺 Token 失败；devkit 优先；或 `diagnostics discover` 勾选；或半自动方案：配置模板含占位符，由用户填入实际值
-3. 实例**先问新建/已有**：已有 → `list_supabase_applications` 列表勾选 + 状态核验；新建 → 创建（仅 Single）+ 配置 EIP/安全组 8443/SSL
+3. **Supabase 应用接入方式——交互式勾选（禁止跳过）**：以选择清单呈现「使用已有应用 / 新建应用」二选一，未获用户显式选择不得推进，不得代为默认。**使用已有** → `list_supabase_applications` 候选列表（ID/名称/状态/规格）供用户勾选 + `show_supabase_application` 状态核验；**新建** → 创建（仅 Single）+ 配置 EIP/安全组 8443/SSL
 4. **凭据获取（两条路径均必须执行，不得遗漏）**：网关 URL + Anon/Service Role Key → 受保护文件（步骤四安装所必需）
-5. OBS 租户桶（frontend 技能引导）→ 写 webapp.json instance 段 → gate PASS
+5. **OBS 桶接入方式——交互式勾选（禁止跳过）**：以选择清单呈现「使用已有桶 / 新建桶」二选一，未获用户显式选择不得推进，不得代为默认（frontend 技能引导）。**使用已有** → 列出租户桶并**仅保留满足静态托管条件的公开读桶**（非公开桶一律剔除、不入候选）供用户勾选 + 区域与托管能力核验；**新建** → **桶名默认与应用名称保持一致**（英文化：小写字母/数字/连字符，3–63 字符；**名称冲突追加短 uuid 后缀**），经用户确认后创建并配置公开读策略 → 写 webapp.json instance 段与 obs 段 → gate PASS
 
 ### 步骤四 · 数据面接入 → 断点 `mcp_connected`
 
@@ -211,6 +211,7 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 |---|---|
 | 步骤二 需求摘要与数据模型 | 用户逐项确认后才进入步骤三；模糊表述不放大授权 |
 | 付费资源创建（实例/桶/CDN） | 费用预估清单展示 + 用户显式确认（管理面两阶段确认作为最终保障） |
+| 步骤三 资源接入方式（Supabase 应用 / OBS 桶） | 交互式勾选，禁止跳过；未获显式选择不得推进、不得代为默认；已有桶候选仅含公开读桶；新建桶名默认与应用名英文化一致，名称冲突追加短 uuid 后缀 |
 | init.sql（步骤五产出） | best-practices 四项审查通过；破坏性语句逐条人工确认 |
 | 凭据 | agent 永不接触明文；只处理 env 名与注入状态；连通性以工具调用结果证明 |
 | 回调配置（步骤七↻） | 展示 site_url/redirect_uris 差异后确认 |

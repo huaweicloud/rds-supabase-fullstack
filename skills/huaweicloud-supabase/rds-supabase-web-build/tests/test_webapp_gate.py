@@ -76,6 +76,7 @@ def make_project(tables=("public.posts", "public.users"), exposed=("public.posts
                      "gateway_url": "http://127.0.0.1:9", "credential_env_names":
                      ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"],
                      "credential_source": "protected_file", "region": "cn-north-4"},
+        "obs": {"bucket_name": "demo", "source": "created", "naming_basis": "app_name_slug"},
         "backend": {"current_batch": "b1", "deployments": [deployment]},
         "frontend": {"record_ref": ".hwsupabase/frontend/prod/environment.json",
                      "project_dir": "web", "framework": "react-vite-ts"},
@@ -153,6 +154,55 @@ class ContractTests(unittest.TestCase):
         result = run_gate(project, "check-contract")
         self.assertEqual(result.returncode, 1)
         self.assertIn("status", result.stdout)
+
+
+class ObsContractTests(unittest.TestCase):
+    def _edit_obs(self, mutate):
+        project = make_project()
+        path = project / ".hwsupabase" / "webapp.json"
+        data = json.loads(path.read_text())
+        mutate(data["obs"])
+        path.write_text(json.dumps(data))
+        return project
+
+    def test_fail_obs_missing_from_instance_ready(self):
+        project = make_project()
+        path = project / ".hwsupabase" / "webapp.json"
+        data = json.loads(path.read_text())
+        del data["obs"]
+        path.write_text(json.dumps(data))
+        result = run_gate(project, "check-stage", "--stage", "instance_ready")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("obs section missing", result.stdout)
+
+    def test_fail_obs_invalid_bucket_name(self):
+        project = self._edit_obs(lambda obs: obs.update(bucket_name="My_Bucket"))
+        result = run_gate(project, "check-contract")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("bucket name", result.stdout)
+
+    def test_fail_obs_invalid_source(self):
+        project = self._edit_obs(lambda obs: obs.update(source="auto"))
+        result = run_gate(project, "check-contract")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("obs.source", result.stdout)
+
+    def test_fail_obs_naming_required_when_created(self):
+        project = self._edit_obs(lambda obs: obs.update(naming_basis=None))
+        result = run_gate(project, "check-contract")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("app_name_slug", result.stdout)
+
+    def test_fail_obs_naming_forbidden_when_selected(self):
+        project = self._edit_obs(lambda obs: obs.update(source="selected", naming_basis="app_name_slug"))
+        result = run_gate(project, "check-contract")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("null when source is 'selected'", result.stdout)
+
+    def test_pass_obs_selected_without_naming(self):
+        project = self._edit_obs(lambda obs: obs.update(source="selected", naming_basis=None))
+        result = run_gate(project, "check-contract")
+        self.assertEqual(result.returncode, 0, result.stdout)
 
 
 class StageTests(unittest.TestCase):

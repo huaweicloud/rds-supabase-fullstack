@@ -7,6 +7,27 @@ semantic versioning.
 
 ### Changed
 
+- Skills `rds-supabase-web-build` v0.10.0 + `rds-supabase-frontend` v0.2.1:
+  two refinements. (1) Credential resolution in step 1 is now a mandatory
+  four-option interactive selection (skipping forbidden): A project
+  secrets/ and B project-scoped devkit file are adopted on selection;
+  C — any sensed system/user-level credential configuration (global
+  devkit login, ~/.config/huaweicloud/, ~/.obsutilconfig, environment
+  AK/SK variables) must NOT be used directly: each source is displayed
+  (level, file/variable name, account identity — never the secret
+  itself) and adopted only after explicit user confirmation, recorded
+  as credential_source=external_confirmed; D lets the user designate a
+  credential file or input AK/SK/token interactively, persisted into
+  project secrets/ (0600, agent never echoes or logs the values).
+  The gate enum follows (global_devkit_confirmed → external_confirmed).
+  (2) The frontend skill now displays a bucket-creation configuration
+  card before creating the OBS hosting bucket and verifies it after
+  creation by reading back: storage class multi-AZ preferred (fallback
+  single-AZ explained), block-public-access OFF (hard constraint —
+  enabled, anonymous reads are denied and static hosting breaks), and
+  bucket policy fixed to public-read (anonymous GetObject only, not
+  modifiable). web-build step 3 references the same card in its
+  create-bucket branch. One new test.
 - Skill `rds-supabase-web-build` v0.9.9: the install trigger sentence in
   INSTALL.md now carries the document's full GitHub URL (按照 <INSTALL.md
   URL>，安装 rds-supabase 技能包) so agents without local context can

@@ -117,9 +117,9 @@ def check_contract(data, missing):
             if obs_endpoint is not None and not isinstance(obs_endpoint, str):
                 missing.append("environment.obs_endpoint must be a string or null")
             if env.get("credential_source") not in ("project_secrets", "project_devkit_file",
-                                                    "global_devkit_confirmed"):
+                                                    "external_confirmed"):
                 missing.append("environment.credential_source must be project_secrets/"
-                               "project_devkit_file/global_devkit_confirmed")
+                               "project_devkit_file/external_confirmed")
     instance = data.get("instance")
     if instance is not None:
         if not isinstance(instance, dict):

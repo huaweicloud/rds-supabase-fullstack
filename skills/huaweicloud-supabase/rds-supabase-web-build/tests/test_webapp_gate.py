@@ -286,6 +286,11 @@ class EnvironmentIsolationTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("credential_source", result.stdout)
 
+    def test_pass_external_confirmed(self):
+        project = self._edit_env(lambda e: e.update(credential_source="external_confirmed"))
+        result = run_gate(project, "check-contract")
+        self.assertEqual(result.returncode, 0, result.stdout)
+
     def test_fail_environment_null_region(self):
         project = self._edit_env(lambda e: e.update(region=None))
         result = run_gate(project, "check-contract")

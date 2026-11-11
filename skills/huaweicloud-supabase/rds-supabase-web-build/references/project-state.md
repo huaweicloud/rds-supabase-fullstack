@@ -48,7 +48,7 @@
 | rds_endpoint | string | RDS 接入点（discover 解析或用户指定，**写回本段**） |
 | obs_endpoint | string/null | OBS 接入点（`null` = 按 region 推导） |
 | project_id | string | `HUAWEICLOUD_PROJECT_ID`（写回本段） |
-| credential_source | string | `project_secrets`（项目内 secrets/）/ `project_devkit_file`（项目内 devkit 文件）/ `global_devkit_confirmed`（全局登录态经用户显式确认）——gate 校验枚举；多项目共用一台机器时，各项目独立记录，互不可见 |
+| credential_source | string | `project_secrets`（A：项目内 secrets/，含 D 用户输入落盘）/ `project_devkit_file`（B：项目内 devkit 文件）/ `external_confirmed`（C：系统/用户级凭证配置经显示与用户确认后采用）——gate 校验枚举；多项目共用一台机器时，各项目独立记录，互不可见 |
 
 ### project
 

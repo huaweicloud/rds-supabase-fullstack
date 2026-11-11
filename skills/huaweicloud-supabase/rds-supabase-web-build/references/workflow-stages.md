@@ -20,7 +20,12 @@
 **动作序列**：
 
 1. 声明步骤一
-2. **凭据检查（三层优先级）**：① 项目内 `<项目根>/.hwsupabase/secrets/`（AK/SK 或服务 Token，0600、排除 Git）→ ② 项目内 devkit 凭据文件（`HUAWEICLOUD_DEVKIT_CREDENTIALS_FILE` 指向项目内 0600 文件）→ ③ 本机全局 devkit 登录态——**仅向用户呈现"检测到本机全局登录态，是否在本项目使用？"并经显式确认后采用**，记 `credential_source=global_devkit_confirmed`（**默认不采用**：全局登录态跨项目共享，静默采用即边界溢出）。均缺失 → 计入缺失清单。禁止写入全局/系统环境变量与个人级配置（shell profile、`~/.config/huaweicloud/`、`~/.obsutilconfig` 等——不新建、不覆写、不迁移）
+2. **凭据检查（四选项交互确认，禁止跳过）**：以对接卡片（来源 | 级别 | 状态 ☐）呈现凭据来源供用户勾选，未获用户勾选不得推进：
+   - **A 项目内 `<项目根>/.hwsupabase/secrets/`**（AK/SK 或服务 Token，0600、排除 Git）→ 勾选即采用
+   - **B 项目内 devkit 凭据文件**（`HUAWEICLOUD_DEVKIT_CREDENTIALS_FILE` 指向项目内 0600 文件）→ 勾选即采用
+   - **C 感知到的系统/用户级凭证配置**（本机全局 devkit 登录态、`~/.config/huaweicloud/credentials.json`、`~/.obsutilconfig`、进程环境中的 AK/SK 变量名等）→ **不得直接采用**：逐项**显示**（级别：系统/用户级；来源：文件路径或变量名；账号标识；**不显示明文**）→ 用户确认某一来源后采用，记 `credential_source=external_confirmed`；未确认 → 不采用（跨项目共享配置静默采用即边界溢出）
+   - **D 用户指定或输入**：用户给出凭据文件路径，或交互输入 AK/SK/Token → **落盘项目 `secrets/`**（0600、排除 Git；agent 不回显、不记录明文）后采用
+   - 四者均无 → 计入缺失清单，提醒用户经 D 提供。禁止写入全局/系统环境变量与个人级配置（shell profile、`~/.config/huaweicloud/`、`~/.obsutilconfig` 等——不新建、不覆写、不迁移）
 3. **uv（含 uvx）可用**——步骤三/四动态安装 MCP 的前提（`uv --version` 验证）；缺失 → 计入缺失清单并提醒用户安装（`curl -LsSf https://astral.sh/uv/install.sh | sh`）
 4. **Region（局点）确认**：读项目配置（webapp.json `environment.region`）——OBS 接入点推导与桶区域的前提；缺失 → 计入缺失清单，用户告知局点后**写入项目配置**（**不读进程/全局环境变量中的 `HUAWEICLOUD_REGION`**）
 5. **RDS 接入点**：项目配置（`environment.rds_endpoint`）已有 → 直接采用；缺失且凭据就绪 → 运行 `diagnostics discover`（`uv run --directory server/mcp_server_rds_supabase_mgr python -m mcp_server_supabase.diagnostics discover`，可加 `--probe`；**凭据为 AK/SK 时命令须带 `SUPABASE_TRANSPORT=sdk_core`**，否则按 REST 模式因缺 `HUAWEICLOUD_AUTH_TOKEN` 失败）→ 从 `suggested_env` 勾选并采纳，**结果写回项目配置**；无法推导（非标准区域命名 / probe 不可达 / 报错）→ 要求用户显式指定后写回
@@ -35,13 +40,13 @@
 
 **黄金路径**：
 ```
-声明步骤一 → 凭据：项目 secrets/ ✓（三层优先级）→ uv --version ✓ → 项目配置 environment.region=cn-north-4 ✓
+声明步骤一 → 凭据四选项勾选：A 项目 secrets/ ✓ → uv --version ✓ → 项目配置 environment.region=cn-north-4 ✓
 → discover --probe → 勾选 p-123 / 采纳 https://rds.cn-north-4.myhuaweicloud.com，写回项目配置 ✓
 → OBS 接入点按 Region 推导并写回 obs.cn-north-4.myhuaweicloud.com ✓ → PROJECT_ID=p-123 写回 ✓
 → 缺失清单为空 → 写 webapp.json(environment 段 + environment_ready) → gate PASS → 步骤报告（下一步骤预告：需求澄清与设计）
 ```
 
-**失败处置**：任一项无法获取 → 缺失清单提醒用户设置后重检；凭据缺失 → 项目内 secrets/ 提供或全局 devkit 显式确认。**断点**：`environment_ready`
+**失败处置**：任一项无法获取 → 缺失清单提醒用户设置后重检；凭据缺失 → 经 D 指定/输入，或经 C 显示确认系统/用户级配置。**断点**：`environment_ready`
 
 ## 步骤二 · 需求澄清与设计
 
@@ -116,7 +121,7 @@
 4. **凭据获取（两条路径都必经——缺失任一项则步骤四无法安装，流水线中断）**：网关 URL + Anon Key + Service Role Key（**两类密钥均须获取**），经管理面 ApiKey 交付工具 deliver 到受保护本地文件——**项目内路径**：`SUPABASE_REQUESTS_FILE=<项目>/.hwsupabase/requests.json` 注册，交付落盘 `.hwsupabase/secrets/`（0600、排除 Git，不写入全局变量与个人级配置）；webapp.json 只记 env 名 + `instance.source`（`created`/`selected`）
 5. **OBS 桶接入方式——交互式勾选（强制，禁止跳过）**：以选择清单形式向用户呈现「使用已有 OBS 桶 / 新建 OBS 桶」，**未获用户显式选择不得推进，不得代为默认**（frontend 技能引导，凭据与 Region 均为步骤一所核对）：
    - **使用已有**：列出租户桶 → **候选过滤：仅保留满足静态托管要求的公开读桶**——匿名 GetObject 未获授权的非公开桶一律剔除，**不得出现在候选列表中**；候选展示（桶名/区域/存储类别）供用户勾选 → 核验选中桶区域与项目 Region 一致、具备静态网站托管能力
-   - **新建**：**桶名默认与应用名称保持一致**——应用名称英文化：转小写，非 ASCII 与非法字符映射为连字符、连续连字符压缩为单个、去除首尾连字符、长度裁剪至 3–63；**名称冲突（同名桶已存在）→ 追加短 uuid 后缀**（连字符连接，形如 `my-webapp-3f2a1b9c`；再次冲突则重新生成后缀并复核唯一性）；最终桶名经用户确认后由 frontend 技能创建并配置公开读策略
+   - **新建**：**桶名默认与应用名称保持一致**——应用名称英文化：转小写，非 ASCII 与非法字符映射为连字符、连续连字符压缩为单个、去除首尾连字符、长度裁剪至 3–63；**名称冲突（同名桶已存在）→ 追加短 uuid 后缀**（连字符连接，形如 `my-webapp-3f2a1b9c`；再次冲突则重新生成后缀并复核唯一性）；最终桶名经用户确认后由 frontend 技能创建——**创建前展示桶配置卡**（存储类别**多 AZ 优先**，区域不支持时降级单 AZ 并说明；**阻止公网访问必须关闭**——该开关开启则匿名读被拒、静态托管不可用；**桶策略固定公共读**：仅匿名 GetObject，不可改为其他），经用户确认后创建，**创建后回读核验三项实际生效**
    - 域名条件核对；**证书仅当实例 SSL 开启（前端 HTTPS 入口）时必需**——SSL 未开启则前端以 HTTP 发布、无需证书；不齐备项于步骤八前补齐
 6. **Storage 桶准备与对接（仅当步骤二能力清单含 `storage`）**：交互式勾选「使用已有桶 / 新建桶」（纪律同实例与前端桶：未获用户显式选择不得推进，不得代为默认）：
    - **使用已有**：先做**桶策略安全评估**——桶必须私有（无公开读、无匿名 GetObject、无公开列举、无通配匿名授权）；存在任一公开项即判定策略不合理 → 停止并说明，建议转新建或先修正桶策略

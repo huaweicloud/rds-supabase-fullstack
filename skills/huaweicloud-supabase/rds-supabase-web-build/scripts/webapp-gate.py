@@ -49,7 +49,7 @@ TRACE_REQUIRED = {"instance_ready", "mcp_connected", "backend_deployed", "fronte
 # string). Violations surface in check-whitelist; patterns are deliberately
 # generous — prefixes group control-plane, data-plane, CLI and bookkeeping.
 WHITELIST = {
-    "environment_ready": ["diagnostics*", "uv*", "webapp*"],
+    "environment_ready": ["diagnostics*", "uv*", "dig*", "nslookup*", "curl*", "webapp*", "gate*"],
     "requirements_confirmed": [],
     "instance_ready": ["list_*", "show_*", "plan_*", "create_*", "wait_*", "cancel_*",
                        "inspect_*", "reconcile_*", "deliver_*", "change_*", "update_*",

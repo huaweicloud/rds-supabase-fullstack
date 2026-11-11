@@ -7,6 +7,18 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.11.1: the derived OBS endpoint in
+  step 1 is now connection-tested before adoption. The derived
+  obs.<region>.myhuaweicloud.com must pass DNS resolution (dig) and an
+  HTTP probe (curl -sI, any status code counts as reachable —
+  unauthenticated 4xx is expected; the test judges connectivity, not
+  authorization). Only a passing endpoint is written back to the
+  project config. Non-derivable regions or failed probes prompt the
+  user to input the actual endpoint, which is re-tested the same way —
+  adopted only on pass, reported honestly when unreachable. The step-1
+  output assertion and state contract carry the tested-endpoint
+  wording; the environment_ready whitelist admits the probe tools
+  (dig/nslookup/curl). One new test.
 - Skill `rds-supabase-web-build` v0.11.0: launched now concludes with an
   application card (应用名片) — the final deliverable, output in chat and
   persisted to .hwsupabase/app-card.md. Fields: application name,

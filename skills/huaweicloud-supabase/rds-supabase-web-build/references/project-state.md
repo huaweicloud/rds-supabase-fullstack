@@ -47,7 +47,7 @@
 |---|---|---|
 | region | string | 局点（如 `cn-north-4`）——**唯一权威存放处**，不从进程/全局环境变量读取 |
 | rds_endpoint | string | RDS 接入点（discover 解析或用户指定，**写回本段**） |
-| obs_endpoint | string/null | OBS 接入点（`null` = 按 region 推导） |
+| obs_endpoint | string/null | OBS 接入点——步骤一推导并**连接测试通过**后写回（DNS 解析 + HTTP 探测；无法推导或测试不通 → 用户输入后复测通过才写回）；未就绪为 `null` |
 | project_id | string | `HUAWEICLOUD_PROJECT_ID`（写回本段） |
 | credential_source | string | `project_secrets`（A：项目内 secrets/，含 D 用户输入落盘）/ `project_devkit_file`（B：项目内 devkit 文件）/ `external_confirmed`（C：系统/用户级凭证配置经显示与用户确认后采用）——gate 校验枚举；多项目共用一台机器时，各项目独立记录，互不可见 |
 

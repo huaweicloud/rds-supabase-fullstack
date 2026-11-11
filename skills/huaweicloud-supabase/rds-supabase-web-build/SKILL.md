@@ -3,7 +3,7 @@ name: rds-supabase-web-build
 description: 'RDS Supabase 全栈开发编排技能：AI Agent 通过自然语言创建并托管 Web 应用网站的端到端工作流——需求澄清与设计、前端代码生成、后端声明式配置（DDL/GRANT/RLS/RPC）生成与部署、本地 L0 测试验证、前端静态资源 OBS+CDN 全托管、端到端上线与生命周期管理（更新/回滚/下线）。Use when：创建 Web 网站、搭建 AI 应用、全栈应用从零到上线、已有 RDS Supabase 应用的迭代更新与托管维护。编排管理面与数据面两台 MCP（均由工作流步骤动态安装：管理面→步骤三、数据面→步骤四）及 rds-supabase-mgr-mcp / rds-supabase-mcp / rds-supabase-usage / rds-supabase-frontend / rds-supabase-postgres-best-practices / rds-supabase-function-graph 六个专项技能。v1 后端边界为数据层；复杂业务逻辑由 function-graph 技能（云函数）承接，SSR 后端部署不支持。'
 license: MIT
 metadata:
-  version: "0.11.0"
+  version: "0.11.1"
 ---
 
 # RDS Supabase 全栈开发编排（web-build）
@@ -82,7 +82,7 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 2. **uv（含 uvx）可用**——步骤三/四动态安装 MCP 的前提；缺失 → 提醒用户安装（`curl -LsSf https://astral.sh/uv/install.sh | sh`）
 3. **Region（局点）确认**：读项目配置（webapp.json `environment.region`）；缺失 → 显式提醒用户告知局点并**写入项目配置**（不读进程/全局环境变量）
 4. **RDS 接入点**：项目配置已有 → 采用；缺失且凭据就绪 → `diagnostics discover` 解析并经用户勾选，**结果写回项目配置**；无法解析 → 显式提醒用户设置
-5. **OBS 接入点**：按 Region 推导（`obs.<region>.myhuaweicloud.com`，KooCLI/SDK 自动解析），**写回项目配置**
+5. **OBS 接入点**：按 Region 推导（`obs.<region>.myhuaweicloud.com`）→ **连接测试**（`dig +short` 有解析 + `curl -sI --max-time 10` 有 HTTP 响应——任意状态码即通，4xx 属未认证预期）→ 通过则**写回项目配置**；**无法推导或测试不通 → 提示用户输入**实际接入点（输入后复测，通过才写回）
 6. **PROJECT_ID**：项目配置已有 → 采用；缺失 → discover 勾选并**写回项目配置**；无法获取 → 显式提醒用户设置
 7. 缺失项汇总为清单提醒用户逐项设置，**不得猜测、不得跳过、不得以默认值代替**；全部就绪 → 写 webapp.json（`environment` 段 + `environment_ready`）→ gate PASS
 

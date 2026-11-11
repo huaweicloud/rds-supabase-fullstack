@@ -771,6 +771,15 @@ class WhitelistTests(unittest.TestCase):
         result = run_gate(make_project(), "check-whitelist")
         self.assertEqual(result.returncode, 0, result.stdout)
 
+    def test_pass_obs_probe_tools_allowed_at_environment_ready(self):
+        project = make_project()
+        with (project / ".hwsupabase" / "trace.jsonl").open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps({"at": "2026-11-10T06:30:00Z", "stage": "environment_ready",
+                                     "tool": "curl", "intent": "probe obs endpoint",
+                                     "status": "ok", "note": None}) + "\n")
+        result = run_gate(project, "check-whitelist")
+        self.assertEqual(result.returncode, 0, result.stdout)
+
     def test_fail_on_out_of_stage_tool(self):
         project = make_project()
         with (project / ".hwsupabase" / "trace.jsonl").open("a", encoding="utf-8") as handle:

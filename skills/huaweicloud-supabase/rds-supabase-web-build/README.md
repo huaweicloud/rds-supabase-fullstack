@@ -34,7 +34,7 @@ Agent 执行要点：
 2. **MCP 与凭据**：安装阶段**不涉及**——两台 MCP 服务器由技能工作流动态安装（管理面 → 步骤三、数据面 → 步骤四，同样只从本仓，见下表）；凭据、Region、接入点、PROJECT_ID 由步骤一环境检查与配置处理
 3. **汇报**：已装技能清单、触发语句示例（如"帮我建一个博客网站"）
 
-完整安装指导与排错见 [INSTALL.md](INSTALL.md)。
+完整安装指导与排错见 [INSTALL.md](INSTALL.md)；建站模式价值对比（传统自建 vs 全托管）见 [USER_GUIDE_REPORT.md](USER_GUIDE_REPORT.md)。
 
 ## MCP 安装来源（工作流动态安装时使用；唯一允许的完整 URL）
 

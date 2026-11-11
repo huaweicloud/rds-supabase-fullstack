@@ -7,6 +7,19 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.8.0: new human-facing deliverable
+  USER_GUIDE_REPORT.md — a comparison report of the traditional
+  frontend→backend→database self-built chain versus the Supabase+OBS
+  fully managed chain orchestrated by this skill. Covers architecture
+  topology diagrams (ASCII), a ten-item workload mapping (backend
+  development, CICD building, initial microservices, ECS purchase,
+  network configuration, deployment, frontend Node.js hosting — each
+  mapped to its managed equivalent or elimination), a self-managed
+  entity count (servers/runtimes/pipelines/nginx/auth all drop to zero),
+  delivery-efficiency and security-model comparisons (GoTrue+RLS+advisors
+  with machine-verified acceptance versus self-built auth), lifecycle
+  operations (update/rollback/decommission), and an honest boundary
+  statement. Linked from the README.
 - Skill `rds-supabase-web-build` v0.7.7: per-host project-level skill paths
   are now pinned explicitly — CodeArts installs to
   <project>/.codeartsdoer/skills/ (mandatory), opencode to

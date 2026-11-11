@@ -7,6 +7,16 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.8.4: the comparison diagrams are merged
+  into ONE left-right canvas (assets/compare-modes.svg) — traditional mode
+  on the left, managed mode on the right, both flowing through the same
+  development/deployment/runtime rows. Small-print clutter is stripped
+  (no English annotations, no badges, no extra components such as
+  FunctionGraph or SLB): every card carries a title plus one keyword line
+  only. Two bold color-coded conclusion strips state the four core
+  differences directly (dev cycle, deploy steps, frontend servers, backend
+  entities). The two per-mode SVGs are removed; the report embeds the
+  single merged image.
 - Skill `rds-supabase-web-build` v0.8.3: comparison diagrams restructured as
   integrated single canvases and de-colloquialized. Each SVG is now one
   large diagram with two entity lanes — frontend and backend — flowing

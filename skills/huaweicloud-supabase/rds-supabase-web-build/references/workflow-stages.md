@@ -117,7 +117,7 @@
 5. **OBS 桶接入方式——交互式勾选（强制，禁止跳过）**：以选择清单形式向用户呈现「使用已有 OBS 桶 / 新建 OBS 桶」，**未获用户显式选择不得推进，不得代为默认**（frontend 技能引导，凭据与 Region 均为步骤一所核对）：
    - **使用已有**：列出租户桶 → **候选过滤：仅保留满足静态托管要求的公开读桶**——匿名 GetObject 未获授权的非公开桶一律剔除，**不得出现在候选列表中**；候选展示（桶名/区域/存储类别）供用户勾选 → 核验选中桶区域与项目 Region 一致、具备静态网站托管能力
    - **新建**：**桶名默认与应用名称保持一致**——应用名称英文化：转小写，非 ASCII 与非法字符映射为连字符、连续连字符压缩为单个、去除首尾连字符、长度裁剪至 3–63；**名称冲突（同名桶已存在）→ 追加短 uuid 后缀**（连字符连接，形如 `my-webapp-3f2a1b9c`；再次冲突则重新生成后缀并复核唯一性）；最终桶名经用户确认后由 frontend 技能创建并配置公开读策略
-   - 域名条件核对；**证书仅当实例 SSL 开启（前端 HTTPS 入口）时必需**——SSL 未开启则前端以 HTTP 发布、无需证书；不齐备项于步骤七前补齐
+   - 域名条件核对；**证书仅当实例 SSL 开启（前端 HTTPS 入口）时必需**——SSL 未开启则前端以 HTTP 发布、无需证书；不齐备项于步骤八前补齐
 6. **Storage 桶准备与对接（仅当步骤二能力清单含 `storage`）**：交互式勾选「使用已有桶 / 新建桶」（纪律同实例与前端桶：未获用户显式选择不得推进，不得代为默认）：
    - **使用已有**：先做**桶策略安全评估**——桶必须私有（无公开读、无匿名 GetObject、无公开列举、无通配匿名授权）；存在任一公开项即判定策略不合理 → 停止并说明，建议转新建或先修正桶策略
    - **新建**：**一律私有桶**（禁止公开读），按最小权限配置；桶名建议 `<应用slug>-storage`
@@ -195,7 +195,7 @@
 
 **输出断言**：🔍 结构确认（`list_tables`/`list_constraints`）｜🤖 gate `--verify` PASS（对照表有效 stem ≥5 + deployments 契约 + sha256 + **teardown 对象全覆盖** + 机器验真：REST 可达/对外表 anon 200/RLS 启用且有策略/advisors 无命中）
 
-**工具白名单**：允许：数据面全部只读 + `execute_sql`；禁止：管理面写工具（auth 配置属步骤七）、前端构建
+**工具白名单**：允许：数据面全部只读 + `execute_sql`；禁止：管理面写工具（auth 配置属步骤八）、前端构建
 
 **黄金路径**：
 ```
@@ -238,17 +238,49 @@
 
 **失败处置**：构建错误 → 修正；运行时错误 → 对照 usage 规则排查；连续 2 次同错 → 停下报告。**断点**：`frontend_built`
 
-## 步骤七 · 构建与托管
+## 步骤七 · 本地测试验证
 
-**目的**：静态产物发布到步骤三预建桶，经 CDN 形成稳定入口，完成回调回路。
+**目的**：前端本地部署并与已部署后端联调，按功能场景孵化 L0 级用例完成全面基本功能验证，修复循环直至全部用例通过——应用功能正常可用才进入托管发布。
 
-**输入**：步骤六 产物源码；步骤三 预建桶与域名（证书仅 HTTPS 入口——`ssl_enabled=true` 时必需）；上一断点 `frontend_built`
+**输入**：步骤六 前端产物（源码 + 构建通过）；步骤五 已部署后端（真实网关与数据）；步骤二 功能场景清单；上一断点 `frontend_built`
 
 **动作序列**：
 
 1. 声明步骤七
+2. **本地联调环境**：本地运行前端（dev server 或构建产物预览），supabase-js 直连已部署后端网关（anon key 进前端、Service Role Key 不进）；以 1 条数据查询确认前后端通路
+3. **L0 用例孵化**（从步骤二功能场景逐项孵化，不发散——只覆盖已确认场景）：
+   - 每场景 ≥1 条正向用例 + 关键负向用例；覆盖维度：页面渲染、核心 CRUD 交互、认证流（注册/登录/登出/权限区分）、RLS 数据可见性（匿名 vs 登录态、用户间隔离）、错误路径（无效输入/未授权访问）
+   - 用例清单（T 编号：T01/T02/…，含场景、步骤、预期）以表格呈现，**经用户确认后执行**
+4. **执行与修复 Loop**：逐条执行并记录（passed/failed + 现象）→ 失败定位修复——前端缺陷 → 改前端源码；后端问题（结构/RLS/种子）→ 步骤五增量批次重部署；用例本身有误 → 修订用例并复确认 → **重新执行，循环直至全部用例通过**（同一用例连续 2 次失败 → 强制中止报告）
+5. **产出测试报告** `.hwsupabase/gates/5-local-test-report.md`：每用例一行，格式 `- T<编号>：<场景/用例名> → passed`（修复记录附后）——gate `check-gate --number 5` 校验（≥5 条 passed、零 failed）
+6. 写 webapp.json（stages: local_verified）→ 跑 `check-stage --stage local_verified` + `check-gate --number 5` → 步骤报告
+
+**输出断言**：🔍 全部 L0 用例 passed（报告留档，gate 校验）｜🔍 前后端联调通路实证（本地前端 ↔ 已部署后端）｜🤖 gate PASS
+
+**工具白名单**：允许：npm/npx/node（本地运行与测试）、数据面只读（`list_*`/`get_*` 核对）、读写 webapp.json；禁止：OBS/CDN 托管操作（步骤八）、实例级管理面写
+
+**黄金路径**：
+```
+声明步骤七 → 本地 dev server 起前端（supabase-js 连网关）→ 首页数据查询 ✓
+→ 孵化 L0 用例 8 条（3 场景 × 正负向）→ 用户确认用例清单
+→ T01–T06 ✓ / T07 ✗（RLS 策略遗漏）→ 步骤五增量批次修复 → T07 ✓ / T08 ✓
+→ 写 gates/5-local-test-report.md（8 passed）→ check-gate 5 PASS + check-stage PASS
+→ 步骤报告（步骤七）（下一步骤预告：构建与托管）
+```
+
+**失败处置**：用例连续 2 次失败 → 中止报告（含失败现象与已尝试修复）；后端问题回步骤五处置后重验；用户中止 → 保留断点，不进入托管。**断点**：`local_verified`
+
+## 步骤八 · 构建与托管
+
+**目的**：静态产物发布到步骤三预建桶，经 CDN 形成稳定入口，完成回调回路。
+
+**输入**：步骤六 产物源码；步骤三 预建桶与域名（证书仅 HTTPS 入口——`ssl_enabled=true` 时必需）；上一断点 `local_verified`
+
+**动作序列**：
+
+1. 声明步骤九
 2. frontend 技能：构建环境核对（Node/包管理器，不擅自升级）→ build → 上传步骤三预建桶 → CDN 刷新 → 版本记录（`.hwsupabase/frontend/` 契约）。**托管入口协议跟随实例 SSL**：`ssl_enabled=true` → HTTPS 入口（域名/证书就绪）；`false` → HTTP 入口（无需证书，**不得 HTTPS**——HTTPS 页面调用 HTTP 网关属混合内容，被浏览器拦截，站点不可用）
-3. **回调回路（步骤七↻）**：域名确定 → 管理面 `update_supabase_auth_config` 配 site_url/redirect_uris（展示差异后确认）→ 前端按最终地址**重建再发布**。未执行此回路 = auth 登录回调 404
+3. **回调回路（步骤八↻）**：域名确定 → 管理面 `update_supabase_auth_config` 配 site_url/redirect_uris（展示差异后确认）→ 前端按最终地址**重建再发布**。未执行此回路 = auth 登录回调 404
 4. frontend checks（entry/assets/routes/negative_paths/cache）
 5. 写 webapp.json（hosting_published）→ gate → 步骤报告
 
@@ -258,23 +290,23 @@
 
 **黄金路径**：
 ```
-声明步骤七 → 构建环境核对 → npm run build → 上传 obs://webapp-123/v1 → CDN 刷新
+声明步骤八 → 构建环境核对 → npm run build → 上传 obs://webapp-123/v1 → CDN 刷新
 → 用户确定域名 https://demo.example.com（本例实例 SSL 开启故入口 https；未开启时入口为 http 且无需证书）→ update_supabase_auth_config(site_url + redirect_uris，差异确认)
 → 前端重建再发布 v2 → frontend checks 全 passed（entry 2xx / assets 2xx / routes / 404 路径 / cache 头）
-→ 写 webapp.json(hosting_published) → gate PASS → 步骤报告（步骤七）
+→ 写 webapp.json(hosting_published) → gate PASS → 步骤报告（步骤八）
 ```
 
 **失败处置**：发布失败 → frontend 技能恢复流程；验收失败 → 按其检查项处置；回调配置失败 → 重试差异确认（连续失败中止规则）。**断点**：`hosting_published`
 
-## 步骤八 · 端到端上线
+## 步骤九 · 端到端上线
 
 **目的**：三层组合验证后正式上线并留档。
 
-**输入**：步骤七的 stable_url 与版本记录；上一断点 `hosting_published`
+**输入**：步骤八的 stable_url 与版本记录；上一断点 `hosting_published`
 
 **动作序列**：
 
-1. 声明步骤八
+1. 声明步骤九
 2. 按 references/launch-checklist.md 执行三层验证：后端项（结构/RLS/advisors/REST 200 + anon 可见性）/ 前端项（checks 契约）/ 连通项（站点渲染、前端→API 数据可见性、**多用户隔离抽检**——两个测试账号经数据面 MCP 用户管理创建后互访对方数据行断言不可见、auth 回调跳转）
 3. 输出上线报告（三级交付语义 + stable_url + 版本引用）
 4. 写 webapp.json（launched）→ gate（`check-stage --stage launched --verify`，后端项机器核验）→ 完成交付
@@ -285,7 +317,7 @@
 
 **黄金路径**：
 ```
-声明步骤八 → 后端项（get_rls_status / get_advisors / REST 200 + anon 可见性）→ 前端项（checks 契约复核）
+声明步骤九 → 后端项（get_rls_status / get_advisors / REST 200 + anon 可见性）→ 前端项（checks 契约复核）
 → 连通项（stable_url 渲染 ✓ / 站点内查询可见性正确 ✓ / 隔离抽检：账号 A↔B 互访均空集 ✓ / auth 回调 ✓）
 → 上线报告（本地已验证 / 环境已准备 / 线上验收通过）→ 写 webapp.json(launched) → gate --verify PASS
 → gate PASS → 交付

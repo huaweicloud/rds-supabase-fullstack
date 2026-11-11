@@ -34,12 +34,12 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 STAGES = ["environment_ready", "requirements_confirmed", "instance_ready", "mcp_connected", "backend_deployed",
-          "frontend_built", "hosting_published", "launched", "decommissioned"]
+          "frontend_built", "local_verified", "hosting_published", "launched", "decommissioned"]
 TS = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 SHA = re.compile(r"^[0-9a-f]{64}$")
 CRED = re.compile(r"eyJ[A-Za-z0-9_-]{10,}|BEGIN (RSA|EC|OPENSSH) PRIVATE|AKID[A-Za-z0-9]{10,}")
 BUCKET = re.compile(r"^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$")
-GATE_FILES = {3: "3-rules-checklist.md", 4: "4-sdk-contract-checklist.md"}
+GATE_FILES = {3: "3-rules-checklist.md", 4: "4-sdk-contract-checklist.md", 5: "5-local-test-report.md"}
 CRED_ENV_NAMES = ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"]
 # Stages whose completion requires at least one ok trace record (tool activity
 # is mandatory there); conversation-only steps are exempt.
@@ -57,6 +57,7 @@ WHITELIST = {
     "mcp_connected": ["get_project_url", "list_tables", "uv*", "webapp*", "gate*"],
     "backend_deployed": ["list_*", "get_*", "execute_sql", "webapp*", "gate*"],
     "frontend_built": ["list_*", "get_*", "npm*", "npx*", "node*", "webapp*", "gate*"],
+    "local_verified": ["list_*", "get_*", "npm*", "npx*", "node*", "webapp*", "gate*"],
     "hosting_published": ["list_*", "show_*", "get_*", "update_*", "hcloud*", "obsutil*",
                           "npm*", "npx*", "uv*", "webapp*", "gate*"],
     "launched": ["get_*", "list_*", "*user*", "*admin*", "webapp*", "gate*"],
@@ -240,13 +241,13 @@ def check_stage(data, stage, missing, project_dir=None):
                for e in history):
         missing.append(f"no passed history event for '{stage}'")
     if stage in ("instance_ready", "mcp_connected", "backend_deployed", "frontend_built",
-                 "hosting_published", "launched") and not isinstance(data.get("instance"), dict):
+                 "local_verified", "hosting_published", "launched") and not isinstance(data.get("instance"), dict):
         missing.append("instance section missing from instance_ready onward")
     if stage in ("instance_ready", "mcp_connected", "backend_deployed", "frontend_built",
-                 "hosting_published", "launched") and not isinstance(data.get("obs"), dict):
+                 "local_verified", "hosting_published", "launched") and not isinstance(data.get("obs"), dict):
         missing.append("obs section missing from instance_ready onward")
     if stage in ("instance_ready", "mcp_connected", "backend_deployed", "frontend_built",
-                 "hosting_published", "launched"):
+                 "local_verified", "hosting_published", "launched"):
         caps = (data.get("project") or {}).get("baas_capabilities") or []
         if "storage" in caps:
             storage = data.get("storage")
@@ -256,11 +257,12 @@ def check_stage(data, stage, missing, project_dir=None):
                 missing.append("storage.connected must be true from instance_ready onward "
                                "when the storage capability is required")
     if stage in ("instance_ready", "mcp_connected", "backend_deployed", "frontend_built",
-                 "hosting_published", "launched"):
+                 "local_verified", "hosting_published", "launched"):
         mcp = data.get("mcp")
         if not isinstance(mcp, dict) or not isinstance((mcp.get("config_paths") or {}).get("mgr"), str):
             missing.append("mcp.config_paths.mgr must be a project-level config path from instance_ready onward")
-    if stage in ("mcp_connected", "backend_deployed", "frontend_built", "hosting_published", "launched"):
+    if stage in ("mcp_connected", "backend_deployed", "frontend_built", "local_verified",
+                    "hosting_published", "launched"):
         mcp = data.get("mcp")
         if not isinstance(mcp, dict) or not isinstance((mcp.get("config_paths") or {}).get("data"), str):
             missing.append("mcp.config_paths.data must be a project-level config path from mcp_connected onward")
@@ -288,9 +290,9 @@ def check_stage(data, stage, missing, project_dir=None):
                                            "(HTTPS page calling the HTTP gateway) is blocked by browsers")
                         elif ssl is True and stable.startswith("http://"):
                             missing.append("stable_url is HTTP while instance SSL is enabled (HTTPS entry required)")
-    if stage in ("frontend_built", "hosting_published", "launched") and not isinstance(data.get("frontend"), dict):
+    if stage in ("frontend_built", "local_verified", "hosting_published", "launched") and not isinstance(data.get("frontend"), dict):
         missing.append("frontend section missing from frontend_built onward")
-    if stage in ("backend_deployed", "frontend_built", "hosting_published", "launched"):
+    if stage in ("backend_deployed", "frontend_built", "local_verified", "hosting_published", "launched"):
         deployments = (data.get("backend") or {}).get("deployments") or []
         if not deployments:
             missing.append("backend.deployments empty from backend_deployed onward")
@@ -324,7 +326,7 @@ def rule_stems():
 def check_gate(data, number, project_dir, missing, summary):
     name = GATE_FILES.get(number)
     if not name:
-        missing.append("gate number must be 3 or 4")
+        missing.append("gate number must be 3, 4 or 5")
         return
     path = Path(project_dir) / ".hwsupabase" / "gates" / name
     if not path.is_file():
@@ -350,6 +352,14 @@ def check_gate(data, number, project_dir, missing, summary):
             missing.append(f"{name} has mapping lines without a known rule file stem: {invalid[:3]}")
         if len(valid) < 5:
             missing.append(f"{name} needs at least 5 valid rule→location mappings (known stems), found {len(valid)}")
+    elif number == 5:
+        passed_lines = [line for line in lines
+                        if re.match(r"^\s*-\s*T\d+", line) and ("→ passed" in line or "-> passed" in line)]
+        failed_lines = [line.strip()[:60] for line in lines if "→ failed" in line or "-> failed" in line]
+        if failed_lines:
+            missing.append(f"{name} still has failed cases (fix and loop until all pass): {failed_lines[:3]}")
+        if len(passed_lines) < 5:
+            missing.append(f"{name} needs at least 5 passed L0 cases (T-numbered lines), found {len(passed_lines)}")
     elif len(lines) < 5:
         missing.append(f"{name} needs at least 5 mapping bullets, found {len(lines)}")
 

@@ -3,7 +3,7 @@ name: rds-supabase-web-build
 description: 'RDS Supabase 全栈开发编排技能：AI Agent 通过自然语言创建并托管 Web 应用网站的端到端工作流——前端代码生成、后端 init.sql（DDL/GRANT/RLS/RPC）生成与部署、前端静态资源 OBS+CDN 全托管、端到端上线与生命周期管理（更新/回滚/下线）。Use when：创建 Web 网站、搭建 AI 应用、全栈应用从零到上线、已有 RDS Supabase 应用的迭代更新与托管维护。编排管理面与数据面两台 MCP（均由工作流步骤动态安装：管理面→步骤三、数据面→步骤四）及 rds-supabase-mgr-mcp / rds-supabase-mcp / rds-supabase-usage / rds-supabase-frontend / rds-supabase-postgres-best-practices 五个专项技能。v1 后端边界为数据层；复杂业务逻辑（支付/第三方调用/长任务）不在 v1 范围，SSR 后端部署不支持。'
 license: MIT
 metadata:
-  version: "0.9.4"
+  version: "0.9.5"
 ---
 
 # RDS Supabase 全栈开发编排（web-build）
@@ -18,13 +18,13 @@ RDS Supabase 全栈开发的**顶层编排技能**：用户以单句自然语言
 【首次创建流水线】（每步骤设有通过条件；未满足不得推进）
  步骤一 环境检查与配置 → 步骤二 需求澄清与设计 → 步骤三 资源准备 → 步骤四 数据面接入
                 ↳ 环境四项：凭据 · Region · RDS/OBS 接入点 · PROJECT_ID（缺失显式提醒用户设置）
- 步骤五 后端生成部署 → 步骤六 前端生成 → 步骤七 构建与托管 → 步骤八 端到端上线
+ 步骤五 后端生成部署 → 步骤六 前端生成 → 步骤七 本地测试验证 → 步骤八 构建与托管 → 步骤九 端到端上线
                 ↳ 步骤三动态启动管理面 MCP（实例/EIP/安全组/SSL/密钥）+ OBS 租户桶
                 ↳ 步骤四动态安装数据面 MCP（install.md）
- 步骤七↻ 回调回路：域名确定 → 管理面配置 site_url/redirect_uris → 前端重建
+ 步骤八↻ 回调回路：域名确定 → 管理面配置 site_url/redirect_uris → 前端重建
 
 【生命周期循环】（独立工作流）
- 更新（增量 init.sql → 重走步骤五与步骤八）｜回滚（前端版本回退 + DB 批次管理）｜下线（清理清单）｜密钥轮换
+ 更新（增量 init.sql → 重走步骤五与步骤九）｜回滚（前端版本回退 + DB 批次管理）｜下线（清理清单）｜密钥轮换
 ```
 
 双平面与双轨：
@@ -69,7 +69,7 @@ RDS Supabase 全栈开发的**顶层编排技能**：用户以单句自然语言
 
 ```
 environment_ready → requirements_confirmed → instance_ready → mcp_connected
-                  → backend_deployed → frontend_built → hosting_published → launched
+                  → backend_deployed → frontend_built → local_verified → hosting_published → launched
 ```
 
 每步固定节奏：**步骤声明 → 编号动作 → 写 webapp.json → gate PASS → 步骤报告**。各步的完整 playbook（输入/输出断言/工具白名单/黄金路径/失败处置）见 references/workflow-stages.md 对应小节。
@@ -166,13 +166,20 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 2. 生成源码（默认 React+Vite+TS + supabase-js；仅 anon key 进产物）+ **SDK 契约对照表** `gates/4-sdk-contract-checklist.md`（gate 校验）
 3. `npm run build` + 本地冒烟（首页渲染 / 1 条 RLS 查询 / 1 次 auth 流）→ 写 webapp.json → gate PASS
 
-### 步骤七 · 构建与托管 → 断点 `hosting_published`
+### 步骤七 · 本地测试验证 → 断点 `local_verified`
+
+1. **本地联调**：本地运行前端（dev server 或构建产物预览），supabase-js 直连已部署后端网关（步骤五真实数据面）——前端本地部署、与后端对接
+2. **L0 用例孵化**：从步骤二确认的功能场景逐项孵化 **L0 级用例**（每场景 ≥1 条正向 + 关键负向；覆盖页面渲染、核心 CRUD 交互、认证流、RLS 数据可见性、错误路径），用例清单（T 编号）经用户确认——只覆盖已确认场景，不发散
+3. **执行与修复 Loop**：逐条执行并记录结果 → 失败项定位修复（前端缺陷改前端；后端问题回步骤五增量批次重部署）→ **循环直至全部用例通过**（同用例连续 2 次失败 → 中止报告）；产出 `.hwsupabase/gates/5-local-test-report.md`（gate 校验：≥5 条 passed、零 failed）
+4. 写 webapp.json（local_verified）→ gate（check-stage + check-gate --number 5）PASS
+
+### 步骤八 · 构建与托管 → 断点 `hosting_published`
 
 1. frontend 技能：build → 上传步骤三预建桶 → CDN 刷新 → 版本记录。**托管入口协议跟随实例 SSL**：`ssl_enabled=true` → HTTPS 入口（域名/证书就绪）；`false` → HTTP 入口（无需证书，**不得 HTTPS**——HTTPS 页面调用 HTTP 网关属混合内容，被浏览器拦截，站点不可用）
-2. **步骤七↻ 回调回路**：域名确定（协议跟随实例 SSL）→ `update_supabase_auth_config` 配 site_url/redirect_uris（差异确认）→ 前端按最终地址**重建再发布**
+2. **步骤八↻ 回调回路**：域名确定（协议跟随实例 SSL）→ `update_supabase_auth_config` 配 site_url/redirect_uris（差异确认）→ 前端按最终地址**重建再发布**
 3. 验证：frontend checks 全必需项 passed + **stable_url 协议跟随实例 SSL**（gate 读 frontend record 机器核验与 `ssl_enabled` 一致）→ 写 webapp.json → gate PASS
 
-### 步骤八 · 端到端上线 → 断点 `launched`
+### 步骤九 · 端到端上线 → 断点 `launched`
 
 1. 三层验证（launch-checklist）：后端项 / 前端项 / 连通项（站点渲染、API 可见性、**多用户隔离抽检**、auth 回调）
 2. 上线报告（三级交付语义）→ 写 webapp.json → gate `--verify` PASS → 交付
@@ -198,7 +205,7 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 3. **等待协议**：>30s 的长操作按固定节奏轮询（job 每 30 秒、上限 20 次）；等待期间禁止发起无关操作
 4. **连续失败中止规则**：同一动作连续失败 2 次 → 强制中止并向用户报告，**禁止第三次盲目重试**
 5. **工具白名单**：每步骤允许/禁止集合见 workflow-stages.md；越界须先获用户同意并记 trace
-6. **gate 机械核验**：步骤完成前运行本技能 `scripts/webapp-gate.py`（`check-stage --stage <标记>`；步骤五、步骤六另跑 `check-gate --number 3|4`），**PASS 才能输出步骤报告与推进**；FAIL 按缺项整改后重跑。**步骤五与步骤八的 `check-stage` 必须加 `--verify`（步骤五另加 `--mcp-command <数据面启动命令>`）**：云上事实（REST 可达/对外表 anon 可见性/RLS/advisors）由 gate 直连机器核验，不采信 agent 自报
+6. **gate 机械核验**：步骤完成前运行本技能 `scripts/webapp-gate.py`（`check-stage --stage <标记>`；步骤五、六、七另跑 `check-gate --number 3|4|5`），**PASS 才能输出步骤报告与推进**；FAIL 按缺项整改后重跑。**步骤五与步骤九的 `check-stage` 必须加 `--verify`（步骤五另加 `--mcp-command <数据面启动命令>`）**：云上事实（REST 可达/对外表 anon 可见性/RLS/advisors）由 gate 直连机器核验，不采信 agent 自报
 7. **trace**：每个 MCP/CLI 工具调用后追加 `.hwsupabase/trace.jsonl` 一行（无敏感值；格式见 project-state.md）；工具调用须在该步骤白名单内（`check-whitelist` 审计，越界即违规）
 8. **进度看板**：技能触发后第一动作——创建八项待办（步骤一~八，宿主待办列表联动）**并在聊天中输出完整步骤总览表**；步骤推进/受阻时两轨同步更新；重入会话时依据 webapp.json 重建
 
@@ -220,7 +227,7 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 | 步骤三 资源接入方式（Supabase 应用 / OBS 桶） | 交互式勾选，禁止跳过；未获显式选择不得推进、不得代为默认；已有桶候选仅含公开读桶；新建桶名默认与应用名英文化一致，名称冲突追加短 uuid 后缀 |
 | init.sql（步骤五产出） | best-practices 四项审查通过；破坏性语句逐条人工确认 |
 | 凭据 | agent 永不接触明文；只处理 env 名与注入状态；连通性以工具调用结果证明 |
-| 回调配置（步骤七↻） | 展示 site_url/redirect_uris 差异后确认 |
+| 回调配置（步骤八↻） | 展示 site_url/redirect_uris 差异后确认 |
 
 ## 输出格式
 
@@ -238,8 +245,9 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
   | 四 | 数据面接入 | mcp_connected | ⏳ 待办 |
   | 五 | 后端生成部署 | backend_deployed | ⏳ 待办 |
   | 六 | 前端生成 | frontend_built | ⏳ 待办 |
-  | 七 | 构建与托管 | hosting_published | ⏳ 待办 |
-  | 八 | 端到端上线 | launched | ⏳ 待办 |
+  | 七 | 本地测试验证 | local_verified | ⏳ 待办 |
+  | 八 | 构建与托管 | hosting_published | ⏳ 待办 |
+  | 九 | 端到端上线 | launched | ⏳ 待办 |
   ```
 - **步骤声明**（每步骤第一条输出）：步骤号、前一态、允许/禁止动作、完成断言（格式见执行纪律）
 - **对接卡片**（需要用户配置或输入时，以表格直观呈现，便于高效对接）：
@@ -258,13 +266,13 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 
 - **节点快讯**（关键动作前后各一行）：`动作 · 对象 · 结果摘要`（如"部署 init.sql · 批次 b1 · 12 对象 applied"）；长操作（实例创建/构建/部署/上传）开始与完成各发一条
 - **步骤报告**（每步骤完成时）：先更新进度看板（聊天内**完整重发步骤总览表**：本步置 ✅、下一步骤置 🔄），再输出报告——目标、执行动作、通过条件验证结果（**引用 gate verdict**）、下一步骤预告 + 需要用户准备什么
-- **上线报告**（步骤八）：三级交付语义（本地已验证/环境已准备/线上验收通过）+ stable_url + 前端版本记录引用；格式见 references/launch-checklist.md
+- **上线报告**（步骤九）：三级交付语义（本地已验证/环境已准备/线上验收通过）+ stable_url + 前端版本记录引用；格式见 references/launch-checklist.md
 - **失败/断点报告**：当前步骤、失败原因（含连续失败中止规则触发）、已恢复/待人工项、webapp.json 状态
 
 ## 验证方法
 
 - 每步骤通过条件即验证点（见工作流表与 workflow-stages.md）
-- 步骤八 上线通过条件 = 三层组合（后端项/前端项/连通项），完整清单见 references/launch-checklist.md
+- 步骤九 上线通过条件 = 三层组合（后端项/前端项/连通项），完整清单见 references/launch-checklist.md
 - 上线后复查：webapp.json 标记 launched 且 stable_url 可访问
 
 ## 注意事项
@@ -292,8 +300,8 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 | 任务归属技能/文档不明时 | references/routing-table.md | 正向/负向路由矩阵 |
 | 步骤五 生成 init.sql 前 | 【强制门】rds-supabase-postgres-best-practices 技能（+ init-sql-guide） | 质量规则逐条对照 |
 | 步骤六 生成前端前 | 【强制门】rds-supabase-usage 技能 | SDK 正确用法，避免运行时报错 |
-| 步骤八 上线验证前 | references/launch-checklist.md | 三层清单与上线报告格式 |
-| 每步骤完成前 | scripts/webapp-gate.py（check-stage；步骤五、步骤六另跑 check-gate） | 🤖 断言机械核验，PASS 才算完成 |
+| 步骤九 上线验证前 | references/launch-checklist.md | 三层清单与上线报告格式 |
+| 每步骤完成前 | scripts/webapp-gate.py（check-stage；步骤五、六、七另跑 check-gate --number 3|4|5） | 🤖 断言机械核验，PASS 才算完成 |
 | launched 之后的更新/回滚/下线/密钥轮换 | references/lifecycle.md | 生命周期工作流 |
 
 一次会话的典型加载量：SKILL.md + project-state.md + workflow-stages.md 当前步骤小节 + 步骤强制门技能（如有）。routing-table.md 仅在路由不明时查询；不在早期步骤预加载 launch-checklist.md 与 lifecycle.md。
@@ -304,5 +312,5 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 - references/lifecycle.md（更新/回滚/下线/密钥轮换；launched 后读）
 - references/project-state.md（webapp.json 契约；首次读写前读）
 - references/routing-table.md（跨技能/MCP 路由矩阵；路由不明时查）
-- references/launch-checklist.md（端到端上线清单；步骤八 验证前读）
+- references/launch-checklist.md（端到端上线清单；步骤九 验证前读）
 - scripts/webapp-gate.py（步骤通过条件机械核验；每步骤完成前运行）

@@ -7,6 +7,24 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.9.5: the pipeline is now nine steps — a
+  local test & verification step (步骤七 本地测试验证, breakpoint local_verified)
+  is inserted between frontend generation and hosting. The frontend runs
+  locally (dev server or built-artifact preview) wired to the real deployed
+  backend gateway via supabase-js; L0 basic-function cases are incubated
+  from the step-2 confirmed scenarios (at least one positive plus a key
+  negative per scenario, covering page rendering, core CRUD, auth flows,
+  RLS visibility and error paths), confirmed by the user, then executed in
+  a fix-and-rerun loop until every case passes (two consecutive failures
+  of the same case aborts with a report; backend defects loop back through
+  step 5 incremental batches). The artifact .hwsupabase/gates/
+  5-local-test-report.md records one T-numbered line per case — gate
+  check-gate --number 5 machine-verifies at least five passed lines and
+  zero failed ones; check-stage --stage local_verified enforces the
+  breakpoint with trace. All downstream steps renumbered (构建与托管 →
+  step 8, 端到端上线 → step 9), including the --verify stages, progress
+  board, skill-lint pipeline (now nine steps) and every cross-reference.
+  Four new tests.
 - Skills `rds-supabase-web-build` v0.9.4 + `rds-supabase-mgr-mcp` (doc): step 2 is
   now 需求澄清与设计 — multi-turn dialogue or SDD spec-driven design around
   scenario × function × boundary (no omissions, no divergence, focused),

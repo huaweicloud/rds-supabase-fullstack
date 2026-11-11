@@ -1,6 +1,6 @@
-# 端到端上线清单（步骤八）
+# 端到端上线清单（步骤九）
 
-上线通过条件 = 三层组合验证。任何必需项 failed → 不标记 `launched`（处置见 workflow-stages.md 步骤八）。验收事件沿用 frontend 契约的 checks 语义：新的 check_id、独立文件、不覆写历史。加载时机：步骤八 上线验证前。
+上线通过条件 = 三层组合验证。任何必需项 failed → 不标记 `launched`（处置见 workflow-stages.md 步骤九）。验收事件沿用 frontend 契约的 checks 语义：新的 check_id、独立文件、不覆写历史。加载时机：步骤九 上线验证前。
 
 ## 第一层：后端项（数据面 MCP）
 
@@ -29,7 +29,7 @@
 | 入口协议一致性 | stable_url 协议 vs `instance.ssl_enabled` | 一致：true→HTTPS / false→HTTP（gate 机器核验 + 浏览器实证——HTTPS 页面调用 HTTP 网关属混合内容，被浏览器拦截） |
 | 前端 → Supabase API | 站点内执行一次数据查询或登录流 | 返回数据可见性正确（匿名/登录态按 RLS 预期受限；空集/子集即正确表现） |
 | 多用户隔离抽检 | 两个测试账号（经数据面 MCP 用户管理创建）在站点内互访对方数据行 | 均不可见（RLS 行级隔离实证；空集即通过） |
-| auth 回调 | 走一次登录/登出 | 回调跳转正确（步骤七↻ 已配置 site_url / redirect_uris） |
+| auth 回调 | 走一次登录/登出 | 回调跳转正确（步骤八↻ 已配置 site_url / redirect_uris） |
 
 ## 上线报告格式
 

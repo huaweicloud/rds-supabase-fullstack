@@ -257,6 +257,59 @@ class McpRegistrationTests(unittest.TestCase):
         self.assertIn("config_paths.data", result.stdout)
 
 
+class LocalVerificationTests(unittest.TestCase):
+    def write_report(self, project, lines):
+        (project / ".hwsupabase" / "gates" / "5-local-test-report.md").write_text(
+            "\n".join(lines) + "\n", encoding="utf-8")
+
+    def test_gate5_pass(self):
+        project = make_project()
+        self.write_report(project, [
+            "- T01：首页渲染 → passed",
+            "- T02：文章 CRUD → passed",
+            "- T03：登录登出 → passed",
+            "- T04：RLS 可见性 → passed",
+            "- T05：无效输入负向 → passed",
+        ])
+        result = run_gate(project, "check-gate", "--number", "5")
+        self.assertEqual(result.returncode, 0, result.stdout)
+
+    def test_gate5_fail_failed_case(self):
+        project = make_project()
+        self.write_report(project, [
+            "- T01：首页渲染 → passed",
+            "- T02：文章 CRUD → failed",
+            "- T03：登录登出 → passed",
+            "- T04：RLS 可见性 → passed",
+            "- T05：无效输入负向 → passed",
+        ])
+        result = run_gate(project, "check-gate", "--number", "5")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("failed cases", result.stdout)
+
+    def test_gate5_fail_too_few(self):
+        project = make_project()
+        self.write_report(project, ["- T01：首页渲染 → passed", "- T02：文章 CRUD → passed"])
+        result = run_gate(project, "check-gate", "--number", "5")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("at least 5 passed", result.stdout)
+
+    def test_stage_local_verified_pass(self):
+        project = make_project()
+        path = project / ".hwsupabase" / "webapp.json"
+        data = json.loads(path.read_text())
+        data["stages"]["last_completed_stage"] = "local_verified"
+        data["stages"]["history"].append({"stage": "local_verified", "status": "passed",
+                                          "at": "2026-11-10T09:30:00Z", "note": None})
+        path.write_text(json.dumps(data))
+        with (project / ".hwsupabase" / "trace.jsonl").open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps({"at": "2026-11-10T09:30:00Z", "stage": "local_verified",
+                                     "tool": "npm run dev", "intent": "local serve",
+                                     "status": "ok", "note": None}) + "\n")
+        result = run_gate(project, "check-stage", "--stage", "local_verified")
+        self.assertEqual(result.returncode, 0, result.stdout)
+
+
 class StorageCapabilityTests(unittest.TestCase):
     def _with_storage(self, mutate_storage=None, caps=("database", "auth", "rpc", "storage")):
         project = make_project()

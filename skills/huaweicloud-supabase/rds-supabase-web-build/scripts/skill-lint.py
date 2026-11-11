@@ -5,9 +5,9 @@ Guards against the class of accidents where a renumbering or contract edit
 lands in one file but not the others. Checks, against a single expected
 pipeline:
 
-  1. SKILL.md step headers: eight sequential 步骤一–步骤八 blocks, each with
+  1. SKILL.md step headers: nine sequential 步骤一–步骤九 blocks, each with
      the expected stage name and breakpoint enum value
-  2. workflow-stages.md: eight matching step sections
+  2. workflow-stages.md: nine matching step sections
   3. project-state.md: the step enum line lists all enum values in order
   4. webapp-gate.py: the STAGES list matches the same pipeline
   5. every reference file mentioned in SKILL.md exists on disk
@@ -28,11 +28,12 @@ STEPS = [
     ("步骤四", "数据面接入", "mcp_connected"),
     ("步骤五", "后端生成部署", "backend_deployed"),
     ("步骤六", "前端生成", "frontend_built"),
-    ("步骤七", "构建与托管", "hosting_published"),
-    ("步骤八", "端到端上线", "launched"),
+    ("步骤七", "本地测试验证", "local_verified"),
+    ("步骤八", "构建与托管", "hosting_published"),
+    ("步骤九", "端到端上线", "launched"),
 ]
-SKILL_HEADER = re.compile(r"^### (步骤[一二三四五六七八]) · (.+?) → 断点 `([a-z_]+)`", re.MULTILINE)
-PLAYBOOK_HEADER = re.compile(r"^## (步骤[一二三四五六七八]) · (.+?)$", re.MULTILINE)
+SKILL_HEADER = re.compile(r"^### (步骤[一二三四五六七八九]) · (.+?) → 断点 `([a-z_]+)`", re.MULTILINE)
+PLAYBOOK_HEADER = re.compile(r"^## (步骤[一二三四五六七八九]) · (.+?)$", re.MULTILINE)
 REF_LINK = re.compile(r"(references/[A-Za-z0-9_-]+\.md|scripts/[A-Za-z0-9_-]+\.py|assets/[A-Za-z0-9_.-]+)")
 
 

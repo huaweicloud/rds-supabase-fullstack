@@ -15,8 +15,8 @@ web-build 是编排者：仅执行路由，不复制内容。命中左列任务�
 | 前端 SDK 用法（步骤六强制门；步骤五客户端消费视角） | rds-supabase-usage 技能 | SKILL.md（客户端集成/auth/RLS 调试速查） |
 | 构建环境/构建/OBS 上传/CDN/版本记录与回退 | rds-supabase-frontend 技能 | `references/build-environment.md`、`references/obs-release.md`、`references/record-contract.md`、`references/deployment.md` |
 | OBS 租户桶创建（步骤三） | rds-supabase-frontend 技能 | `references/hosting.md` / `references/obs-release.md` |
-| auth 回调配置（步骤七↻：site_url/redirect_uris） | 管理面 MCP | `update_supabase_auth_config`（两阶段确认） |
-| 部署验证（步骤五/步骤八后端项） | rds-supabase-mcp 技能 | `references/verification-method.md` |
+| auth 回调配置（步骤八↻：site_url/redirect_uris） | 管理面 MCP | `update_supabase_auth_config`（两阶段确认） |
+| 部署验证（步骤五/步骤九后端项） | rds-supabase-mcp 技能 | `references/verification-method.md` |
 | 单工具数据操作（结构查询/用户管理等） | rds-supabase-mcp 技能 | SKILL.md 可用工具表 |
 
 ## 负向路由（web-build 不做）

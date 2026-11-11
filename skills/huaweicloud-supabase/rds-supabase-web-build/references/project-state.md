@@ -38,6 +38,7 @@
 | storage | object/null | 步骤二未标记 `storage` 能力或尚未完成对接时为 `null` |
 | backend | object/null | 未部署时为 `null` |
 | frontend | object/null | 未生成时为 `null` |
+| test_accounts | list/null | 未进入步骤九时为 `null` |
 | stages | object | 见下 |
 
 ### environment
@@ -110,6 +111,16 @@
 | project_dir | string | 前端项目目录（相对项目根） |
 | framework | string | 如 `react-vite-ts` |
 | hosting_mode | string/null | 步骤八 托管场景选择后必填：`temporary`（临时访问——原型/测试验证，免购域名免备案）或 `production`（正式上线——购买域名/备案/CDN 商用链路）；hosting_published 起 gate 校验枚举 |
+
+### test_accounts
+
+| 字段 | 类型 | 规则 |
+|---|---|---|
+| email | string | 测试账号邮箱 |
+| password | string | 测试账号密码——**应用级演示账号凭据（非云凭据）**，凭据红线唯一例外：随「应用名片」向用户交付；正式使用前改密或删除 |
+| note | string | 用途说明（如「隔离抽检账号 A」） |
+
+`auth` 能力在场时 `launched` 起须 ≥2 条（gate 校验；无 auth 能力的应用不适用）。
 
 ### stages
 

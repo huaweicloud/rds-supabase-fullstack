@@ -3,7 +3,7 @@ name: rds-supabase-web-build
 description: 'RDS Supabase 全栈开发编排技能：AI Agent 通过自然语言创建并托管 Web 应用网站的端到端工作流——需求澄清与设计、前端代码生成、后端声明式配置（DDL/GRANT/RLS/RPC）生成与部署、本地 L0 测试验证、前端静态资源 OBS+CDN 全托管、端到端上线与生命周期管理（更新/回滚/下线）。Use when：创建 Web 网站、搭建 AI 应用、全栈应用从零到上线、已有 RDS Supabase 应用的迭代更新与托管维护。编排管理面与数据面两台 MCP（均由工作流步骤动态安装：管理面→步骤三、数据面→步骤四）及 rds-supabase-mgr-mcp / rds-supabase-mcp / rds-supabase-usage / rds-supabase-frontend / rds-supabase-postgres-best-practices / rds-supabase-function-graph 六个专项技能。v1 后端边界为数据层；复杂业务逻辑由 function-graph 技能（云函数）承接，SSR 后端部署不支持。'
 license: MIT
 metadata:
-  version: "0.10.2"
+  version: "0.11.0"
 ---
 
 # RDS Supabase 全栈开发编排（web-build）
@@ -187,8 +187,9 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 
 ### 步骤九 · 端到端上线 → 断点 `launched`
 
-1. 三层验证（launch-checklist）：后端项 / 前端项 / 连通项（站点渲染、API 可见性、**多用户隔离抽检**、auth 回调）
-2. 上线报告（三级交付语义）→ 写 webapp.json → gate `--verify` PASS → 交付
+1. 三层验证（launch-checklist）：后端项 / 前端项 / 连通项（站点渲染、API 可见性、**多用户隔离抽检**、auth 回调）；抽检测试账号创建后即记入 webapp.json `test_accounts`（email/密码/用途）
+2. 上线报告（三级交付语义）→ 写 webapp.json → gate `--verify` PASS
+3. **输出「应用名片」并落盘 `.hwsupabase/app-card.md`**（launched 后最终交付物）：应用名称、功能介绍、访问地址、后端地址、**测试账号（含密码）**、数据模型与技术栈概览、使用方式（更新/回滚/下线触发语）——格式见输出格式
 
 **断点续作**：会话开始先读 webapp.json → 从 `last_completed_stage` 的下一步骤重入，并**重验该步骤通过条件**（不信任历史结论）。
 
@@ -273,6 +274,27 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 - **节点快讯**（关键动作前后各一行）：`动作 · 对象 · 结果摘要`（如"部署 init.sql · 批次 b1 · 12 对象 applied"）；长操作（实例创建/构建/部署/上传）开始与完成各发一条
 - **步骤报告**（每步骤完成时）：先更新进度看板（聊天内**完整重发步骤总览表**：本步置 ✅、下一步骤置 🔄），再输出报告——目标、执行动作、通过条件验证结果（**引用 gate verdict**）、下一步骤预告 + 需要用户准备什么
 - **上线报告**（步骤九）：三级交付语义（本地已验证/环境已准备/线上验收通过）+ stable_url + 前端版本记录引用；格式见 references/launch-checklist.md
+- **应用名片**（步骤九 launched 后输出 + 落盘 `.hwsupabase/app-card.md`）：
+
+  ```
+  【应用名片】<应用名称>
+  | 项 | 内容 |
+  |---|---|
+  | 应用名称 | <project.name> |
+  | 功能介绍 | <requirements_summary 一句话> |
+  | 访问地址 | <stable_url>（temporary 场景仅本机生效） |
+  | 后端地址 | <gateway_url>（RDS Supabase 网关） |
+  | 测试账号 | A：<email> / 密码：<password>；B：<email> / 密码：<password>（验收演示账号，正式使用前改密或删除） |
+  | 数据模型 | <N> 张表：<表清单>；RPC <M> 个 |
+  | 技术栈 | 前端 <framework> + supabase-js；后端 Supabase（PostgREST/GoTrue）；托管 OBS · <hosting_mode> |
+  | 版本信息 | 后端批次 <current_batch> · 上线 <时间> |
+  | 项目管理 | 状态 .hwsupabase/webapp.json · 前端记录 <record_ref> |
+
+  使用方式（自然语言直接说）：
+  - 更新：「给 <应用名> 增加 <功能/页面>」
+  - 回滚：「回滚 <应用名> 前端到上个版本」
+  - 下线：「下线 <应用名>」（含清理清单）
+  ```
 - **失败/断点报告**：当前步骤、失败原因（含连续失败中止规则触发）、已恢复/待人工项、webapp.json 状态
 
 ## 验证方法
@@ -283,7 +305,7 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 
 ## 注意事项
 
-- **凭据红线**：密钥永不写入 webapp.json/会话内容/工具返回；agent 不读取交付文件；凭据三层优先级（项目 `secrets/` → 项目内 devkit 文件 → 全局 devkit 显式确认）；anon key 进入前端产物属预期，Service Role Key 绝不进入
+- **凭据红线**：密钥永不写入 webapp.json/会话内容/工具返回；agent 不读取交付文件；凭据三层优先级（项目 `secrets/` → 项目内 devkit 文件 → 全局 devkit 显式确认）；anon key 进入前端产物属预期，Service Role Key 绝不进入；**唯一例外**——步骤九 验收创建的**应用级测试账号**（邮箱+密码）记入 `test_accounts` 并随「应用名片」交付用户：属应用演示账号而非云凭据（正式使用前改密或删除）
 - **环境配置项目级隔离（红线）**：Region / RDS·OBS 接入点 / PROJECT_ID 的**唯一权威是项目内 webapp.json `environment` 段**——**禁止从 agent 进程环境、shell 会话或全局环境变量读取同名变量**（可能来自其他项目或本机全局，跨项目共享即边界溢出）；`diagnostics discover` 解析结果必须写回项目配置；`HUAWEICLOUD_REGION` 等环境变量名仅在步骤三/四启动 MCP 时由项目配置注入进程（进程作用域，不 export）；凭据四选项交互（禁止跳过）：A 项目 `secrets/` 与 B 项目内 devkit 文件（`HUAWEICLOUD_DEVKIT_CREDENTIALS_FILE` 指向项目内 0600 文件）勾选即采用；**C 感知到的系统/用户级凭证配置（全局 devkit、`~/.config/huaweicloud/`、`~/.obsutilconfig`、环境变量）不得直接采用**——逐项显示（级别/来源/账号标识，不显明文）经用户确认后采用并记 `credential_source=external_confirmed`；D 用户指定或输入落盘项目 `secrets/`——多项目共用一台机器时，A 项目的凭证配置不得静默进入 B 项目
 - **凭据项目级隔离（红线）**：登录态与凭据**只存放于当前项目内**——`<项目根>/.hwsupabase/secrets/`（0600、属主本人、目录排除 Git）。**禁止**写入全局或系统环境变量（shell profile、launchd/系统级 env、会话 `export`）；**禁止**新建或覆写个人级配置（`~/.config/huaweicloud/credentials.json`、`~/.obsutilconfig`）——已有个人级文件属既有工具与其他项目，**不迁移、不删除、不覆写**。MCP 进程凭据经进程内 env 或项目内凭据文件注入（`HUAWEICLOUD_MCP_CREDENTIALS_FILE` / `HUAWEICLOUD_DEVKIT_CREDENTIALS_FILE` 指向项目内 0600 文件；`SUPABASE_REQUESTS_FILE=<项目>/.hwsupabase/requests.json`，Key 交付落盘 secrets/）。本项目凭据轮换只影响本项目 `.hwsupabase/`，不污染其他项目开发
 - **MCP 注册项目级隔离（红线）**：动态安装的两台 MCP **只注册进当前项目的项目级 MCP 配置**——Claude Code `<项目根>/.mcp.json`（`mcpServers` 结构）、CodeArts `<项目根>/.codeartsdoer/`（与项目级技能目录同根）、OfficeAce 项目根下该宿主项目级配置、opencode `<项目根>/opencode.json` 或 `.opencode/` 内配置（`mcp` 键）；**禁止一切用户级与系统级位置**（`~/.claude.json` user scope、Claude Desktop `claude_desktop_config.json`、`~/.config/opencode/` 全局、`~/.codeartsdoer/` 个人级、系统 managed 配置等）——用户级注册会使本机其他项目可见并使用本项目实例的 MCP 与凭据，属边界溢出；**宿主仅有用户级配置机制 → 停止并报告，不注册**（宁缺毋溢出）；注册后核验条目落位项目级且未触碰用户级/系统级，再重载客户端；含凭据的配置文件必须列入 `.gitignore`（0600，凭据由用户从 secrets/ 填入，agent 不经手明文）；**严禁 `uv tool install`/`pip install` 等装入用户级/系统级环境**——`uvx` 仅一次性缓存运行（共享构建缓存非安装非注册），本地克隆 `.venv` 只落仓内目录（项目级或唯一临时目录）；下线时从项目级配置移除两台条目

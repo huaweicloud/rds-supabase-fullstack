@@ -443,6 +443,60 @@ class StableUrlProtocolTests(unittest.TestCase):
         self.assertIn("record_ref file not found", result.stdout)
 
 
+def make_launched(test_accounts=None, caps=("database", "auth", "rpc"), write_card=True):
+    project = make_published(False, "http://cdn.example.com")
+    path = project / ".hwsupabase" / "webapp.json"
+    data = json.loads(path.read_text())
+    data["project"]["baas_capabilities"] = list(caps)
+    data["stages"]["last_completed_stage"] = "launched"
+    data["stages"]["history"].append({"stage": "launched", "status": "passed",
+                                      "at": "2026-11-10T11:00:00Z", "note": None})
+    if test_accounts is not None:
+        data["test_accounts"] = test_accounts
+    path.write_text(json.dumps(data))
+    with (project / ".hwsupabase" / "trace.jsonl").open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps({"at": "2026-11-10T11:00:00Z", "stage": "launched",
+                                 "tool": "create_user", "intent": "isolation test accounts",
+                                 "status": "ok", "note": None}) + "\n")
+    if write_card:
+        (project / ".hwsupabase" / "app-card.md").write_text(
+            "【应用名片】demo\n访问地址 http://cdn.example.com\n", encoding="utf-8")
+    return project
+
+
+class AppCardTests(unittest.TestCase):
+    ACCOUNTS = [{"email": "a@test.dev", "password": "Passw0rd!A", "note": "隔离抽检账号 A"},
+                {"email": "b@test.dev", "password": "Passw0rd!B", "note": "隔离抽检账号 B"}]
+
+    def test_fail_app_card_missing(self):
+        project = make_launched(self.ACCOUNTS, write_card=False)
+        result = run_gate(project, "check-stage", "--stage", "launched")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("app-card.md missing", result.stdout)
+
+    def test_fail_test_accounts_missing_when_auth(self):
+        project = make_launched(None)
+        result = run_gate(project, "check-stage", "--stage", "launched")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("test_accounts", result.stdout)
+
+    def test_fail_test_accounts_too_few(self):
+        project = make_launched(self.ACCOUNTS[:1])
+        result = run_gate(project, "check-stage", "--stage", "launched")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("at least 2", result.stdout)
+
+    def test_pass_launched_with_accounts_and_card(self):
+        project = make_launched(self.ACCOUNTS)
+        result = run_gate(project, "check-stage", "--stage", "launched")
+        self.assertEqual(result.returncode, 0, result.stdout)
+
+    def test_pass_launched_without_auth_no_accounts(self):
+        project = make_launched(None, caps=("database", "rpc"))
+        result = run_gate(project, "check-stage", "--stage", "launched")
+        self.assertEqual(result.returncode, 0, result.stdout)
+
+
 class HostingModeTests(unittest.TestCase):
     def test_fail_hosting_mode_missing(self):
         project = make_published(False, "http://cdn.example.com")

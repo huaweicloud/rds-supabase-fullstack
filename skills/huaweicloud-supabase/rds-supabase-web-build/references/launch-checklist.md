@@ -45,4 +45,8 @@
 三级交付语义：本地已验证 / 环境已准备 / 线上验收通过
 ```
 
+## 应用名片（launched 后输出 + 落盘 .hwsupabase/app-card.md）
+
+最终交付物，面向用户直观展示应用全貌与使用方式。字段来源：webapp.json（project / instance / backend / frontend / test_accounts）与 frontend record（stable_url）。测试账号**含密码**（验收演示账号，正式使用前改密或删除）。完整格式见 SKILL.md 输出格式「应用名片」。
+
 任一层失败：报告区分失败层与处置路径，webapp.json history 记录 `failed`，不标记 `launched`。页面可达不等于 API/Auth 链路通过（**入口协议须与实例 SSL 一致——HTTPS 页面调用 HTTP 网关属混合内容，被浏览器拦截**）；本地检查不能代替真实入口验证。**RLS 拒绝的正确表现是受限结果（空集/子集），不是 4xx/5xx——不得以状态码代替数据可见性断言。**

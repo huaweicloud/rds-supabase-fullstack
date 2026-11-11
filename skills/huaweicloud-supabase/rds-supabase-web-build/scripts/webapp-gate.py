@@ -231,6 +231,15 @@ def check_contract(data, missing):
             mode = frontend.get("hosting_mode")
             if mode is not None and mode not in ("temporary", "production"):
                 missing.append("frontend.hosting_mode must be 'temporary' or 'production'")
+    accounts = data.get("test_accounts")
+    if accounts is not None:
+        if not isinstance(accounts, list):
+            missing.append("test_accounts must be a list")
+        else:
+            for index, acc in enumerate(accounts):
+                if not (isinstance(acc, dict) and isinstance(acc.get("email"), str)
+                        and isinstance(acc.get("password"), str) and isinstance(acc.get("note"), str)):
+                    missing.append(f"test_accounts[{index}] must contain string email/password/note")
     stages = data.get("stages")
     if isinstance(stages, dict):
         if stages.get("last_completed_stage") not in STAGES:
@@ -296,6 +305,17 @@ def check_stage(data, stage, missing, project_dir=None):
         if mode not in ("temporary", "production"):
             missing.append("frontend.hosting_mode must be 'temporary' or 'production' "
                            "from hosting_published onward (user-confirmed hosting scenario)")
+    if stage == "launched":
+        caps = (data.get("project") or {}).get("baas_capabilities") or []
+        if "auth" in caps:
+            accounts = data.get("test_accounts") or []
+            if not (isinstance(accounts, list) and len(accounts) >= 2):
+                missing.append("test_accounts needs at least 2 entries from launched onward "
+                               "when the auth capability is required")
+    if stage == "launched" and project_dir is not None:
+        card = Path(project_dir) / ".hwsupabase" / "app-card.md"
+        if not card.is_file():
+            missing.append(".hwsupabase/app-card.md missing (application card, required at launched)")
     if stage in ("hosting_published", "launched") and project_dir is not None:
         record_ref = (data.get("frontend") or {}).get("record_ref")
         if isinstance(record_ref, str):

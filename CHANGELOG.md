@@ -7,6 +7,23 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.11.0: launched now concludes with an
+  application card (应用名片) — the final deliverable, output in chat and
+  persisted to .hwsupabase/app-card.md. Fields: application name,
+  one-line function summary, access URL (with the temporary-mode
+  local-only caveat), backend gateway URL, test accounts WITH passwords
+  (created for the step-9 user-isolation checks, recorded as
+  test_accounts — email/password/note; explicitly carved out of the
+  credential red line as app-level demo accounts, not cloud
+  credentials, with a reminder to change or remove them before real
+  use), data model (tables/RPC from the latest deployment batch),
+  tech stack (frontend framework, Supabase backend, hosting mode),
+  version info (backend batch, launch time), project-management
+  pointers, and usage triggers for update/rollback/decommission.
+  webapp.json gains the test_accounts section; the gate validates its
+  structure, requires >=2 accounts at launched when the auth capability
+  is present, and requires app-card.md to exist at launched. Five new
+  tests.
 - Skills `rds-supabase-web-build` v0.10.2 + `rds-supabase-frontend` v0.2.3:
   the temporary-access scenario now uses a deterministic custom-domain
   procedure. The domain is fixed as <app-slug>.huaweicloud-rds.com

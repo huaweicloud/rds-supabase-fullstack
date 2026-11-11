@@ -328,10 +328,12 @@
 
 1. 声明步骤九
 2. 按 references/launch-checklist.md 执行三层验证：后端项（结构/RLS/advisors/REST 200 + anon 可见性）/ 前端项（checks 契约）/ 连通项（站点渲染、前端→API 数据可见性、**多用户隔离抽检**——两个测试账号经数据面 MCP 用户管理创建后互访对方数据行断言不可见、auth 回调跳转）
-3. 输出上线报告（三级交付语义 + stable_url + 版本引用）
-4. 写 webapp.json（launched）→ gate（`check-stage --stage launched --verify`，后端项机器核验）→ 完成交付
+3. **测试账号记录**：隔离抽检的两个测试账号创建后即写入 webapp.json `test_accounts`（`email`/`password`/`note`——应用演示账号，非云凭据；凭据红线唯一例外，随名片交付）
+4. 输出上线报告（三级交付语义 + stable_url + 版本引用）
+5. **输出「应用名片」并落盘 `.hwsupabase/app-card.md`**（字段取自 webapp.json 与 frontend record）：应用名称（`project.name`）、功能介绍（`requirements_summary`）、访问地址（stable_url）、后端地址（`instance.gateway_url`）、测试账号（`test_accounts` 含密码）、数据模型（最新批次 `objects`）、技术栈（`frontend.framework`/`hosting_mode`/实例）、版本信息（`current_batch`/上线时间）、项目管理入口（webapp.json/`record_ref`）+ 使用方式（更新/回滚/下线触发语）；名片落 `.hwsupabase/`（排除 Git）
+6. 写 webapp.json（launched + test_accounts）→ gate（`check-stage --stage launched --verify`，后端项机器核验；**app-card.md 存在性一并校验**）→ 完成交付
 
-**输出断言**：🔍 三层全必需项 passed（含多用户隔离抽检不可见）｜🤖 gate PASS（launched 终态 + 全链 history）
+**输出断言**：🔍 三层全必需项 passed（含多用户隔离抽检不可见）｜🔍 应用名片已输出并落盘（含测试账号与使用方式）｜🤖 gate PASS（launched 终态 + 全链 history）
 
 **工具白名单**：允许：数据面只读与用户管理（测试账号创建）、frontend checks；禁止：**一切写工具**（上线验证除测试账号外纯只读；测试账号在报告后提示用户可清理）
 
@@ -339,8 +341,8 @@
 ```
 声明步骤九 → 后端项（get_rls_status / get_advisors / REST 200 + anon 可见性）→ 前端项（checks 契约复核）
 → 连通项（stable_url 渲染 ✓ / 站点内查询可见性正确 ✓ / 隔离抽检：账号 A↔B 互访均空集 ✓ / auth 回调 ✓）
-→ 上线报告（本地已验证 / 环境已准备 / 线上验收通过）→ 写 webapp.json(launched) → gate --verify PASS
-→ gate PASS → 交付
+→ 测试账号记入 test_accounts → 上线报告（本地已验证 / 环境已准备 / 线上验收通过）
+→ 应用名片输出 + 落盘 app-card.md → 写 webapp.json(launched) → gate --verify PASS → 交付
 ```
 
 **失败处置**：后端项失败 → 回步骤五修复重部署；前端项失败 → frontend 修复/回退；连通项失败 → 回调回路/网关/安全组排查——不标记 launched。**断点**：`launched`

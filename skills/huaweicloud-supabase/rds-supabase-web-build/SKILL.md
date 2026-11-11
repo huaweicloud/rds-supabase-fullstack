@@ -3,7 +3,7 @@ name: rds-supabase-web-build
 description: 'RDS Supabase 全栈开发编排技能：AI Agent 通过自然语言创建并托管 Web 应用网站的端到端工作流——前端代码生成、后端 init.sql（DDL/GRANT/RLS/RPC）生成与部署、前端静态资源 OBS+CDN 全托管、端到端上线与生命周期管理（更新/回滚/下线）。Use when：创建 Web 网站、搭建 AI 应用、全栈应用从零到上线、已有 RDS Supabase 应用的迭代更新与托管维护。编排管理面与数据面两台 MCP（均由工作流步骤动态安装：管理面→步骤三、数据面→步骤四）及 rds-supabase-mgr-mcp / rds-supabase-mcp / rds-supabase-usage / rds-supabase-frontend / rds-supabase-postgres-best-practices 五个专项技能。v1 后端边界为数据层；复杂业务逻辑（支付/第三方调用/长任务）不在 v1 范围，SSR 后端部署不支持。'
 license: MIT
 metadata:
-  version: "0.9.5"
+  version: "0.9.6"
 ---
 
 # RDS Supabase 全栈开发编排（web-build）
@@ -60,7 +60,7 @@ RDS Supabase 全栈开发的**顶层编排技能**：用户以单句自然语言
 
 1. 技能包（全部技能）已按 [README](README.md)/[INSTALL.md](INSTALL.md) 完整安装进**项目级**技能目录（**强约束：仅项目级，路径固定**——CodeArts `<项目根>/.codeartsdoer/skills/`、opencode `<项目根>/.opencode/skills/`、Claude Code `<项目根>/.claude/skills/`；**禁系统内置/系统级目录与一切个人级目录**（`~/.codeartsdoer/skills` 等同名不同根的家目录路径）——技能版本随项目走，不污染其他项目）——安装阶段不含 MCP 与凭据
 2. uv（含 uvx）可用——步骤三/四动态安装 MCP 所需，步骤一环境检查核对，缺失提醒用户安装
-3. 步骤一执行环境检查与配置：凭据（devkit 登录态或 AK/SK）、Region（局点）、RDS 与 OBS 接入点、`HUAWEICLOUD_PROJECT_ID` 须已配置或可解析；**无法获取的项必须以缺失清单显式提醒用户设置**，不得猜测或跳过。凭据存放遵循**项目级隔离**：只入 `<项目根>/.hwsupabase/secrets/`，不入全局/系统环境变量与个人级配置（红线见注意事项）
+3. 步骤一执行环境检查与配置：凭据、Region（局点）、RDS 与 OBS 接入点、`HUAWEICLOUD_PROJECT_ID` 须已在**项目内配置**（webapp.json `environment` 段 + `secrets/`，唯一权威）或可解析（discover 解析结果**写回项目配置**）；**无法获取的项必须以缺失清单显式提醒用户设置**，不得猜测或跳过，**不从 agent 进程/全局环境变量读取**（红线见注意事项）
 4. 云侧付费资源（实例/OBS 桶/CDN）创建前须用户显式确认（费用预估在步骤二输出）
 
 ## 工作流（步骤一–八 分步执行）
@@ -76,13 +76,15 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 
 ### 步骤一 · 环境检查与配置 → 断点 `environment_ready`
 
-1. 凭据检查：devkit 登录态或 AK/SK（或服务 Token）；缺失 → 提醒用户设置
+**配置来源唯一权威：当前项目的 `.hwsupabase/`**（webapp.json `environment` 段 + `secrets/`）——Region/接入点/PROJECT_ID **不从 agent 进程环境、shell 会话或全局环境变量读取**（同名变量可能来自其他项目或本机全局设置，一律不采信）；`HUAWEICLOUD_REGION` 等环境变量名仅在步骤三/四启动 MCP 时**由项目配置注入进程**（进程作用域，不 export）
+
+1. **凭据检查（三层优先级）**：① 项目内 `.hwsupabase/secrets/`（AK/SK 或 Token，0600、排除 Git）→ ② 项目内 devkit 凭据文件（`HUAWEICLOUD_DEVKIT_CREDENTIALS_FILE` 指向项目内 0600 文件）→ ③ 本机全局 devkit 登录态——**仅向用户呈现并经显式确认后采用**，记 `credential_source=global_devkit_confirmed`（默认不采用：全局登录态跨项目共享，静默采用即边界溢出）；均缺失 → 提醒用户在项目内设置
 2. **uv（含 uvx）可用**——步骤三/四动态安装 MCP 的前提；缺失 → 提醒用户安装（`curl -LsSf https://astral.sh/uv/install.sh | sh`）
-3. **Region（局点）确认**：`HUAWEICLOUD_REGION` 已选择——OBS 接入点推导与桶区域的前提；缺失 → **显式提醒用户设置**
-4. **RDS 接入点**：`SUPABASE_RDS_ENDPOINT` 已配置 → 采用；未配置且凭据就绪 → `diagnostics discover` 解析并经用户勾选；**无法解析 → 显式提醒用户设置**
-5. **OBS 接入点**：按 Region 推导（`obs.<region>.myhuaweicloud.com`，KooCLI/SDK 自动解析）；**无法推导 → 显式提醒用户设置**
-6. **PROJECT_ID**：已配置 → 采用；未配置 → discover 勾选；**无法获取 → 显式提醒用户设置**
-7. 缺失项汇总为清单提醒用户逐项设置，**不得猜测、不得跳过、不得以默认值代替**；全部就绪 → 写 webapp.json（`environment_ready`）→ gate PASS
+3. **Region（局点）确认**：读项目配置（webapp.json `environment.region`）；缺失 → 显式提醒用户告知局点并**写入项目配置**（不读进程/全局环境变量）
+4. **RDS 接入点**：项目配置已有 → 采用；缺失且凭据就绪 → `diagnostics discover` 解析并经用户勾选，**结果写回项目配置**；无法解析 → 显式提醒用户设置
+5. **OBS 接入点**：按 Region 推导（`obs.<region>.myhuaweicloud.com`，KooCLI/SDK 自动解析），**写回项目配置**
+6. **PROJECT_ID**：项目配置已有 → 采用；缺失 → discover 勾选并**写回项目配置**；无法获取 → 显式提醒用户设置
+7. 缺失项汇总为清单提醒用户逐项设置，**不得猜测、不得跳过、不得以默认值代替**；全部就绪 → 写 webapp.json（`environment` 段 + `environment_ready`）→ gate PASS
 
 ### 步骤二 · 需求澄清与设计 → 断点 `requirements_confirmed`
 
@@ -115,7 +117,7 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
    ```
 
    ZIP 归档属本仓官方源（`.../archive/<commit>.zip` 为 pin 等价形式），不违反来源锁定；仍禁 PyPI/第三方源。
-   env：`SUPABASE_RDS_ENDPOINT` / `HUAWEICLOUD_PROJECT_ID` / 凭据。**凭据模式二选一**：REST token（`HUAWEICLOUD_AUTH_TOKEN`，`SUPABASE_TRANSPORT` 默认 rest）或 **AK/SK（必须设置 `SUPABASE_TRANSPORT=sdk_core`**，读取 `HUAWEICLOUD_ACCESS_KEY`/`HUAWEICLOUD_SECRET_KEY`/可选 `HUAWEICLOUD_SECURITY_TOKEN`）——用户已填 AK/SK 而未设 `sdk_core` 时管理面将按 REST 模式启动并因缺 Token 失败；devkit 优先；或 `diagnostics discover` 勾选；或半自动方案：配置模板含占位符，由用户填入实际值
+   env：`SUPABASE_RDS_ENDPOINT` / `HUAWEICLOUD_PROJECT_ID` / 凭据——**值一律由项目内配置注入进程**（步骤一 `environment` 段与 `secrets/`），不读取会话/全局环境。**凭据模式二选一**：REST token（`HUAWEICLOUD_AUTH_TOKEN`，`SUPABASE_TRANSPORT` 默认 rest）或 **AK/SK（必须设置 `SUPABASE_TRANSPORT=sdk_core`**，读取 `HUAWEICLOUD_ACCESS_KEY`/`HUAWEICLOUD_SECRET_KEY`/可选 `HUAWEICLOUD_SECURITY_TOKEN`）——用户已填 AK/SK 而未设 `sdk_core` 时管理面将按 REST 模式启动并因缺 Token 失败；devkit 优先；或 `diagnostics discover` 勾选；或半自动方案：配置模板含占位符，由用户填入实际值
 
    **注册纪律（项目级隔离）**：MCP 启动后**只注册进当前项目的项目级 MCP 配置**（Claude Code `<项目根>/.mcp.json`、CodeArts `<项目根>/.codeartsdoer/`、OfficeAce 项目根下项目级配置、opencode `<项目根>/opencode.json`；**禁止 `~/.claude.json` user scope、Claude Desktop `claude_desktop_config.json`、`~/.config/opencode/` 等一切用户级/系统级位置**——用户级注册会使本机其他项目可见可用，属边界溢出；宿主仅有用户级机制 → 停止报告，不注册）；含凭据的配置文件列入 `.gitignore`（0600）；**严禁 `uv tool install`/`pip install` 装入用户级/系统级**——uvx 仅一次性缓存运行；注册后核验落位再重载客户端（详细表见 workflow-stages.md 步骤三）
 3. **Supabase 应用接入方式——交互式勾选（禁止跳过）**：以选择清单呈现「使用已有应用 / 新建应用」二选一，未获用户显式选择不得推进，不得代为默认。**使用已有** → `list_supabase_applications` 候选列表（ID/名称/状态/规格）供用户勾选 + `show_supabase_application` 状态核验；**新建** → 创建（仅 Single）+ 配置 EIP/安全组 8443/SSL
@@ -277,7 +279,8 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 
 ## 注意事项
 
-- **凭据红线**：密钥永不写入 webapp.json/会话内容/工具返回；agent 不读取交付文件；devkit 注入优先、半自动备选路径；anon key 进入前端产物属预期，Service Role Key 绝不进入
+- **凭据红线**：密钥永不写入 webapp.json/会话内容/工具返回；agent 不读取交付文件；凭据三层优先级（项目 `secrets/` → 项目内 devkit 文件 → 全局 devkit 显式确认）；anon key 进入前端产物属预期，Service Role Key 绝不进入
+- **环境配置项目级隔离（红线）**：Region / RDS·OBS 接入点 / PROJECT_ID 的**唯一权威是项目内 webapp.json `environment` 段**——**禁止从 agent 进程环境、shell 会话或全局环境变量读取同名变量**（可能来自其他项目或本机全局，跨项目共享即边界溢出）；`diagnostics discover` 解析结果必须写回项目配置；`HUAWEICLOUD_REGION` 等环境变量名仅在步骤三/四启动 MCP 时由项目配置注入进程（进程作用域，不 export）；凭据三层优先级：项目 `secrets/` → 项目内 devkit 文件（`HUAWEICLOUD_DEVKIT_CREDENTIALS_FILE` 指向项目内 0600 文件）→ 全局 devkit 登录态（**仅用户显式确认后采用**并记 `credential_source=global_devkit_confirmed`，默认不采用——多项目共用一台机器时，A 项目的登录态不得静默进入 B 项目）
 - **凭据项目级隔离（红线）**：登录态与凭据**只存放于当前项目内**——`<项目根>/.hwsupabase/secrets/`（0600、属主本人、目录排除 Git）。**禁止**写入全局或系统环境变量（shell profile、launchd/系统级 env、会话 `export`）；**禁止**新建或覆写个人级配置（`~/.config/huaweicloud/credentials.json`、`~/.obsutilconfig`）——已有个人级文件属既有工具与其他项目，**不迁移、不删除、不覆写**。MCP 进程凭据经进程内 env 或项目内凭据文件注入（`HUAWEICLOUD_MCP_CREDENTIALS_FILE` / `HUAWEICLOUD_DEVKIT_CREDENTIALS_FILE` 指向项目内 0600 文件；`SUPABASE_REQUESTS_FILE=<项目>/.hwsupabase/requests.json`，Key 交付落盘 secrets/）。本项目凭据轮换只影响本项目 `.hwsupabase/`，不污染其他项目开发
 - **MCP 注册项目级隔离（红线）**：动态安装的两台 MCP **只注册进当前项目的项目级 MCP 配置**——Claude Code `<项目根>/.mcp.json`（`mcpServers` 结构）、CodeArts `<项目根>/.codeartsdoer/`（与项目级技能目录同根）、OfficeAce 项目根下该宿主项目级配置、opencode `<项目根>/opencode.json` 或 `.opencode/` 内配置（`mcp` 键）；**禁止一切用户级与系统级位置**（`~/.claude.json` user scope、Claude Desktop `claude_desktop_config.json`、`~/.config/opencode/` 全局、`~/.codeartsdoer/` 个人级、系统 managed 配置等）——用户级注册会使本机其他项目可见并使用本项目实例的 MCP 与凭据，属边界溢出；**宿主仅有用户级配置机制 → 停止并报告，不注册**（宁缺毋溢出）；注册后核验条目落位项目级且未触碰用户级/系统级，再重载客户端；含凭据的配置文件必须列入 `.gitignore`（0600，凭据由用户从 secrets/ 填入，agent 不经手明文）；**严禁 `uv tool install`/`pip install` 等装入用户级/系统级环境**——`uvx` 仅一次性缓存运行（共享构建缓存非安装非注册），本地克隆 `.venv` 只落仓内目录（项目级或唯一临时目录）；下线时从项目级配置移除两台条目
 - **MCP 安装来源锁定**：两台 MCP 服务器只从**本仓**安装（uvx git 模板 `git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=...`，本地 `uv run --directory server/... <入口脚本>`，或**网络逃生通道**：git 不可达时立即切换 ZIP 归档下载解压 + 本地运行——`https://github.com/huaweicloud/rds-supabase-fullstack/archive/refs/heads/main.zip`，连续失败 2 次或 30 秒无进展即切换，不反复重试；`.../archive/<commit>.zip` 为 pin 等价形式）；禁止从 PyPI/第三方仓库搜索安装——存在同名第三方 "supabase" MCP 包，会导致连接到完全错误的服务器

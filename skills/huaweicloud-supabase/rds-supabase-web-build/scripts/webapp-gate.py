@@ -104,6 +104,22 @@ def check_contract(data, missing):
         if not (isinstance(caps, list) and caps and all(isinstance(c, str) and c in valid for c in caps)):
             missing.append("project.baas_capabilities must be a non-empty list drawn from "
                            "database/auth/rpc/storage/realtime/vector")
+    env = data.get("environment")
+    if env is not None:
+        if not isinstance(env, dict):
+            missing.append("environment must be an object or null")
+        else:
+            for key in ("region", "rds_endpoint", "project_id"):
+                if not (isinstance(env.get(key), str) and env.get(key)):
+                    missing.append(f"environment.{key} must be a non-empty string "
+                                   "(project-level config, the only authoritative source)")
+            obs_endpoint = env.get("obs_endpoint")
+            if obs_endpoint is not None and not isinstance(obs_endpoint, str):
+                missing.append("environment.obs_endpoint must be a string or null")
+            if env.get("credential_source") not in ("project_secrets", "project_devkit_file",
+                                                    "global_devkit_confirmed"):
+                missing.append("environment.credential_source must be project_secrets/"
+                               "project_devkit_file/global_devkit_confirmed")
     instance = data.get("instance")
     if instance is not None:
         if not isinstance(instance, dict):
@@ -240,6 +256,10 @@ def check_stage(data, stage, missing, project_dir=None):
     if not any(isinstance(e, dict) and e.get("stage") == stage and e.get("status") == "passed"
                for e in history):
         missing.append(f"no passed history event for '{stage}'")
+    if stage in ("environment_ready", "requirements_confirmed", "instance_ready", "mcp_connected",
+                 "backend_deployed", "frontend_built", "local_verified", "hosting_published",
+                 "launched") and not isinstance(data.get("environment"), dict):
+        missing.append("environment section missing from environment_ready onward")
     if stage in ("instance_ready", "mcp_connected", "backend_deployed", "frontend_built",
                  "local_verified", "hosting_published", "launched") and not isinstance(data.get("instance"), dict):
         missing.append("instance section missing from instance_ready onward")

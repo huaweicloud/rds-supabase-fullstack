@@ -7,6 +7,28 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.9.6: fix a cross-project configuration
+  leak reported in multi-project use — starting the skill in project B
+  would find region / AK / SK already "configured", because step 1 never
+  scoped WHERE those values come from. Root causes fixed: (1) "已配置 →
+  采用" accepted same-named variables from the agent process / shell /
+  global environment (values set by another project or the machine);
+  step 1 now declares the project's .hwsupabase/ as the ONLY
+  authoritative source and refuses process/global env reads — env var
+  names are injected into MCP processes from project config only;
+  (2) Region / endpoints / PROJECT_ID had no project-level persistence —
+  webapp.json gains a mandatory environment section (region /
+  rds_endpoint / obs_endpoint / project_id / credential_source), and
+  diagnostics-discover results must be written back into it;
+  (3) "devkit 优先" silently adopted the machine-global devkit login
+  state (shared across projects) — credentials now resolve through a
+  three-tier priority: project secrets/ → project-scoped devkit file
+  (HUAWEICLOUD_DEVKIT_CREDENTIALS_FILE) → global devkit login ONLY after
+  explicit user confirmation, recorded as global_devkit_confirmed;
+  (4) MCP launch env in steps 3/4 now states the injection source
+  (project config, process scope). webapp-gate machine-verifies the
+  environment contract and requires the section from environment_ready
+  onward. Four new tests.
 - Skill `rds-supabase-web-build` v0.9.5: the pipeline is now nine steps — a
   local test & verification step (步骤七 本地测试验证, breakpoint local_verified)
   is inserted between frontend generation and hosting. The frontend runs

@@ -30,6 +30,7 @@
 | 字段 | 类型 | 规则 |
 |---|---|---|
 | schema_version | integer | 固定 `1` |
+| environment | object/null | 步骤一 完成前为 `null` |
 | project | object | 见下 |
 | instance | object/null | 未进入步骤三时为 `null` |
 | obs | object/null | 未进入步骤三时为 `null` |
@@ -38,6 +39,16 @@
 | backend | object/null | 未部署时为 `null` |
 | frontend | object/null | 未生成时为 `null` |
 | stages | object | 见下 |
+
+### environment
+
+| 字段 | 类型 | 规则 |
+|---|---|---|
+| region | string | 局点（如 `cn-north-4`）——**唯一权威存放处**，不从进程/全局环境变量读取 |
+| rds_endpoint | string | RDS 接入点（discover 解析或用户指定，**写回本段**） |
+| obs_endpoint | string/null | OBS 接入点（`null` = 按 region 推导） |
+| project_id | string | `HUAWEICLOUD_PROJECT_ID`（写回本段） |
+| credential_source | string | `project_secrets`（项目内 secrets/）/ `project_devkit_file`（项目内 devkit 文件）/ `global_devkit_confirmed`（全局登录态经用户显式确认）——gate 校验枚举；多项目共用一台机器时，各项目独立记录，互不可见 |
 
 ### project
 

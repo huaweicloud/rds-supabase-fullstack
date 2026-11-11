@@ -13,35 +13,35 @@
 
 ## 步骤一 · 环境检查与配置
 
-**目的**：会话环境与云侧接入配置完备：凭据、Region、RDS 与 OBS 接入点、PROJECT_ID 均已配置或已解析。
+**目的**：会话环境与云侧接入配置完备：凭据、Region、RDS 与 OBS 接入点、PROJECT_ID 均已在**项目内配置**（唯一权威）或已解析并写回。
 
-**输入**：用户环境（devkit 登录态 / 环境变量 / KooCLI 配置）；webapp.json（存在则读 `last_completed_stage`）
+**输入**：项目配置（`.hwsupabase/`：webapp.json `environment` 段 + `secrets/`）；本机全局 devkit 登录态（仅显式确认路径）；webapp.json（存在则读 `last_completed_stage`）。**不从 agent 进程环境、shell 会话或全局环境变量读取**——同名变量可能来自其他项目或本机全局设置
 
 **动作序列**：
 
 1. 声明步骤一
-2. **凭据检查**：devkit 登录态，或 AK/SK（或服务 Token）位于受保护文件；缺失 → 计入缺失清单。**存放遵循项目级隔离**：项目内 `<项目根>/.hwsupabase/secrets/`（0600、排除 Git）；禁止写入全局/系统环境变量与个人级配置（shell profile、`~/.config/huaweicloud/`、`~/.obsutilconfig` 等——不新建、不覆写、不迁移）
+2. **凭据检查（三层优先级）**：① 项目内 `<项目根>/.hwsupabase/secrets/`（AK/SK 或服务 Token，0600、排除 Git）→ ② 项目内 devkit 凭据文件（`HUAWEICLOUD_DEVKIT_CREDENTIALS_FILE` 指向项目内 0600 文件）→ ③ 本机全局 devkit 登录态——**仅向用户呈现"检测到本机全局登录态，是否在本项目使用？"并经显式确认后采用**，记 `credential_source=global_devkit_confirmed`（**默认不采用**：全局登录态跨项目共享，静默采用即边界溢出）。均缺失 → 计入缺失清单。禁止写入全局/系统环境变量与个人级配置（shell profile、`~/.config/huaweicloud/`、`~/.obsutilconfig` 等——不新建、不覆写、不迁移）
 3. **uv（含 uvx）可用**——步骤三/四动态安装 MCP 的前提（`uv --version` 验证）；缺失 → 计入缺失清单并提醒用户安装（`curl -LsSf https://astral.sh/uv/install.sh | sh`）
-4. **Region（局点）确认**：`HUAWEICLOUD_REGION` 已选择——OBS 接入点推导与桶区域的前提；缺失 → 计入缺失清单
-5. **RDS 接入点**：`SUPABASE_RDS_ENDPOINT` 已配置 → 直接采用；未配置且凭据就绪 → 运行 `diagnostics discover`（`uv run --directory server/mcp_server_rds_supabase_mgr python -m mcp_server_supabase.diagnostics discover`，可加 `--probe`；**凭据为 AK/SK 时命令须带 `SUPABASE_TRANSPORT=sdk_core`**，否则按 REST 模式因缺 `HUAWEICLOUD_AUTH_TOKEN` 失败）→ 从 `suggested_env` 勾选并采纳；无法推导（非标准区域命名 / probe 不可达 / 报错）→ 要求用户显式指定
-6. **OBS 接入点**：按 Region 推导（`obs.<region>.myhuaweicloud.com`，KooCLI/SDK 自动解析）；无法推导 → 要求用户显式指定
-7. **PROJECT_ID**：已配置 → 采用；未配置 → `diagnostics discover` 勾选；无法获取 → 要求用户显式指定
+4. **Region（局点）确认**：读项目配置（webapp.json `environment.region`）——OBS 接入点推导与桶区域的前提；缺失 → 计入缺失清单，用户告知局点后**写入项目配置**（**不读进程/全局环境变量中的 `HUAWEICLOUD_REGION`**）
+5. **RDS 接入点**：项目配置（`environment.rds_endpoint`）已有 → 直接采用；缺失且凭据就绪 → 运行 `diagnostics discover`（`uv run --directory server/mcp_server_rds_supabase_mgr python -m mcp_server_supabase.diagnostics discover`，可加 `--probe`；**凭据为 AK/SK 时命令须带 `SUPABASE_TRANSPORT=sdk_core`**，否则按 REST 模式因缺 `HUAWEICLOUD_AUTH_TOKEN` 失败）→ 从 `suggested_env` 勾选并采纳，**结果写回项目配置**；无法推导（非标准区域命名 / probe 不可达 / 报错）→ 要求用户显式指定后写回
+6. **OBS 接入点**：按 Region 推导（`obs.<region>.myhuaweicloud.com`，KooCLI/SDK 自动解析），**写回项目配置**；无法推导 → 要求用户显式指定后写回
+7. **PROJECT_ID**：项目配置（`environment.project_id`）已有 → 采用；缺失 → `diagnostics discover` 勾选，**写回项目配置**；无法获取 → 要求用户显式指定后写回
 8. **缺失清单处置**：存在缺失项 → 以**对接卡片**表格呈现（检查项 | 状态 ✅/❌/⏳ | 获取方式，格式见 SKILL.md 输出格式），显式提醒用户逐项设置并等待补齐（不得猜测、不得跳过、不得以默认值代替）；补齐后重新检查
-9. 全部就绪 → 写 webapp.json（stages: environment_ready）→ gate → 步骤报告
+9. 全部就绪 → 写 webapp.json（`environment` 段：region/rds_endpoint/obs_endpoint/project_id/credential_source + stages: environment_ready）→ gate → 步骤报告
 
-**输出断言**：🔍 凭据、uv、Region、RDS 接入点、OBS 接入点、PROJECT_ID 全部已配置或已解析（缺失清单为空）｜🤖 gate PASS
+**输出断言**：🔍 凭据、uv、Region、RDS 接入点、OBS 接入点、PROJECT_ID 全部已在**项目内配置**（缺失清单为空；无一项取自进程/全局环境）｜🤖 gate PASS（environment 契约）
 
 **工具白名单**：允许：`diagnostics discover`（只读 IAM 查询）、读写 webapp.json；禁止：一切业务 MCP 工具（管理面尚未启动，实例操作不得提前执行）
 
 **黄金路径**：
 ```
-声明步骤一 → devkit 已登录（凭据 ✓）→ uv --version ✓ → REGION=cn-north-4 ✓
-→ discover --probe → 勾选 p-123 / 采纳 https://rds.cn-north-4.myhuaweicloud.com ✓
-→ OBS 接入点按 Region 推导 obs.cn-north-4.myhuaweicloud.com ✓ → PROJECT_ID=p-123 ✓
-→ 缺失清单为空 → 写 webapp.json(environment_ready) → gate PASS → 步骤报告（下一步骤预告：需求澄清）
+声明步骤一 → 凭据：项目 secrets/ ✓（三层优先级）→ uv --version ✓ → 项目配置 environment.region=cn-north-4 ✓
+→ discover --probe → 勾选 p-123 / 采纳 https://rds.cn-north-4.myhuaweicloud.com，写回项目配置 ✓
+→ OBS 接入点按 Region 推导并写回 obs.cn-north-4.myhuaweicloud.com ✓ → PROJECT_ID=p-123 写回 ✓
+→ 缺失清单为空 → 写 webapp.json(environment 段 + environment_ready) → gate PASS → 步骤报告（下一步骤预告：需求澄清与设计）
 ```
 
-**失败处置**：任一项无法获取 → 缺失清单提醒用户设置后重检；凭据缺失 → devkit 登录或经受保护文件提供。**断点**：`environment_ready`
+**失败处置**：任一项无法获取 → 缺失清单提醒用户设置后重检；凭据缺失 → 项目内 secrets/ 提供或全局 devkit 显式确认。**断点**：`environment_ready`
 
 ## 步骤二 · 需求澄清与设计
 
@@ -98,7 +98,7 @@
 **动作序列**：
 
 1. 声明步骤三；复核步骤一环境配置（凭据 / Region / RDS·OBS 接入点 / PROJECT_ID）仍就绪，发现缺项 → 返回步骤一补齐
-2. **管理面就绪**：检测已连接 MCP（devkit 预初始化）；无则动态启动——**安装来源只允许本仓**：uvx 模板 `git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr`（入口 `mcp-huaweicloud-rds-supabase-mgr`；**生产建议 pin `@<commit>` 锁定版本，避免默认分支变更引入未验证行为**）或本地 `uv run --directory <仓>/server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr`；**禁止**从 PyPI/第三方仓搜索安装（存在同名第三方包）。启动 env **凭据模式二选一**：REST token（`HUAWEICLOUD_AUTH_TOKEN`，默认 `SUPABASE_TRANSPORT=rest`）或 **AK/SK（必须设置 `SUPABASE_TRANSPORT=sdk_core`**，读取 `HUAWEICLOUD_ACCESS_KEY`/`HUAWEICLOUD_SECRET_KEY`/可选 `HUAWEICLOUD_SECURITY_TOKEN`——用户已填 AK/SK 而未设 `sdk_core` 将按 REST 模式启动并失败）。**网络逃生通道**：uvx git 拉取失败或停滞（含代理后仍不通；连续失败 2 次或 30 秒无进展即判失败）→ **立即切换** ZIP 归档（`TMP=$(mktemp -d)`，`curl -L --fail --max-time 120 -o "$TMP/rds.zip" https://github.com/huaweicloud/rds-supabase-fullstack/archive/refs/heads/main.zip && unzip -q "$TMP/rds.zip" -d "$TMP"`；浏览器直接下载该 URL 亦**落临时目录**）+ 本地模板 `uv run --directory "$TMP/rds-supabase-fullstack-main/server/mcp_server_rds_supabase_mgr" mcp-huaweicloud-rds-supabase-mgr`——**下载物一律落唯一临时目录（mktemp -d），不污染项目目录/家目录；MCP 运行期间保留、停止后清理**——ZIP 属本仓官方源，不违反来源锁定，仍禁 PyPI/第三方源。启动后遵循 mgr-mcp 技能两阶段确认与执行账本
+2. **管理面就绪**：检测已连接 MCP（devkit 预初始化）；无则动态启动——**安装来源只允许本仓**：uvx 模板 `git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr`（入口 `mcp-huaweicloud-rds-supabase-mgr`；**生产建议 pin `@<commit>` 锁定版本，避免默认分支变更引入未验证行为**）或本地 `uv run --directory <仓>/server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr`；**禁止**从 PyPI/第三方仓搜索安装（存在同名第三方包）。启动 env **凭据模式二选一**（**值一律由项目内配置注入进程**——步骤一 `environment` 段与 `secrets/`，不读取会话/全局环境）：REST token（`HUAWEICLOUD_AUTH_TOKEN`，默认 `SUPABASE_TRANSPORT=rest`）或 **AK/SK（必须设置 `SUPABASE_TRANSPORT=sdk_core`**，读取 `HUAWEICLOUD_ACCESS_KEY`/`HUAWEICLOUD_SECRET_KEY`/可选 `HUAWEICLOUD_SECURITY_TOKEN`——用户已填 AK/SK 而未设 `sdk_core` 将按 REST 模式启动并失败）。**网络逃生通道**：uvx git 拉取失败或停滞（含代理后仍不通；连续失败 2 次或 30 秒无进展即判失败）→ **立即切换** ZIP 归档（`TMP=$(mktemp -d)`，`curl -L --fail --max-time 120 -o "$TMP/rds.zip" https://github.com/huaweicloud/rds-supabase-fullstack/archive/refs/heads/main.zip && unzip -q "$TMP/rds.zip" -d "$TMP"`；浏览器直接下载该 URL 亦**落临时目录**）+ 本地模板 `uv run --directory "$TMP/rds-supabase-fullstack-main/server/mcp_server_rds_supabase_mgr" mcp-huaweicloud-rds-supabase-mgr`——**下载物一律落唯一临时目录（mktemp -d），不污染项目目录/家目录；MCP 运行期间保留、停止后清理**——ZIP 属本仓官方源，不违反来源锁定，仍禁 PyPI/第三方源。启动后遵循 mgr-mcp 技能两阶段确认与执行账本
    **注册位置（项目级强约束）**——MCP 启动后只注册进当前项目的项目级 MCP 配置（当前项目之外不可见；用户级/系统级注册 = 本机所有项目可见可用 = 边界溢出，严禁）：
 
    | 宿主 | 项目级 MCP 配置（唯一允许） | 条目结构 | 禁止（用户级/系统级） |
@@ -153,7 +153,7 @@
 
 1. 声明步骤四
 2. 按 `rds-supabase-mcp 技能 references/install.md` 动态安装；**来源只允许本仓**——完整命令：`uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack --subdirectory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase`（或本地克隆 `uv run --directory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase`；服务器文档：https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase/README.md ）。**网络逃生通道**：uvx git 拉取失败或停滞（含代理后仍不通；连续失败 2 次或 30 秒无进展即判失败）→ **立即切换** ZIP 归档（`TMP=$(mktemp -d)`，`curl -L --fail --max-time 120 -o "$TMP/rds.zip" https://github.com/huaweicloud/rds-supabase-fullstack/archive/refs/heads/main.zip && unzip -q "$TMP/rds.zip" -d "$TMP"`；浏览器直接下载该 URL 亦**落临时目录**）+ 本地模板 `uv run --directory "$TMP/rds-supabase-fullstack-main/server/mcp_server_rds_supabase" mcp-server-huaweicloud-rds-supabase`——**下载物一律落唯一临时目录（mktemp -d），不污染项目目录/家目录；MCP 运行期间保留、停止后清理**——ZIP 属本仓官方源，不违反来源锁定。禁止搜索 PyPI 同名包
-3. 凭据注入双路径：**devkit 优先**（已注入 → 直接验证）。数据面**无 `SUPABASE_TRANSPORT` 参数、不使用华为云 AK/SK**——凭据为网关三件套（`SUPABASE_URL` + 两把 Key）；**半自动备选路径**（agent 生成含占位符的 mcpServers 配置模板 → 用户从**项目内**受保护文件 `.hwsupabase/secrets/` 复制实际值填入 → 客户端重载；agent 全程不接触明文）。**注入作用域限于 MCP 进程**（进程 env 或项目内 0600 凭据文件）——不 `export` 到 shell 会话、不写入 shell profile 或任何全局/个人级配置
+3. 凭据注入（**来源与作用域**）：数据面**无 `SUPABASE_TRANSPORT` 参数、不使用华为云 AK/SK**——凭据为网关三件套（`SUPABASE_URL` + 两把 Key），**值一律取自项目内 `.hwsupabase/secrets/`**（半自动路径：agent 生成含占位符的 mcpServers 配置模板 → 用户从**项目内**受保护文件复制实际值填入 → 客户端重载；agent 全程不接触明文；**不从会话/全局环境读取**）。**注入作用域限于 MCP 进程**（进程 env 或项目内 0600 凭据文件）——不 `export` 到 shell 会话、不写入 shell profile 或任何全局/个人级配置
 4. **访问协议跟随实例 SSL 状态**（`SUPABASE_URL` 取值规则）：开启 SSL → `https://`；未开启 → `http://`（**不强制 HTTPS 交互**；步骤三已将 `instance.ssl_enabled` 记入 webapp.json，gate `--verify` 对 `ssl_enabled=false` 放行 http）
 5. **注册纪律（与步骤三同表同禁令）**：数据面 MCP **只注册进当前项目的项目级 MCP 配置**（宿主仅有用户级机制 → 停止并报告，不注册；含凭据的配置文件列入 `.gitignore`、0600）；注册后核验落位 → 客户端重载 → 写 webapp.json `mcp.config_paths.data`
 6. 验证：`get_project_url` 返回 == 网关地址；`list_tables` 正常应答

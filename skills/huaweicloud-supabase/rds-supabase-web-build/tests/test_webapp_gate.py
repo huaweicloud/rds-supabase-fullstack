@@ -71,6 +71,10 @@ def make_project(tables=("public.posts", "public.users"), exposed=("public.posts
         deployment.update(advanced)
     manifest = {
         "schema_version": 1,
+        "environment": {"region": "cn-north-4",
+                        "rds_endpoint": "https://rds.cn-north-4.myhuaweicloud.com",
+                        "obs_endpoint": "obs.cn-north-4.myhuaweicloud.com",
+                        "project_id": "p-123", "credential_source": "project_secrets"},
         "project": {"name": "demo", "description": None, "requirements_summary": "blog",
                     "baas_capabilities": ["database", "auth", "rpc"]},
         "instance": {"supabase_application_id": "app-1", "source": "selected",
@@ -86,8 +90,8 @@ def make_project(tables=("public.posts", "public.users"), exposed=("public.posts
                      "project_dir": "web", "framework": "react-vite-ts"},
         "stages": {"last_completed_stage": "frontend_built", "updated_at": "2026-11-10T09:00:00Z",
                    "history": [{"stage": s, "status": "passed", "at": "2026-11-10T07:00:00Z", "note": None}
-                               for s in ("requirements_confirmed", "instance_ready", "mcp_connected",
-                                         "backend_deployed", "frontend_built")]},
+                               for s in ("environment_ready", "requirements_confirmed", "instance_ready",
+                                         "mcp_connected", "backend_deployed", "frontend_built")]},
     }
     (root / ".hwsupabase" / "webapp.json").write_text(json.dumps(manifest), encoding="utf-8")
     (root / ".hwsupabase" / "teardown.sql").write_text(
@@ -255,6 +259,43 @@ class McpRegistrationTests(unittest.TestCase):
         result = run_gate(project, "check-stage", "--stage", "mcp_connected")
         self.assertEqual(result.returncode, 1)
         self.assertIn("config_paths.data", result.stdout)
+
+
+class EnvironmentIsolationTests(unittest.TestCase):
+    def _edit_env(self, mutate):
+        project = make_project()
+        path = project / ".hwsupabase" / "webapp.json"
+        data = json.loads(path.read_text())
+        mutate(data["environment"])
+        path.write_text(json.dumps(data))
+        return project
+
+    def test_fail_environment_missing_from_environment_ready(self):
+        project = make_project()
+        path = project / ".hwsupabase" / "webapp.json"
+        data = json.loads(path.read_text())
+        del data["environment"]
+        path.write_text(json.dumps(data))
+        result = run_gate(project, "check-stage", "--stage", "environment_ready")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("environment section missing", result.stdout)
+
+    def test_fail_environment_invalid_credential_source(self):
+        project = self._edit_env(lambda e: e.update(credential_source="global_env"))
+        result = run_gate(project, "check-contract")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("credential_source", result.stdout)
+
+    def test_fail_environment_null_region(self):
+        project = self._edit_env(lambda e: e.update(region=None))
+        result = run_gate(project, "check-contract")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("environment.region", result.stdout)
+
+    def test_pass_environment_ready(self):
+        project = make_project()
+        result = run_gate(project, "check-stage", "--stage", "environment_ready")
+        self.assertEqual(result.returncode, 0, result.stdout)
 
 
 class LocalVerificationTests(unittest.TestCase):

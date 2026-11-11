@@ -7,6 +7,15 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.8.8: complete tool-docking audit of the
+  managed side. Frontend lane now carries its tools: dev card names
+  supabase-js (the SDK integration, usage-skill governed), deploy card
+  names rds-supabase-frontend 技能 · KooCLI (bucket creation and artifact
+  upload), and the runtime OBS card states its origin (由 frontend 技能 +
+  KooCLI 创建托管). Backend dev-to-deploy transition is labeled
+  best-practices 质量门 (the mandatory gate before generation); the backend
+  deploy wording clarifies execute_sql as initialization. Report caption
+  spells out the full docking chain. Geometry verified: zero overlaps.
 - Skill `rds-supabase-web-build` v0.8.7: the backend dev card in the
   comparison canvas now speaks to general readers — the internal artifact
   name init.sql is replaced by 声明式后端 with its contents spelled out:

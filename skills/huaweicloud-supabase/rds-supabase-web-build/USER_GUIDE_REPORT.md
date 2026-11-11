@@ -10,7 +10,7 @@
 
 ![建站模式对比：左传统自建 / 右全托管](assets/compare-modes.svg)
 
-*左列：前端、后端两条链路各自完成开发、部署、运行的全流程自建；右列：同一链路收敛为声明式产出与托管服务，工具对接如下——rds-supabase Skill 全程编排；**Supabase 实例由 rds-supabase-mgr-mcp 动态创建**；**后端声明式配置（数据建模 · CRUD 接口 · Data-Function RPC · 权限 · 初始数据）由 rds-supabase-mcp 经 execute_sql 单事务部署**；前端构建产物直传 OBS；交付经 gate 机器核验。结论条直陈四项核心差异：开发周期、部署步骤、前端服务器数、后端实体数。*
+*左列：前端、后端两条链路各自完成开发、部署、运行的全流程自建；右列：同一链路收敛为声明式产出与托管服务，工具对接如下——rds-supabase Skill 套件全程编排：前端代码经 **supabase-js** 接入（usage 技能规范用法）；后端声明式配置（数据建模 · CRUD 接口 · Data-Function RPC · 权限 · 初始数据）生成经 **best-practices 质量门**，由 **rds-supabase-mcp** 经 execute_sql 单事务初始化；**Supabase 实例由 rds-supabase-mgr-mcp 动态创建**；OBS 桶建立与产物直传由 **rds-supabase-frontend 技能 + KooCLI** 执行；交付经 **gate 机器核验**。结论条直陈四项核心差异：开发周期、部署步骤、前端服务器数、后端实体数。*
 
 ---
 

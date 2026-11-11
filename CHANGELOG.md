@@ -7,6 +7,13 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.9.8: drop `npx skills add` from
+  INSTALL.md — the repo is not published to that channel, so the command
+  cannot work. It is now explicitly forbidden (agents must not attempt
+  CLI/package-manager auto-install); the two install paths are git clone
+  (primary) and the ZIP archive escape hatch. The npm prerequisite and
+  CLI fallback rules are removed; update/uninstall and FAQ references
+  follow the new A/B lettering.
 - Skill `rds-supabase-web-build` v0.9.7: README/INSTALL restructure. The
   AI one-click install content now lives solely in INSTALL.md — rewritten
   as a lean agent-facing guide with a fixed structure: install scope

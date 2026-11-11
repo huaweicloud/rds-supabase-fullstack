@@ -60,7 +60,8 @@ WHITELIST = {
     "hosting_published": ["list_*", "show_*", "get_*", "update_*", "hcloud*", "obsutil*",
                           "npm*", "npx*", "uv*", "webapp*", "gate*"],
     "launched": ["get_*", "list_*", "*user*", "*admin*", "webapp*", "gate*"],
-    "decommissioned": ["list_*", "show_*", "delete_*", "hcloud*", "obsutil*", "webapp*", "gate*"],
+    "decommissioned": ["list_*", "show_*", "delete_*", "execute_sql", "hcloud*", "obsutil*",
+                       "webapp*", "gate*"],
 }
 
 
@@ -133,6 +134,8 @@ def check_contract(data, missing):
         if not isinstance(backend, dict) or not isinstance(backend.get("deployments"), list):
             missing.append("backend.deployments must be a list")
         else:
+            if not isinstance(backend.get("teardown_ref"), str):
+                missing.append("backend.teardown_ref must be a string (one-click cleanup script path)")
             for index, dep in enumerate(backend["deployments"]):
                 if not isinstance(dep, dict):
                     missing.append(f"backend.deployments[{index}] must be an object")
@@ -182,7 +185,7 @@ def check_contract(data, missing):
     scan_credential_like(data, "webapp", missing)
 
 
-def check_stage(data, stage, missing):
+def check_stage(data, stage, missing, project_dir=None):
     stages = data.get("stages") or {}
     reached = stages.get("last_completed_stage")
     if reached not in STAGES or stage not in STAGES:
@@ -208,6 +211,19 @@ def check_stage(data, stage, missing):
             missing.append("backend.deployments empty from backend_deployed onward")
         elif deployments[-1].get("status") != "applied":
             missing.append("latest backend deployment is not 'applied'")
+        teardown = (data.get("backend") or {}).get("teardown_ref")
+        if not isinstance(teardown, str):
+            missing.append("backend.teardown_ref must be a string from backend_deployed onward")
+        elif project_dir is not None:
+            path = Path(project_dir) / teardown
+            if not path.is_file():
+                missing.append(f"backend.teardown_ref file not found: {teardown}")
+            else:
+                text = path.read_text(encoding="utf-8")
+                for obj in deployments[-1].get("objects") or []:
+                    bare = obj.split(".")[-1].strip('"')
+                    if obj not in text and bare not in text:
+                        missing.append(f"teardown does not cover deployed object '{obj}'")
 
 
 def rule_stems():
@@ -545,7 +561,7 @@ def main():
     elif args.mode == "check-stage":
         if not args.stage:
             return report("FAIL", {"missing": ["--stage is required for check-stage"]})
-        check_stage(data, args.stage, missing)
+        check_stage(data, args.stage, missing, project_dir=args.project_dir)
         check_contract(data, missing)
         if args.stage in TRACE_REQUIRED:
             records = load_trace(args.project_dir, missing)

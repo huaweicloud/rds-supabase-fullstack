@@ -7,6 +7,20 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.9.1: backend development now produces a
+  one-click cleanup script alongside init.sql. Step 5 generates
+  .hwsupabase/teardown.sql in the same pass as init.sql — single-transaction
+  wrapped, fully idempotent (DROP ... IF EXISTS), dependency-safe ordering
+  (policies → triggers → tables → functions/RPC → roles → schema), and
+  covering only the objects recorded in the deployment manifest; it is
+  refreshed after every incremental batch. webapp.json gains
+  backend.teardown_ref (mandatory from backend_deployed onward); webapp-gate
+  verifies the file exists and covers every object of the latest deployment;
+  the decommissioned whitelist now admits execute_sql so the teardown can be
+  executed via the data-plane MCP at decommission time (explicit user
+  confirmation, per lifecycle.md — needless when the whole instance is
+  deleted, essential when the PG instance is retained or reused). Four new
+  tests cover the contract.
 - Skill `rds-supabase-web-build` v0.9.0: resource acquisition in step 3 now
   requires explicit interactive selection, skipping forbidden, for BOTH
   resources. The Supabase application access method (use existing /

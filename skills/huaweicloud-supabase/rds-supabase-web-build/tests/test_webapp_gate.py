@@ -77,7 +77,8 @@ def make_project(tables=("public.posts", "public.users"), exposed=("public.posts
                      ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"],
                      "credential_source": "protected_file", "region": "cn-north-4"},
         "obs": {"bucket_name": "demo", "source": "created", "naming_basis": "app_name_slug"},
-        "backend": {"current_batch": "b1", "deployments": [deployment]},
+        "backend": {"current_batch": "b1", "deployments": [deployment],
+                    "teardown_ref": ".hwsupabase/teardown.sql"},
         "frontend": {"record_ref": ".hwsupabase/frontend/prod/environment.json",
                      "project_dir": "web", "framework": "react-vite-ts"},
         "stages": {"last_completed_stage": "frontend_built", "updated_at": "2026-11-10T09:00:00Z",
@@ -86,6 +87,10 @@ def make_project(tables=("public.posts", "public.users"), exposed=("public.posts
                                          "backend_deployed", "frontend_built")]},
     }
     (root / ".hwsupabase" / "webapp.json").write_text(json.dumps(manifest), encoding="utf-8")
+    (root / ".hwsupabase" / "teardown.sql").write_text(
+        "-- one-click teardown\nBEGIN;\n"
+        + "".join(f"DROP TABLE IF EXISTS {t};\n" for t in tables)
+        + "COMMIT;\n", encoding="utf-8")
     trace_lines = [json.dumps({"at": "2026-11-10T07:30:00Z", "stage": stage, "tool": tool,
                                "intent": "fixture", "status": "ok", "note": None})
                    for stage, tool in (("instance_ready", "list_supabase_applications"),
@@ -202,6 +207,41 @@ class ObsContractTests(unittest.TestCase):
     def test_pass_obs_selected_without_naming(self):
         project = self._edit_obs(lambda obs: obs.update(source="selected", naming_basis=None))
         result = run_gate(project, "check-contract")
+        self.assertEqual(result.returncode, 0, result.stdout)
+
+
+class TeardownTests(unittest.TestCase):
+    def test_fail_teardown_ref_missing(self):
+        project = make_project()
+        path = project / ".hwsupabase" / "webapp.json"
+        data = json.loads(path.read_text())
+        del data["backend"]["teardown_ref"]
+        path.write_text(json.dumps(data))
+        result = run_gate(project, "check-contract")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("teardown_ref", result.stdout)
+
+    def test_fail_teardown_file_missing(self):
+        project = make_project()
+        (project / ".hwsupabase" / "teardown.sql").unlink()
+        result = run_gate(project, "check-stage", "--stage", "backend_deployed")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("not found", result.stdout)
+
+    def test_fail_teardown_object_not_covered(self):
+        project = make_project()
+        (project / ".hwsupabase" / "teardown.sql").write_text(
+            "BEGIN;\nDROP TABLE IF EXISTS public.posts;\nCOMMIT;\n", encoding="utf-8")
+        result = run_gate(project, "check-stage", "--stage", "backend_deployed")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("does not cover", result.stdout)
+
+    def test_pass_teardown_bare_name_coverage(self):
+        project = make_project()
+        (project / ".hwsupabase" / "teardown.sql").write_text(
+            "BEGIN;\nDROP TABLE IF EXISTS posts;\nDROP TABLE IF EXISTS users;\nCOMMIT;\n",
+            encoding="utf-8")
+        result = run_gate(project, "check-stage", "--stage", "backend_deployed")
         self.assertEqual(result.returncode, 0, result.stdout)
 
 

@@ -70,6 +70,7 @@
 | 字段 | 类型 | 规则 |
 |---|---|---|
 | current_batch | string/null | 当前生效批次 ID |
+| teardown_ref | string | 一键清理脚本路径（`.hwsupabase/teardown.sql`）——步骤五 与 init.sql 同源生成、随批次刷新；`backend_deployed` 起必填；gate 校验其覆盖最新批次 `objects` 全部对象 |
 | deployments | object[] | 每项必含 `batch_id`、`applied_at`、`objects`（字符串数组）、`source_sha256`、`status`（`applied`/`failed`/`rolled_back`）；可含 `exposed`（字符串数组，`objects` 子集——对外暴露表，`--verify` 以 anon key 机器核验其 REST 可达） |
 
 ### frontend

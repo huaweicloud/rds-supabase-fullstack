@@ -3,7 +3,7 @@ name: rds-supabase-web-build
 description: 'RDS Supabase 全栈开发编排技能：AI Agent 通过自然语言创建并托管 Web 应用网站的端到端工作流——前端代码生成、后端 init.sql（DDL/GRANT/RLS/RPC）生成与部署、前端静态资源 OBS+CDN 全托管、端到端上线与生命周期管理（更新/回滚/下线）。Use when：创建 Web 网站、搭建 AI 应用、全栈应用从零到上线、已有 RDS Supabase 应用的迭代更新与托管维护。编排管理面与数据面两台 MCP（均由工作流步骤动态安装：管理面→步骤三、数据面→步骤四）及 rds-supabase-mgr-mcp / rds-supabase-mcp / rds-supabase-usage / rds-supabase-frontend / rds-supabase-postgres-best-practices 五个专项技能。v1 后端边界为数据层；复杂业务逻辑（支付/第三方调用/长任务）不在 v1 范围，SSR 后端部署不支持。'
 license: MIT
 metadata:
-  version: "0.9.0"
+  version: "0.9.1"
 ---
 
 # RDS Supabase 全栈开发编排（web-build）
@@ -150,9 +150,9 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 ### 步骤五 · 后端生成部署 → 断点 `backend_deployed`
 
 1. **【强制门】** 读 best-practices（逐条对照）+ usage 客户端消费视角
-2. 生成 init.sql + **规则对照表** `gates/3-rules-checklist.md`（gate 校验）
+2. 生成 init.sql + **一键清理脚本 `teardown.sql`**（与 init.sql 同源生成，供下线/换实例时一键执行：单事务包裹、全语句 `IF EXISTS` 幂等、依赖安全序 策略→触发器→表→函数/RPC→角色→schema、仅覆盖部署清单内对象；gate 校验对象全覆盖）+ **规则对照表** `gates/3-rules-checklist.md`（gate 校验）
 3. 五步部署：预检 → 审查 → `execute_sql` 单一事务 → 授权（`NOTIFY pgrst, 'reload schema'`）→ 查询确认
-4. 验证：结构确认 + RLS 生效 + advisors 无新增 + REST 200 且 anon 可见性符合设计 → 写 webapp.json（含 `exposed` 对外表清单）→ gate `--verify` PASS（机器验真）
+4. 验证：结构确认 + RLS 生效 + advisors 无新增 + REST 200 且 anon 可见性符合设计 → 写 webapp.json（含 `exposed` 对外表清单与 `backend.teardown_ref`）→ gate `--verify` PASS（机器验真）
 
 ### 步骤六 · 前端生成 → 断点 `frontend_built`
 

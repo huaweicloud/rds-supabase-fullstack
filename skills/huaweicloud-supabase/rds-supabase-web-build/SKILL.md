@@ -3,7 +3,7 @@ name: rds-supabase-web-build
 description: 'RDS Supabase 全栈开发编排技能：AI Agent 通过自然语言创建并托管 Web 应用网站的端到端工作流——前端代码生成、后端 init.sql（DDL/GRANT/RLS/RPC）生成与部署、前端静态资源 OBS+CDN 全托管、端到端上线与生命周期管理（更新/回滚/下线）。Use when：创建 Web 网站、搭建 AI 应用、全栈应用从零到上线、已有 RDS Supabase 应用的迭代更新与托管维护。编排管理面与数据面两台 MCP（均由工作流步骤动态安装：管理面→步骤三、数据面→步骤四）及 rds-supabase-mgr-mcp / rds-supabase-mcp / rds-supabase-usage / rds-supabase-frontend / rds-supabase-postgres-best-practices 五个专项技能。v1 后端边界为数据层；复杂业务逻辑（支付/第三方调用/长任务）不在 v1 范围，SSR 后端部署不支持。'
 license: MIT
 metadata:
-  version: "0.9.3"
+  version: "0.9.4"
 ---
 
 # RDS Supabase 全栈开发编排（web-build）
@@ -16,7 +16,7 @@ RDS Supabase 全栈开发的**顶层编排技能**：用户以单句自然语言
 
 ```
 【首次创建流水线】（每步骤设有通过条件；未满足不得推进）
- 步骤一 环境检查与配置 → 步骤二 需求澄清 → 步骤三 资源准备 → 步骤四 数据面接入
+ 步骤一 环境检查与配置 → 步骤二 需求澄清与设计 → 步骤三 资源准备 → 步骤四 数据面接入
                 ↳ 环境四项：凭据 · Region · RDS/OBS 接入点 · PROJECT_ID（缺失显式提醒用户设置）
  步骤五 后端生成部署 → 步骤六 前端生成 → 步骤七 构建与托管 → 步骤八 端到端上线
                 ↳ 步骤三动态启动管理面 MCP（实例/EIP/安全组/SSL/密钥）+ OBS 租户桶
@@ -84,11 +84,12 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 6. **PROJECT_ID**：已配置 → 采用；未配置 → discover 勾选；**无法获取 → 显式提醒用户设置**
 7. 缺失项汇总为清单提醒用户逐项设置，**不得猜测、不得跳过、不得以默认值代替**；全部就绪 → 写 webapp.json（`environment_ready`）→ gate PASS
 
-### 步骤二 · 需求澄清 → 断点 `requirements_confirmed`
+### 步骤二 · 需求澄清与设计 → 断点 `requirements_confirmed`
 
-1. 澄清清单逐项确认：页面清单、数据模型、认证需求、AI 能力（pgvector 检索/Realtime/文件上传为可选扩展）
-2. 边界外识别（复杂业务逻辑→v2；SSR 不支持）+ 费用预估清单 → 用户确认
-3. 写 webapp.json（requirements_summary）→ gate PASS
+1. **多轮澄清或 SDD 规格驱动**：围绕「场景 × 功能 × 边界」多轮收敛——目标用户与使用情境、页面清单、数据模型、认证需求、**文件/图片/视频管理诉求**、AI 能力（pgvector 检索/Realtime）；纪律：**不遗留**（清单逐项确认）、**不发散**（偏离场景的诉求记录为备注不入主线）、**聚焦不走偏**（每轮复述共识与用户校准）
+2. **BaaS 能力提炼与满足性评估**：映射 RDS Supabase 能力清单（数据建模/CRUD、Data-Function RPC、认证、**Storage 文件存储**、Realtime、pgvector）逐项评估，记入 `project.baas_capabilities`；**存在文件/图片/视频管理诉求 → 标记 `storage` → 步骤三必须完成专用私有 OBS 桶准备与 `update_supabase_storage` 对接（禁止复用前端托管桶——公开读桶复用即权限越界与隐私暴露）**
+3. 边界外识别（复杂业务逻辑→FunctionGraph；SSR 不支持）+ 费用预估清单（实例、前端托管桶、Storage 桶分别列示）→ 用户确认
+4. 写 webapp.json（requirements_summary + baas_capabilities）→ gate PASS
 
 ### 步骤三 · 资源准备 → 断点 `instance_ready`
 
@@ -119,7 +120,8 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
    **注册纪律（项目级隔离）**：MCP 启动后**只注册进当前项目的项目级 MCP 配置**（Claude Code `<项目根>/.mcp.json`、CodeArts `<项目根>/.codeartsdoer/`、OfficeAce 项目根下项目级配置、opencode `<项目根>/opencode.json`；**禁止 `~/.claude.json` user scope、Claude Desktop `claude_desktop_config.json`、`~/.config/opencode/` 等一切用户级/系统级位置**——用户级注册会使本机其他项目可见可用，属边界溢出；宿主仅有用户级机制 → 停止报告，不注册）；含凭据的配置文件列入 `.gitignore`（0600）；**严禁 `uv tool install`/`pip install` 装入用户级/系统级**——uvx 仅一次性缓存运行；注册后核验落位再重载客户端（详细表见 workflow-stages.md 步骤三）
 3. **Supabase 应用接入方式——交互式勾选（禁止跳过）**：以选择清单呈现「使用已有应用 / 新建应用」二选一，未获用户显式选择不得推进，不得代为默认。**使用已有** → `list_supabase_applications` 候选列表（ID/名称/状态/规格）供用户勾选 + `show_supabase_application` 状态核验；**新建** → 创建（仅 Single）+ 配置 EIP/安全组 8443/SSL
 4. **凭据获取（两条路径均必须执行，不得遗漏）**：网关 URL + Anon/Service Role Key → 受保护文件（步骤四安装所必需）
-5. **OBS 桶接入方式——交互式勾选（禁止跳过）**：以选择清单呈现「使用已有桶 / 新建桶」二选一，未获用户显式选择不得推进，不得代为默认（frontend 技能引导）。**使用已有** → 列出租户桶并**仅保留满足静态托管条件的公开读桶**（非公开桶一律剔除、不入候选）供用户勾选 + 区域与托管能力核验；**新建** → **桶名默认与应用名称保持一致**（英文化：小写字母/数字/连字符，3–63 字符；**名称冲突追加短 uuid 后缀**），经用户确认后创建并配置公开读策略 → 写 webapp.json instance 段与 obs 段 → gate PASS
+5. **OBS 桶接入方式——交互式勾选（禁止跳过）**：以选择清单呈现「使用已有桶 / 新建桶」二选一，未获用户显式选择不得推进，不得代为默认（frontend 技能引导）。**使用已有** → 列出租户桶并**仅保留满足静态托管条件的公开读桶**（非公开桶一律剔除、不入候选）供用户勾选 + 区域与托管能力核验；**新建** → **桶名默认与应用名称保持一致**（英文化：小写字母/数字/连字符，3–63 字符；**名称冲突追加短 uuid 后缀**），经用户确认后创建并配置公开读策略
+6. **Storage 桶准备与对接（仅当步骤二标记 `storage` 能力）**：交互式勾选「使用已有桶 / 新建桶」（纪律同上，禁止跳过）。**使用已有** → **桶策略安全评估**：必须私有（无公开读、无匿名 GetObject、无公开列举），存在任一公开项即判定不合理 → 停止并建议转新建或先修正策略；**新建** → **一律私有桶**（禁止公开读）+ 最小权限，桶名建议 `<应用slug>-storage`。**两类均禁止复用前端托管桶**（公开读桶复用即权限越界）→ 经管理面 `update_supabase_storage` 对接（凭据经 request_ref、两阶段确认；首次启用需 SK）→ 写 webapp.json instance/obs/mcp/storage 段 → gate PASS
 
 ### 步骤四 · 数据面接入 → 断点 `mcp_connected`
 
@@ -231,7 +233,7 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
   | # | 步骤 | 通过断点 | 状态 |
   |---|---|---|---|
   | 一 | 环境检查与配置 | environment_ready | 🔄 进行中 |
-  | 二 | 需求澄清 | requirements_confirmed | ⏳ 待办 |
+  | 二 | 需求澄清与设计 | requirements_confirmed | ⏳ 待办 |
   | 三 | 资源准备 | instance_ready | ⏳ 待办 |
   | 四 | 数据面接入 | mcp_connected | ⏳ 待办 |
   | 五 | 后端生成部署 | backend_deployed | ⏳ 待办 |
@@ -273,7 +275,7 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 - **MCP 安装来源锁定**：两台 MCP 服务器只从**本仓**安装（uvx git 模板 `git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=...`，本地 `uv run --directory server/... <入口脚本>`，或**网络逃生通道**：git 不可达时立即切换 ZIP 归档下载解压 + 本地运行——`https://github.com/huaweicloud/rds-supabase-fullstack/archive/refs/heads/main.zip`，连续失败 2 次或 30 秒无进展即切换，不反复重试；`.../archive/<commit>.zip` 为 pin 等价形式）；禁止从 PyPI/第三方仓库搜索安装——存在同名第三方 "supabase" MCP 包，会导致连接到完全错误的服务器
 - **配置完备性检查**（步骤三第一动作）：管理面需凭据 + `HUAWEICLOUD_PROJECT_ID` + `SUPABASE_RDS_ENDPOINT`；frontend/OBS 需 AK/SK + `HUAWEICLOUD_REGION`。缺失项以清单**以清单形式提示用户填写**（不猜测不跳过）；endpoint 无法推导（discover 失败/非标准区域）→ 用户显式指定
 - **边界外处置**：复杂业务逻辑（支付/第三方调用/长任务）超出 v1 数据层边界——明确告知用户并停止，不擅自以 RPC 模拟
-- 文件上传（Storage）v1 默认不含：步骤二 识别并说明（可选扩展路径：管理面 `update_supabase_storage` 配 OBS 凭据）
+- **Storage 按需接入**：步骤二识别文件/图片/视频管理诉求并标记 `storage` 能力 → 步骤三准备**专用私有 OBS 桶**并经管理面 `update_supabase_storage` 对接（新建一律私有桶；选既有桶必先通过桶策略安全评估——存在公开读/匿名授权即停止；**禁止复用前端托管桶**——公开读桶复用即权限越界与隐私暴露）
 - v1 单环境（webapp.json 字段预留多环境扩展）
 - 管理面操作遵循其两阶段确认与执行账本；未知结果不重放、不删账本
 - 步骤通过条件未满足不得推进；强制门（步骤五步骤六）不可跳过

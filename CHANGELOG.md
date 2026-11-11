@@ -7,6 +7,27 @@ semantic versioning.
 
 ### Changed
 
+- Skills `rds-supabase-web-build` v0.9.4 + `rds-supabase-mgr-mcp` (doc): step 2 is
+  now 需求澄清与设计 — multi-turn dialogue or SDD spec-driven design around
+  scenario × function × boundary (no omissions, no divergence, focused),
+  from which the RDS Supabase BaaS capability matrix is extracted and
+  assessed per capability (CRUD / RPC / auth / Storage / Realtime /
+  pgvector), recorded as project.baas_capabilities. When the scenario has
+  file/image/video management needs, step 3 must prepare a DEDICATED
+  private OBS storage bucket and connect it via update_supabase_storage —
+  reuse of the frontend hosting bucket is forbidden (public-read bucket
+  reuse is a privilege escalation and privacy exposure). Storage bucket
+  selection follows the same interactive discipline (no skipping): reuse
+  requires a bucket-policy safety assessment (private only — any public
+  read / anonymous GetObject / public listing fails the assessment and
+  stops the flow); creation is always a private bucket with least
+  privilege. webapp.json gains a storage section (bucket_name / source /
+  connected) and the capability list; webapp-gate machine-verifies the
+  capability enum, the storage contract, bucket-name inequality against
+  the hosting bucket, and enforces storage presence + connected=true from
+  instance_ready onward when the storage capability is required. The
+  mgr-mcp skill carries the same private-bucket baseline for
+  update_supabase_storage. Five new tests.
 - Skill `rds-supabase-web-build` v0.9.3: the hosted frontend entry protocol
   now follows the instance SSL state, mirroring the step-4 data-plane rule.
   ssl_enabled=true → stable_url must be HTTPS (domain and certificate

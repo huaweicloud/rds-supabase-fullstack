@@ -97,6 +97,12 @@ def check_contract(data, missing):
             missing.append(f"{key} must be an object")
     if isinstance(data.get("project"), dict) and not data["project"].get("name"):
         missing.append("project.name must be a non-empty string")
+    caps = (data.get("project") or {}).get("baas_capabilities")
+    if caps is not None:
+        valid = {"database", "auth", "rpc", "storage", "realtime", "vector"}
+        if not (isinstance(caps, list) and caps and all(isinstance(c, str) and c in valid for c in caps)):
+            missing.append("project.baas_capabilities must be a non-empty list drawn from "
+                           "database/auth/rpc/storage/realtime/vector")
     instance = data.get("instance")
     if instance is not None:
         if not isinstance(instance, dict):
@@ -149,6 +155,22 @@ def check_contract(data, missing):
                             and "~" not in value and not os.path.isabs(value)):
                         missing.append(f"mcp.config_paths.{plane} must be a project-relative path starting "
                                        "with '.' (absolute paths, '~' and '..' are forbidden)")
+    storage = data.get("storage")
+    if storage is not None:
+        if not isinstance(storage, dict):
+            missing.append("storage must be an object or null")
+        else:
+            if not (isinstance(storage.get("bucket_name"), str) and BUCKET.match(storage["bucket_name"])):
+                missing.append("storage.bucket_name must be a valid bucket name "
+                               "(3-63 chars, lowercase letters/digits/hyphens, letter-or-digit ends)")
+            if storage.get("source") not in ("created", "selected"):
+                missing.append("storage.source must be 'created' or 'selected'")
+            if not isinstance(storage.get("connected"), bool):
+                missing.append("storage.connected must be a boolean")
+            obs_bucket = (data.get("obs") or {}).get("bucket_name")
+            if isinstance(storage.get("bucket_name"), str) and storage["bucket_name"] == obs_bucket:
+                missing.append("storage.bucket_name must differ from obs.bucket_name "
+                               "(the frontend hosting bucket is public-read; reuse is a privilege escalation)")
     backend = data.get("backend")
     if backend is not None:
         if not isinstance(backend, dict) or not isinstance(backend.get("deployments"), list):
@@ -223,6 +245,16 @@ def check_stage(data, stage, missing, project_dir=None):
     if stage in ("instance_ready", "mcp_connected", "backend_deployed", "frontend_built",
                  "hosting_published", "launched") and not isinstance(data.get("obs"), dict):
         missing.append("obs section missing from instance_ready onward")
+    if stage in ("instance_ready", "mcp_connected", "backend_deployed", "frontend_built",
+                 "hosting_published", "launched"):
+        caps = (data.get("project") or {}).get("baas_capabilities") or []
+        if "storage" in caps:
+            storage = data.get("storage")
+            if not isinstance(storage, dict):
+                missing.append("storage capability required by step 2 but storage section is missing")
+            elif storage.get("connected") is not True:
+                missing.append("storage.connected must be true from instance_ready onward "
+                               "when the storage capability is required")
     if stage in ("instance_ready", "mcp_connected", "backend_deployed", "frontend_built",
                  "hosting_published", "launched"):
         mcp = data.get("mcp")

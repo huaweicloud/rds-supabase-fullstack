@@ -43,34 +43,51 @@
 
 **失败处置**：任一项无法获取 → 缺失清单提醒用户设置后重检；凭据缺失 → devkit 登录或经受保护文件提供。**断点**：`environment_ready`
 
-## 步骤二 · 需求澄清
+## 步骤二 · 需求澄清与设计
 
-**目的**：将用户的单句需求整理为经确认的需求摘要与数据模型草案。
+**目的**：经**多轮对话或 SDD 规格驱动设计**，透彻掌握用户 Web 应用的场景、功能与边界——**不遗留、不发散、聚焦不走偏**；据此提炼 RDS Supabase BaaS 能力需求清单并逐项评估满足性，产出经确认的设计共识。
 
 **输入**：用户单句需求；（已有项目）webapp.json 的 `last_completed_stage`
 
 **动作序列**：
 
 1. 输出步骤声明（格式见 SKILL.md 执行纪律）
-2. 澄清清单逐项确认（以对接卡片表格呈现：确认项 | 内容 | 状态 ☐，格式见 SKILL.md 输出格式）：网站类型与页面清单 / 数据模型草案（实体、关系、对外暴露表）/ 认证需求 / AI 能力识别（pgvector 语义检索、Realtime 订阅、文件上传→v1 默认不含）
-3. 边界外识别明确告知（不擅自模拟）：复杂业务逻辑（支付/第三方/长任务）→ 路由 rds-supabase-function-graph 技能（云函数）；SSR 不支持
-4. 费用预估清单（实例规格/时长、OBS 存储、CDN 流量、域名证书）→ 用户确认
-5. 写 webapp.json：`project.requirements_summary`（脱敏）+ history 追加 passed 事件
-6. 跑 gate（check-stage --stage requirements_confirmed）→ 步骤报告
+2. **多轮澄清或 SDD 规格驱动**（以对接卡片表格逐轮呈现：确认项 | 内容 | 状态 ☐，格式见 SKILL.md 输出格式）：围绕「场景 × 功能 × 边界」三要素收敛——
+   - 场景：目标用户、使用情境、核心用户旅程
+   - 功能：网站类型与页面清单 / 数据模型草案（实体、关系、对外暴露表）/ 认证需求 / **文件、图片、视频管理诉求** / AI 能力（pgvector 语义检索、Realtime 订阅）
+   - 边界：明确不做什么与非功能约束
+   - 纪律：**不遗留**（清单逐项确认后才过关）、**不发散**（偏离场景的诉求记录为备注、不入主线）、**聚焦不走偏**（每轮结束复述当前共识与用户校准；无新增即收敛）
+3. **BaaS 能力提炼与满足性评估**（映射矩阵逐项记录）：
 
-**输出断言**：🔍 用户逐项确认需求摘要与数据模型（不默认、不放大模糊表述）｜🤖 gate PASS
+   | 诉求 | RDS Supabase 能力 | 满足性 |
+   |---|---|---|
+   | 数据建模与 CRUD | PostgREST 自动接口 | 核心路径，满足 |
+   | 业务逻辑 | Data-Function（库内 RPC） | 满足；复杂逻辑 → function-graph 技能 |
+   | 认证 | GoTrue | 满足 |
+   | 文件/图片/视频管理 | **Storage（对接 OBS）** | 满足——**标记 `storage`，触发步骤三 Storage 桶准备与对接** |
+   | 实时订阅 | Realtime | 满足（可选） |
+   | 语义检索 | pgvector | 满足（可选） |
+
+4. **Storage 专项判定**：存在文件/图片/视频管理诉求 → 能力清单记入 `storage` → **步骤三必须完成专用私有 OBS 桶准备与 `update_supabase_storage` 对接**；**禁止复用前端托管桶**（该桶为公开读，复用即权限越界与隐私暴露）
+5. 边界外识别明确告知（不擅自模拟）：复杂业务逻辑（支付/第三方/长任务）→ 路由 rds-supabase-function-graph 技能（云函数）；SSR 不支持
+6. 费用预估清单（实例规格/时长、**前端托管桶与 Storage 桶分别列示**、CDN 流量、域名证书）→ 用户确认
+7. 写 webapp.json：`project.requirements_summary`（脱敏）+ `project.baas_capabilities`（能力清单，枚举 database/auth/rpc/storage/realtime/vector）+ history 追加 passed 事件
+8. 跑 gate（check-stage --stage requirements_confirmed）→ 步骤报告
+
+**输出断言**：🔍 用户逐项确认需求摘要、数据模型与能力清单（不默认、不放大模糊表述）｜🤖 gate PASS
 
 **工具白名单**：允许：读写 webapp.json；禁止：**一切 MCP 工具**
 
 **黄金路径**：
 ```
-用户：帮我建一个博客网站，支持登录评论
-→ 声明步骤二 → 澄清（页面清单 / Posts-Comments-Users 模型 / 邮箱登录 / 无 AI 能力）
-→ 费用清单确认 → 写 webapp.json(requirements_summary)
-→ gate PASS → 步骤报告（步骤二）（下一步骤预告：需要凭据与区域信息）
+用户：帮我建一个博客网站，支持登录评论和文章配图上传
+→ 声明步骤二 → 多轮澄清（页面清单 / Posts-Comments-Users 模型 / 邮箱登录 / 文章配图上传 = 文件管理诉求 / 无 AI 检索）
+→ 能力矩阵：database + auth + rpc + storage（配图上传 → storage 标记）
+→ 边界与费用清单（实例 / 前端托管桶 / Storage 私有桶 分列）确认 → 写 webapp.json(requirements_summary + baas_capabilities)
+→ gate PASS → 步骤报告（步骤二）（下一步骤预告：凭据与区域信息；步骤三将准备 Storage 私有桶并对接）
 ```
 
-**失败处置**：需求不清 → 继续澄清；用户取消 → 停止，不创建任何资源。**断点**：`requirements_confirmed`
+**失败处置**：需求不清 → 继续多轮澄清直至收敛；用户取消 → 停止，不创建任何资源。**断点**：`requirements_confirmed`
 
 ## 步骤三 · 资源准备
 
@@ -101,9 +118,14 @@
    - **使用已有**：列出租户桶 → **候选过滤：仅保留满足静态托管要求的公开读桶**——匿名 GetObject 未获授权的非公开桶一律剔除，**不得出现在候选列表中**；候选展示（桶名/区域/存储类别）供用户勾选 → 核验选中桶区域与项目 Region 一致、具备静态网站托管能力
    - **新建**：**桶名默认与应用名称保持一致**——应用名称英文化：转小写，非 ASCII 与非法字符映射为连字符、连续连字符压缩为单个、去除首尾连字符、长度裁剪至 3–63；**名称冲突（同名桶已存在）→ 追加短 uuid 后缀**（连字符连接，形如 `my-webapp-3f2a1b9c`；再次冲突则重新生成后缀并复核唯一性）；最终桶名经用户确认后由 frontend 技能创建并配置公开读策略
    - 域名条件核对；**证书仅当实例 SSL 开启（前端 HTTPS 入口）时必需**——SSL 未开启则前端以 HTTP 发布、无需证书；不齐备项于步骤七前补齐
-6. 写 webapp.json（instance 段 + `obs` 段：`bucket_name`/`source`/`naming_basis` + `mcp` 段：`registration_scope`/`config_paths.mgr`，契约见 project-state.md）→ gate → 步骤报告
+6. **Storage 桶准备与对接（仅当步骤二能力清单含 `storage`）**：交互式勾选「使用已有桶 / 新建桶」（纪律同实例与前端桶：未获用户显式选择不得推进，不得代为默认）：
+   - **使用已有**：先做**桶策略安全评估**——桶必须私有（无公开读、无匿名 GetObject、无公开列举、无通配匿名授权）；存在任一公开项即判定策略不合理 → 停止并说明，建议转新建或先修正桶策略
+   - **新建**：**一律私有桶**（禁止公开读），按最小权限配置；桶名建议 `<应用slug>-storage`
+   - **两类均禁止复用前端托管桶**（`obs.bucket_name`——公开读桶复用即权限越界与隐私暴露）
+   - 选定后经管理面 `update_supabase_storage` 完成对接（凭据 bucket/AK/SK 经 request_ref、两阶段确认；首次启用需 SK，见 mgr-mcp 技能）→ 核验对接生效
+7. 写 webapp.json（instance 段 + `obs` 段：`bucket_name`/`source`/`naming_basis` + `mcp` 段：`registration_scope`/`config_paths.mgr` + `storage` 段（能力含 storage 时）：`bucket_name`/`source`/`connected`，契约见 project-state.md）→ gate → 步骤报告
 
-**输出断言**：🔍 实例 running 且实际可访问，接入方式经用户显式勾选确认｜🔍 桶就绪且接入方式经用户显式勾选确认（公开读核验通过）｜🔍 管理面 MCP 注册落位项目级配置（核验通过，未触碰用户级/系统级）｜🤖 gate PASS（instance 契约 + `source` 枚举 + obs 契约 + mcp 契约）
+**输出断言**：🔍 实例 running 且实际可访问，接入方式经用户显式勾选确认｜🔍 桶就绪且接入方式经用户显式勾选确认（公开读核验通过）｜🔍 Storage 桶（如诉求存在）私有、未复用前端托管桶且对接生效｜🔍 管理面 MCP 注册落位项目级配置（核验通过，未触碰用户级/系统级）｜🤖 gate PASS（instance 契约 + `source` 枚举 + obs 契约 + mcp 契约 + storage 契约）
 
 **工具白名单**：允许：管理面 list/show/plan/create/wait/ApiKey 交付、`diagnostics discover`、frontend 技能 KooCLI（OBS 桶）；禁止：数据面 MCP（尚未安装）、一切 SQL 执行
 
@@ -113,8 +135,9 @@
 → list_supabase_applications → 用户勾选 app-123 → show_supabase_application 核验 normal
 → list_supabase_api_keys + deliver → 受保护文件（agent 不见明文）
 → 呈现 OBS 桶接入方式选择清单：用户勾选「新建」→ 桶名取应用名英文化 webapp-demo（无冲突，用户确认）
-→ frontend 技能建桶 + 公开读策略 → 管理面 MCP 注册项目级配置（如 .opencode/mcp.json）+ 核验未触碰用户级/系统级
-→ 写 webapp.json(instance.source=selected, obs.source=created, mcp.registration_scope=project)
+→ frontend 技能建桶 + 公开读策略 → 能力清单含 storage（文章配图）→ Storage 桶勾选「新建」demo-storage（私有桶）→ update_supabase_storage 对接（两阶段确认）✓
+→ 管理面 MCP 注册项目级配置（如 .opencode/mcp.json）+ 核验未触碰用户级/系统级
+→ 写 webapp.json(instance.source=selected, obs.source=created, mcp.registration_scope=project, storage.connected=true)
 → gate PASS → 步骤报告（步骤三）（下一步骤预告：重载客户端后安装数据面 MCP）
 ```
 

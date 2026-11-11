@@ -23,7 +23,7 @@ from pathlib import Path
 
 STEPS = [
     ("步骤一", "环境检查与配置", "environment_ready"),
-    ("步骤二", "需求澄清", "requirements_confirmed"),
+    ("步骤二", "需求澄清与设计", "requirements_confirmed"),
     ("步骤三", "资源准备", "instance_ready"),
     ("步骤四", "数据面接入", "mcp_connected"),
     ("步骤五", "后端生成部署", "backend_deployed"),

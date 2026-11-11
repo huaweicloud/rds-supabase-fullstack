@@ -34,6 +34,7 @@
 | instance | object/null | 未进入步骤三时为 `null` |
 | obs | object/null | 未进入步骤三时为 `null` |
 | mcp | object/null | 未进入步骤三时为 `null` |
+| storage | object/null | 步骤二未标记 `storage` 能力或尚未完成对接时为 `null` |
 | backend | object/null | 未部署时为 `null` |
 | frontend | object/null | 未生成时为 `null` |
 | stages | object | 见下 |
@@ -45,6 +46,7 @@
 | name | string | 项目名 |
 | description | string/null | 一句话描述 |
 | requirements_summary | string | 步骤二 确认的需求摘要（脱敏，不含凭据与用户数据） |
+| baas_capabilities | string[] | 步骤二 提炼的 BaaS 能力需求清单（枚举 `database`/`auth`/`rpc`/`storage`/`realtime`/`vector`，非空）；含 `storage` 时步骤三必须完成 Storage 桶准备与对接（gate 校验 storage 段存在且 connected） |
 
 ### instance
 
@@ -65,6 +67,14 @@
 | bucket_name | string | 选定或新建的桶名：3–63 字符，仅小写字母、数字与连字符，以字母或数字开头与结尾 |
 | source | string | `created`（本流程新建，桶名经用户确认）或 `selected`（步骤三用户自公开读候选勾选） |
 | naming_basis | string/null | `created` 时必填：`app_name_slug`（应用名英文化）或 `app_name_slug_uuid`（英文化后名称冲突，追加短 uuid 后缀）；`selected` 时为 `null` |
+
+### storage
+
+| 字段 | 类型 | 规则 |
+|---|---|---|
+| bucket_name | string | Storage 对接专用私有桶名（3–63 字符规范同 obs）；**必须与前端托管桶 `obs.bucket_name` 不同**（公开读桶复用即权限越界）——gate 机器核验 |
+| source | string | `created`（本流程新建私有桶）或 `selected`（用户勾选既有桶，**桶策略安全评估通过**：无公开读/匿名 GetObject/公开列举） |
+| connected | boolean | 管理面 `update_supabase_storage` 对接完成；能力清单含 `storage` 时自 instance_ready 起必须为 `true`（gate 校验） |
 
 ### mcp
 

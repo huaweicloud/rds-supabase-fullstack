@@ -71,7 +71,8 @@ def make_project(tables=("public.posts", "public.users"), exposed=("public.posts
         deployment.update(advanced)
     manifest = {
         "schema_version": 1,
-        "project": {"name": "demo", "description": None, "requirements_summary": "blog"},
+        "project": {"name": "demo", "description": None, "requirements_summary": "blog",
+                    "baas_capabilities": ["database", "auth", "rpc"]},
         "instance": {"supabase_application_id": "app-1", "source": "selected",
                      "gateway_url": "http://127.0.0.1:9", "credential_env_names":
                      ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"],
@@ -254,6 +255,47 @@ class McpRegistrationTests(unittest.TestCase):
         result = run_gate(project, "check-stage", "--stage", "mcp_connected")
         self.assertEqual(result.returncode, 1)
         self.assertIn("config_paths.data", result.stdout)
+
+
+class StorageCapabilityTests(unittest.TestCase):
+    def _with_storage(self, mutate_storage=None, caps=("database", "auth", "rpc", "storage")):
+        project = make_project()
+        path = project / ".hwsupabase" / "webapp.json"
+        data = json.loads(path.read_text())
+        data["project"]["baas_capabilities"] = list(caps)
+        if mutate_storage is not None:
+            data["storage"] = mutate_storage
+        path.write_text(json.dumps(data))
+        return project
+
+    def test_fail_storage_required_but_missing(self):
+        project = self._with_storage()
+        result = run_gate(project, "check-stage", "--stage", "instance_ready")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("storage section is missing", result.stdout)
+
+    def test_fail_storage_reuses_hosting_bucket(self):
+        project = self._with_storage({"bucket_name": "demo", "source": "created", "connected": True})
+        result = run_gate(project, "check-contract")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("must differ from obs.bucket_name", result.stdout)
+
+    def test_fail_storage_not_connected(self):
+        project = self._with_storage({"bucket_name": "demo-storage", "source": "created", "connected": False})
+        result = run_gate(project, "check-stage", "--stage", "instance_ready")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("storage.connected", result.stdout)
+
+    def test_fail_storage_invalid_source(self):
+        project = self._with_storage({"bucket_name": "demo-storage", "source": "auto", "connected": True})
+        result = run_gate(project, "check-contract")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("storage.source", result.stdout)
+
+    def test_pass_storage_fully_connected(self):
+        project = self._with_storage({"bucket_name": "demo-storage", "source": "selected", "connected": True})
+        result = run_gate(project, "check-stage", "--stage", "instance_ready")
+        self.assertEqual(result.returncode, 0, result.stdout)
 
 
 class StableUrlProtocolTests(unittest.TestCase):

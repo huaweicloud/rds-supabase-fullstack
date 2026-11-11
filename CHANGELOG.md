@@ -7,6 +7,18 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.8.2: the comparison report's topology
+  diagrams are now rendered images (assets/compare-traditional.svg,
+  assets/compare-managed.svg) replacing ASCII art. Each diagram is organized
+  into three explicit layers — development (dev cycle headline), deployment
+  (step-count headline) and runtime (entity composition). Frontend and
+  backend each appear as a single entity: the traditional backend is a
+  dashed group of two self-managed entities (backend services -> database),
+  while the managed backend is one Supabase instance card (Kong gateway +
+  Postgres + GoTrue/RLS built in) and the frontend is the OBS bucket with
+  zero servers. Short connectors only — no long crossing lines; layout
+  verified programmatically (text/line/card overlap checks) plus visual
+  review. Embedded into USER_GUIDE_REPORT.md section 1.
 - Skill `rds-supabase-web-build` v0.8.1: all repo download sites now land
   in a unique temporary directory. git clones, ZIP-archive downloads and
   unzip extractions (README escape hatch, INSTALL methods B/C, SKILL.md

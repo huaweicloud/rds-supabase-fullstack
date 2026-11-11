@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 810" width="920" height="810" font-family="PingFang SC, Microsoft YaHei, Noto Sans CJK SC, sans-serif">
+  <defs>
+    <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#64748B"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="920" height="810" fill="#FFFFFF"/>
+
+  <text x="460" y="42" text-anchor="middle" font-size="21" font-weight="700" fill="#0F172A">全托管新模式 · Supabase + OBS</text>
+  <text x="460" y="66" text-anchor="middle" font-size="12" fill="#475569">后端 = 一个 Supabase 实例（网关 + 数据库 + 鉴权内建）；两个声明式产物，托管层与机器核验承接其余一切</text>
+
+  <!-- ======== 开发态 ======== -->
+  <rect x="20" y="90" width="880" height="140" rx="14" fill="#EEF2FF" stroke="#C7D2FE"/>
+  <rect x="36" y="104" width="132" height="26" rx="13" fill="#4338CA"/>
+  <text x="102" y="121" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF">开发态 · 你写的</text>
+
+  <rect x="48" y="140" width="250" height="62" rx="10" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <rect x="244" y="146" width="50" height="18" rx="9" fill="#DCFCE7"/>
+  <text x="269" y="159" text-anchor="middle" font-size="10" font-weight="600" fill="#15803D">声明式</text>
+  <text x="173" y="180" text-anchor="middle" font-size="13" font-weight="700" fill="#1E293B">前端代码（React / Vue）</text>
+  <text x="173" y="198" text-anchor="middle" font-size="11" fill="#475569">页面与组件 · 产物直传 OBS</text>
+
+  <rect x="335" y="140" width="250" height="62" rx="10" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <rect x="531" y="146" width="50" height="18" rx="9" fill="#DCFCE7"/>
+  <text x="556" y="159" text-anchor="middle" font-size="10" font-weight="600" fill="#15803D">声明式</text>
+  <text x="460" y="180" text-anchor="middle" font-size="13" font-weight="700" fill="#1E293B">后端声明：init.sql</text>
+  <text x="460" y="198" text-anchor="middle" font-size="11" fill="#475569">表 · GRANT · RLS · RPC（一份 SQL）</text>
+
+  <rect x="622" y="140" width="250" height="62" rx="10" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <rect x="818" y="146" width="50" height="18" rx="9" fill="#DCFCE7"/>
+  <text x="843" y="159" text-anchor="middle" font-size="10" font-weight="600" fill="#15803D">声明式</text>
+  <text x="747" y="180" text-anchor="middle" font-size="13" font-weight="700" fill="#1E293B">函数代码（可选）</text>
+  <text x="747" y="198" text-anchor="middle" font-size="11" fill="#475569">交易通知 · 外部对接 · 隐私处理</text>
+
+  <text x="460" y="219" text-anchor="middle" font-size="12.5" font-weight="700" fill="#15803D">一份 SQL 声明替代整个后端应用 —— 开发周期：数天级</text>
+
+  <line x1="173" y1="202" x2="173" y2="246" stroke="#64748B" stroke-width="2" marker-end="url(#ah2)"/>
+  <line x1="747" y1="202" x2="747" y2="246" stroke="#64748B" stroke-width="2" marker-end="url(#ah2)"/>
+
+  <!-- ======== 部署态 ======== -->
+  <rect x="20" y="250" width="880" height="150" rx="14" fill="#FFF7E6" stroke="#FDE68A"/>
+  <rect x="36" y="264" width="132" height="26" rx="13" fill="#B45309"/>
+  <text x="102" y="281" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF">部署态 · 一键的</text>
+
+  <rect x="48" y="296" width="190" height="64" rx="10" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <text x="143" y="320" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1E293B">npm build → OBS</text>
+  <text x="143" y="342" text-anchor="middle" font-size="11" fill="#475569">构建产物直传公开桶</text>
+
+  <rect x="262" y="296" width="190" height="64" rx="10" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <text x="357" y="320" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1E293B">execute_sql</text>
+  <text x="357" y="342" text-anchor="middle" font-size="11" fill="#475569">单事务五步 · sha256 留痕</text>
+
+  <rect x="476" y="296" width="190" height="64" rx="10" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <text x="571" y="320" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1E293B">KooCLI 函数部署</text>
+  <text x="571" y="342" text-anchor="middle" font-size="11" fill="#475569">实例 + 网络 · 一次配置</text>
+
+  <rect x="690" y="296" width="190" height="64" rx="10" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <text x="785" y="320" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1E293B">gate 机器核验</text>
+  <text x="785" y="342" text-anchor="middle" font-size="11" fill="#475569">直连云验证 · 不采信自报</text>
+
+  <text x="460" y="385" text-anchor="middle" font-size="12.5" font-weight="700" fill="#15803D">部署流程：一句话触发 · 8 步声明式 · 小时级</text>
+
+  <line x1="143" y1="360" x2="143" y2="426" stroke="#64748B" stroke-width="2" marker-end="url(#ah2)"/>
+  <line x1="781" y1="360" x2="781" y2="426" stroke="#64748B" stroke-width="2" marker-end="url(#ah2)"/>
+
+  <!-- ======== 运行态 ======== -->
+  <rect x="20" y="430" width="880" height="300" rx="14" fill="#ECFDF5" stroke="#BBF7D0"/>
+  <rect x="36" y="444" width="132" height="26" rx="13" fill="#15803D"/>
+  <text x="102" y="461" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF">运行态 · 托管的</text>
+
+  <rect x="400" y="478" width="120" height="44" rx="22" fill="#0F172A"/>
+  <text x="460" y="505" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">用户</text>
+  <line x1="460" y1="522" x2="342" y2="544" stroke="#64748B" stroke-width="2" marker-end="url(#ah2)"/>
+  <line x1="460" y1="522" x2="655" y2="544" stroke="#64748B" stroke-width="2" marker-end="url(#ah2)"/>
+
+  <rect x="250" y="548" width="170" height="56" rx="10" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <text x="335" y="572" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1E293B">CDN</text>
+  <text x="335" y="592" text-anchor="middle" font-size="10.5" fill="#475569">加速 · 缓存</text>
+
+  <rect x="560" y="548" width="320" height="158" rx="12" fill="#FFFFFF" stroke="#86EFAC" stroke-width="2"/>
+  <rect x="824" y="556" width="46" height="19" rx="9.5" fill="#DCFCE7"/>
+  <text x="847" y="569" text-anchor="middle" font-size="10" font-weight="600" fill="#15803D">托管</text>
+  <text x="700" y="585" text-anchor="middle" font-size="13.5" font-weight="700" fill="#1E293B">Supabase 实例 —— 后端 = 1 个实体</text>
+
+  <rect x="578" y="600" width="138" height="34" rx="8" fill="#F8FAFC" stroke="#E2E8F0"/>
+  <text x="647" y="622" text-anchor="middle" font-size="11.5" font-weight="600" fill="#334155">Kong 网关</text>
+  <rect x="724" y="600" width="138" height="34" rx="8" fill="#F8FAFC" stroke="#E2E8F0"/>
+  <text x="793" y="622" text-anchor="middle" font-size="11.5" font-weight="600" fill="#334155">Postgres · GoTrue</text>
+
+  <text x="720" y="666" text-anchor="middle" font-size="11" fill="#475569">RLS 行级安全 · RPC · advisors 机器体检</text>
+  <text x="720" y="688" text-anchor="middle" font-size="11" fill="#475569">实例自带网关与鉴权 · 备份托管</text>
+
+  <rect x="80" y="630" width="230" height="76" rx="10" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <rect x="262" y="636" width="44" height="18" rx="9" fill="#DCFCE7"/>
+  <text x="284" y="649" text-anchor="middle" font-size="10" font-weight="600" fill="#15803D">托管</text>
+  <text x="172" y="671" text-anchor="middle" font-size="13" font-weight="700" fill="#1E293B">OBS 静态桶 —— 前端 = 0 服务器</text>
+  <text x="172" y="692" text-anchor="middle" font-size="10.5" fill="#475569">零服务器 · 零 nginx · 公开读</text>
+
+  <rect x="330" y="630" width="200" height="76" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-dasharray="6 4"/>
+  <text x="430" y="662" text-anchor="middle" font-size="12.5" font-weight="700" fill="#334155">FunctionGraph（可选）</text>
+  <text x="430" y="684" text-anchor="middle" font-size="10.5" fill="#475569">事件驱动 · 免运维 · 按量计费</text>
+
+  <line x1="335" y1="604" x2="200" y2="626" stroke="#64748B" stroke-width="2" marker-end="url(#ah2)"/>
+
+  <!-- ======== 汇总条 ======== -->
+  <rect x="20" y="750" width="880" height="46" rx="10" fill="#F0FDF4" stroke="#BBF7D0"/>
+  <text x="460" y="778" text-anchor="middle" font-size="12" font-weight="700" fill="#166534">开发周期 数天 · 部署 8 步声明式 · 前端 0 服务器 · 后端 1 个实体 —— 两个声明式产物 + gate 机器核验</text>
+</svg>

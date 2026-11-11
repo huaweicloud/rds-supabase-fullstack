@@ -1,155 +1,99 @@
-# rds-supabase-web-build 一键安装指导（自然语言安装）
+# rds-supabase 技能包安装（AI Agent 一键安装）
 
-面向想用一句话创建并托管 RDS Supabase Web 应用的用户。**使用方式：把本文档交给你的
-AI Agent，对它说：**
-
-> 按 INSTALL.md 安装 rds-supabase 技能包，装完告诉我怎么触发。
-
-Agent 按下述步骤执行即可；人类也可照读自查。安装阶段**只安装技能包**——不需要任何
-云资源、凭据或 MCP 配置先行就绪。
-
-## 安装什么（技能包），MCP 何时出现
-
-| 项 | 何时 | 说明 |
-|---|---|---|
-| **技能包（全部技能）** | 现在，一次性（安装阶段的全部内容） | 从本 GitHub 源码仓克隆/添加到项目技能目录 |
-| 管理面 MCP（29 工具） | 工作流**步骤三**动态启动 | 由技能在工作流中安装（同样只从本仓，见下表）；凭据/Region/接入点/PROJECT_ID 由**步骤一**环境检查与配置处理 |
-| 数据面 MCP（38 工具） | 工作流**步骤四**动态安装 | 依赖实例网关 URL 与 API Key——实例在步骤三才创建/选定，届时凭据已就绪 |
-
-> **安装阶段不涉及任何 MCP、凭据与云侧配置**。两台 MCP 服务器由技能工作流按需从本仓
-> 动态安装；不要在安装时索取凭据、不要预置 mcpServers 占位配置。
-
-## 前置条件（仅安装）
-
-| 项 | 要求 | 说明 |
-|---|---|---|
-| AI Agent | 支持 Agent Skills 标准 | opencode / Claude Code / Cursor 等 |
-| npm（可选） | Node ≥ 18 | 仅 `npx skills add` 需要；无则手动复制 |
-| 网络 | 可达 GitHub | 内网环境见"常见问题" |
-
-运行时前置（uv/uvx、Python ≥ 3.10、华为云凭据、npm 构建环境等）不在安装阶段要求——
-技能工作流步骤一环境检查会逐项核对并提示补齐。
-
-## 一句话安装
-
-用户对 Agent 说：
+面向 AI Agent 的安装指导。用户对 Agent 说：
 
 > 按 INSTALL.md 安装 rds-supabase 技能包，装完告诉我怎么触发。
 
-Agent 执行以下 3 步。
+Agent 按本文四节执行；人类可照读自查。安装范围**仅技能包**——不安装、不配置任何 MCP、凭据与云资源。
 
-### 第 1 步：安装技能文件
+## 一、安装范围
 
-方式 A（Agent Skills 开放标准，推荐）：
+| 项 | 何时 | 来源 |
+|---|---|---|
+| **技能包（全部技能，安装阶段的全部内容）** | 现在，一次性 | 本 GitHub 源码仓 `skills/huaweicloud-supabase/` |
+| 管理面 MCP（29 工具） | 工作流步骤三动态启动 | 本仓 `server/`（不在技能包内） |
+| 数据面 MCP（38 工具） | 工作流步骤四动态安装 | 同上；依赖步骤三交付的实例凭据 |
+| 凭据 / Region / 接入点 / PROJECT_ID | 工作流步骤一 | 项目内 `.hwsupabase/`（项目级隔离） |
+
+前置：Agent 支持 Agent Skills 标准；npm ≥ 18（仅方式 A 需要）；网络可达 GitHub（不可达见方式 C）。
+
+## 二、安装目录（各宿主差异）
+
+**强约束：只装项目级技能目录**——技能版本随项目走，不污染其他项目与本机全局。
+
+| 宿主 | 项目级技能目录（唯一允许） | 禁止的个人级目录（同名不同根） |
+|---|---|---|
+| CodeArts | `<项目根>/.codeartsdoer/skills/` | `~/.codeartsdoer/skills` |
+| opencode | `<项目根>/.opencode/skills/` | `~/.config/opencode/skills` |
+| Claude Code | `<项目根>/.claude/skills/` | `~/.claude/skills` |
+| 其余宿主 | 该宿主的项目级技能机制（Agent 自知位置，以项目根为界） | 一切系统级与个人级目录 |
+
+- 系统内置/系统级目录一律禁止；CodeArts 两级目录同名不同根，家目录下属个人级、严禁使用
+- CLI（`npx skills add`）默认落位为个人级时，弃用其结果，改方式 B/C 手动装入上表路径
+
+## 三、三步安装
+
+### 第 1 步 · 安装技能文件（方式 A/B/C 择一）
+
+**方式 A**（Agent Skills 标准，推荐）：
 
 ```bash
 npx skills add huaweicloud/rds-supabase-fullstack
 ```
 
-> 安装后**核验落位**：CLI 默认目标若为个人级/全局目录，则弃用其结果、改用方式 B/C
-> 手动装入项目级目录（见下方强约束）。
+装后核验落位：结果在个人级/全局目录 → 弃用，改方式 B/C。
 
-**安装位置强约束（强制执行）**：技能包只安装到**当前项目的项目级技能目录**，各宿主的项目级路径固定如下——
-
-| 宿主 | 项目级技能目录（唯一允许） | 对应禁止的个人级目录 |
-|---|---|---|
-| CodeArts | `<项目根>/.codeartsdoer/skills/` | `~/.codeartsdoer/skills` |
-| opencode | `<项目根>/.opencode/skills/` | `~/.config/opencode/skills/` |
-| Claude Code | `<项目根>/.claude/skills/` | `~/.claude/skills/` |
-
-系统内置/系统级目录一律禁止；其余宿主按其项目级技能机制定位，Agent 自知位置。注意
-CodeArts 的两级目录**同名不同根**：随项目走的是 `<项目根>/.codeartsdoer/skills/`，家目录下
-的 `~/.codeartsdoer/skills` 属个人级、严禁使用。技能版本随项目走，不得影响、不污染其他
-项目与本机全局环境——与凭据项目级隔离同一原则。CLI（`npx skills add`）默认落位为个人级时，
-弃用其结果，改用手动复制装入上表项目级路径。
-
-方式 B（手动复制）：克隆仓库，把 `skills/huaweicloud-supabase/` 下所有技能目录完整复制到
-项目级技能目录（CodeArts：`<项目根>/.codeartsdoer/skills/`；opencode：`<项目根>/.opencode/skills/`；
-Claude Code：`<项目根>/.claude/skills/`；其余宿主按其项目级技能机制，Agent 自知位置）：
+**方式 B**（手动克隆复制）：
 
 ```bash
-TMP=$(mktemp -d)   # 克隆落临时目录，不污染项目目录与家目录
-git clone https://github.com/huaweicloud/rds-supabase-fullstack "$TMP/rds-supabase-fullstack"
-cp -r "$TMP/rds-supabase-fullstack/skills/huaweicloud-supabase/"* <项目技能目录>/
+TMP=$(mktemp -d)   # 克隆落唯一临时目录，不污染项目目录与家目录
+git clone https://github.com/huaweicloud/rds-supabase-fullstack "$TMP/repo"
+cp -r "$TMP/repo/skills/huaweicloud-supabase/"* <项目技能目录>/
 rm -rf "$TMP"     # 复制完成即清理
 ```
 
-方式 C（**网络逃生通道**——git 不可达时立即切换，不反复重试）：克隆失败或停滞
-（含代理后仍不通；连续失败 2 次或 30 秒无进展即判失败）→ 下载仓库 ZIP 归档解压使用：
+**方式 C**（网络逃生通道——git 失败即切，不反复重试）：连续失败 2 次或 30 秒无进展即判失败 → 下载 ZIP 归档解压：
 
 ```bash
-TMP=$(mktemp -d)   # 下载解压落临时目录，不污染项目目录与家目录
-curl -L --fail --max-time 120 -o "$TMP/rds-supabase-fullstack.zip" \
+TMP=$(mktemp -d)
+curl -L --fail --max-time 120 -o "$TMP/rds.zip" \
   https://github.com/huaweicloud/rds-supabase-fullstack/archive/refs/heads/main.zip
-unzip -q "$TMP/rds-supabase-fullstack.zip" -d "$TMP"
+unzip -q "$TMP/rds.zip" -d "$TMP"
 cp -r "$TMP/rds-supabase-fullstack-main/skills/huaweicloud-supabase/"* <项目技能目录>/
-rm -rf "$TMP"     # 安装完成即清理
+rm -rf "$TMP"
 ```
 
-浏览器直接打开该 ZIP URL 下载亦可（浏览器常走不同加速通道）。ZIP 归档属本仓
-官方源，不违反来源锁定；版本 pin 等价形式为 `.../archive/<commit>.zip`。
+浏览器直接下载该 ZIP URL 亦可（下载物同样落临时目录）。ZIP 归档属本仓官方源；版本 pin 等价形式 `.../archive/<commit>.zip`。
 
-安装的全部技能：`rds-supabase-web-build`（编排总指挥）、`rds-supabase-mgr-mcp`、
-`rds-supabase-mcp`、`rds-supabase-usage`、`rds-supabase-frontend`、
-`rds-supabase-postgres-best-practices`、`rds-supabase-function-graph`（云函数）。
+安装的全部技能（7 个）：`rds-supabase-web-build`（编排）、`rds-supabase-mgr-mcp`、`rds-supabase-mcp`、`rds-supabase-usage`、`rds-supabase-frontend`、`rds-supabase-postgres-best-practices`、`rds-supabase-function-graph`。
 
-### 第 2 步：校验
+### 第 2 步 · 校验
 
 每个技能目录含 `SKILL.md`；克隆了仓库的，可运行
 `uv run --directory server/mcp_server_rds_supabase python ../../scripts/validate_skills.py`，
 期望输出 `validate-skills: OK (8 skills)`。
 
-### 第 3 步：完成报告
+### 第 3 步 · 完成报告
 
-向用户汇报：已装技能清单、触发语句示例（如"帮我建一个博客网站"）、以及约定说明——
-MCP 与凭据不在安装阶段出现，首次建站时技能从步骤一环境检查开始逐项处理。
+向用户汇报三项：已装技能清单；触发语句示例（如"帮我建一个博客网站"）；约定说明——MCP 与凭据不在安装阶段出现，首次建站时技能从步骤一环境检查开始逐项处理。
 
-## MCP 项目地址与安装方式（工作流动态安装时使用；只允许本仓来源）
+## 四、更新与卸载
 
-两台 MCP 由技能工作流动态安装（管理面 → 步骤三、数据面 → 步骤四）；届时**只注册进当前项目的项目级 MCP 配置**（Claude Code `.mcp.json`、CodeArts `.codeartsdoer/`、OfficeAce 项目级配置、opencode `opencode.json`——禁止 `~/.claude.json`、Claude Desktop、`~/.config/opencode/` 等一切用户级/系统级位置，详见 rds-supabase-mcp 技能 references/install.md）。下表供届时直接
-复制使用，本地未克隆仓库也不必搜索：
-
-| MCP | 仓内路径 | 入口脚本 | git uvx 模板 | 本地克隆运行 |
-|---|---|---|---|---|
-| 管理面 `rds-supabase-mgr` | `server/mcp_server_rds_supabase_mgr` | `mcp-huaweicloud-rds-supabase-mgr` | `uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr` | `uv run --directory server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr` |
-| 数据面 `rds-supabase` | `server/mcp_server_rds_supabase` | `mcp-server-huaweicloud-rds-supabase` | `uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack --subdirectory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase`（步骤四动态安装） | `uv run --directory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase` |
-
-> **警示（Agent 必读）**：PyPI 与应用市场存在**同名/相似的第三方 "supabase" MCP 包**——它们不是本项目的服务器。除上表两种来源（git uvx 模板 / 本仓本地路径）外，**不得搜索、安装或引入任何其他来源的 MCP**；发现已配置了其他来源时，先移除再按本表重装。
-
-**版本锁定（生产推荐）**：动态安装时 `--from` 值改为
-`git+https://github.com/huaweicloud/rds-supabase-fullstack@<commit 或 tag>#subdirectory=...`，
-避免默认分支变更引入未验证行为。**技能目录里没有 `server/` 子目录属预期行为**——
-服务器不在技能包内，所有仓内路径引用均应以上表 URL 为准。
-
-**凭据说明**：安装阶段不经手任何凭据。运行时的凭据红线（密钥只进本地客户端 env、
-不进对话/日志/仓库、devkit 注入优先、受保护文件 0600）由技能工作流步骤一起执行，
-详见 [SKILL.md](SKILL.md) 执行纪律与管理面 README"安全机制"。
-
-## 更新与卸载
-
-- **更新**：`git pull` 后重新复制/重跑 `npx skills add`；uvx 每次拉取默认分支最新
-  （生产建议 pin `@<commit>`）；管理面执行账本（`SUPABASE_STATE_FILE`）跨升级保持同一
-  文件，勿切新账本重放
-- **卸载**：删除技能目录即可；若工作流已配置过 MCP，另移除 `mcpServers` 中对应条目，
-  并在删除 `~/.local/state/huaweicloud-supabase/`（本地执行账本）前先审计执行历史
+- **更新**：`git pull` 后重新复制，或重跑方式 A（落位核验同上）
+- **卸载**：删除项目级技能目录；工作流曾配置 MCP 的，另移除项目级 MCP 配置中对应条目
 
 ## 常见问题
 
 | 问题 | 处置 |
 |---|---|
-| GitHub / PyPI 不可达 | 配置企业镜像（pip index-url、UV_INDEX）；或克隆仓库后工作流步骤中改用本地 `uv run --directory server/... <入口脚本>` 运行，不经 uvx git 拉取 |
-| 装完为什么没有 MCP/工具 | 属预期：MCP 由技能工作流动态安装（管理面→步骤三、数据面→步骤四），凭据由步骤一环境检查处理。触发建站即自动进行 |
-| 多项目账号 | 步骤一 `diagnostics discover` 列出全部候选（名称/区域/推导入口），用户勾选；不静默选择 |
-| Windows | env 设置用 `$env:`；其余步骤一致 |
-| 已有 RDS Supabase 实例 | 步骤三会先询问"新建还是使用已有"；选已有 → 管理面 `list_supabase_applications` 列出可用应用供用户勾选，随即获取该应用的网关 URL 与 API Key（步骤四数据面安装所必需，不会遗漏） |
-| 什么时候才能访问站点 | 步骤一–八 全流程由技能驱动，实例创建（步骤三）可能耗时数分钟；步骤八通过三层上线清单后给出 stable_url |
+| GitHub 不可达 | 方式 C（ZIP 逃生通道）或浏览器直接下载；内网可配企业镜像后再走 A/B |
+| 装完没有 MCP 与工具 | 预期行为：MCP 由工作流步骤三/四动态安装，凭据由步骤一处理，触发建站即自动进行 |
+| 已有 RDS Supabase 实例 | 无需预配置：步骤三交互勾选「使用已有」，随即获取网关 URL 与 API Key |
+| 多项目共用一台机器 | 各项目独立 `.hwsupabase/`（凭据与环境配置项目级隔离）；新项目不会识别到其他项目的配置 |
+| 何时能访问站点 | 步骤一–九流水线由技能驱动（步骤九三层上线验收后给出 stable_url；实例创建耗时数分钟） |
 
-## 触发
-
-安装完成后，直接说：
+安装完成后触发：
 
 > 帮我建一个博客网站，支持登录评论。
-> 搭一个带 AI 问答的知识库应用。
 
-技能从步骤一环境检查与配置开始接管，步骤二进入需求澄清；流水线、强制门、断点续作与上线验收由
-[rds-supabase-web-build](SKILL.md) 编排。
+技能从步骤一环境检查与配置开始接管，编排逻辑见 [SKILL.md](SKILL.md)；MCP 安装来源见 [README.md](README.md)。

@@ -7,6 +7,22 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.9.7: README/INSTALL restructure. The
+  AI one-click install content now lives solely in INSTALL.md — rewritten
+  as a lean agent-facing guide with a fixed structure: install scope
+  (skills only; no MCP/credentials/cloud at install time), per-host
+  install directories as a dedicated section (project-level paths only,
+  forbidden personal-level twins, CLI-fallback rule), a three-step
+  procedure (install via A/B/C incl. the ZIP network escape hatch into
+  temp dirs, validate, report), update/uninstall, and a trimmed FAQ
+  (incl. the multi-project isolation note). README.md shrinks to
+  overview + framework diagram + install pointer (one natural-language
+  sentence, details delegated to INSTALL.md) + MCP source table; the
+  duplicated install steps, directory table, escape hatch and agent
+  execution notes are removed from README. Stale counts fixed (six
+  specialized skills, steps one-nine) across README, INSTALL and the
+  SKILL.md frontmatter description, which also now reflects the
+  declarative-backend, local-test and function-graph wording.
 - Skill `rds-supabase-web-build` v0.9.6: fix a cross-project configuration
   leak reported in multi-project use — starting the skill in project B
   would find region / AK / SK already "configured", because step 1 never

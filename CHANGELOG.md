@@ -7,6 +7,18 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.8.3: comparison diagrams restructured as
+  integrated single canvases and de-colloquialized. Each SVG is now one
+  large diagram with two entity lanes — frontend and backend — flowing
+  through development (tooling and artifacts), deployment (ECS, network,
+  microservices for the traditional mode) and runtime, with labeled
+  interaction links on every arrow (build tools, deploy actions, user
+  access paths for static assets and APIs). Band labels use formal terms
+  (开发态/部署态/运行态 with English annotations; 自行运维 / 云托管 / 声明式
+  chips replace colloquial wording). Layer headline metrics sit at each
+  band's top-right corner (dev cycle, deploy steps). The report itself is
+  word-swept for formal language (ten-item mapping title, entity-count
+  table headers, value proposition and conclusion phrasing).
 - Skill `rds-supabase-web-build` v0.8.2: the comparison report's topology
   diagrams are now rendered images (assets/compare-traditional.svg,
   assets/compare-managed.svg) replacing ASCII art. Each diagram is organized

@@ -43,6 +43,8 @@
 
 ### environment
 
+写入前经**五项终检**：AK/SK / REGION / PROJECT_ID / RDS_ENDPOINT 经一次 `diagnostics discover` 实际调用核验，OBS_ENDPOINT 经连接测试；任一不过 → 用户二次输入后复测，全过才落 `environment_ready`。
+
 | 字段 | 类型 | 规则 |
 |---|---|---|
 | region | string | 局点（如 `cn-north-4`）——**唯一权威存放处**，不从进程/全局环境变量读取 |

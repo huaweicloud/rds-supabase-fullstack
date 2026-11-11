@@ -43,8 +43,8 @@ GATE_FILES = {3: "3-rules-checklist.md", 4: "4-sdk-contract-checklist.md", 5: "5
 CRED_ENV_NAMES = ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"]
 # Stages whose completion requires at least one ok trace record (tool activity
 # is mandatory there); conversation-only steps are exempt.
-TRACE_REQUIRED = {"instance_ready", "mcp_connected", "backend_deployed", "frontend_built",
-                  "hosting_published", "launched"}
+TRACE_REQUIRED = {"environment_ready", "instance_ready", "mcp_connected", "backend_deployed",
+                  "frontend_built", "local_verified", "hosting_published", "launched"}
 # Per-stage tool allow-lists (shell wildcards matched against the trace tool
 # string). Violations surface in check-whitelist; patterns are deliberately
 # generous — prefixes group control-plane, data-plane, CLI and bookkeeping.

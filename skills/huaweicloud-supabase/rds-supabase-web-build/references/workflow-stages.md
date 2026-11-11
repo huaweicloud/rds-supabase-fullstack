@@ -31,10 +31,14 @@
 5. **RDS 接入点**：项目配置（`environment.rds_endpoint`）已有 → 直接采用；缺失且凭据就绪 → 运行 `diagnostics discover`（`uv run --directory server/mcp_server_rds_supabase_mgr python -m mcp_server_supabase.diagnostics discover`，可加 `--probe`；**凭据为 AK/SK 时命令须带 `SUPABASE_TRANSPORT=sdk_core`**，否则按 REST 模式因缺 `HUAWEICLOUD_AUTH_TOKEN` 失败）→ 从 `suggested_env` 勾选并采纳，**结果写回项目配置**；无法推导（非标准区域命名 / probe 不可达 / 报错）→ 要求用户显式指定后写回
 6. **OBS 接入点：推导 → 连接测试 → 写回**：按 Region 推导 `obs.<region>.myhuaweicloud.com` → **连接测试**：`dig +short <endpoint>` 有 A 记录 + `curl -sI --max-time 10 <endpoint>` 有 HTTP 响应（任意状态码即通——未认证访问返回 4xx 属预期，判定的是网络连通而非鉴权；超时/DNS 无解析 = 不通）→ 通过 → 写回项目配置；**无法推导（Region 非标准）或测试不通 → 缺失清单提示用户输入**实际接入点，用户输入后同样复测——通过才写回，仍不通则如实报告不强行采用
 7. **PROJECT_ID**：项目配置（`environment.project_id`）已有 → 采用；缺失 → `diagnostics discover` 勾选，**写回项目配置**；无法获取 → 要求用户显式指定后写回
-8. **缺失清单处置**：存在缺失项 → 以**对接卡片**表格呈现（检查项 | 状态 ✅/❌/⏳ | 获取方式，格式见 SKILL.md 输出格式），显式提醒用户逐项设置并等待补齐（不得猜测、不得跳过、不得以默认值代替）；补齐后重新检查
-9. 全部就绪 → 写 webapp.json（`environment` 段：region/rds_endpoint/obs_endpoint/project_id/credential_source + stages: environment_ready）→ gate → 步骤报告
+8. **五项终检（写入 environment_ready 前的最后一道校验）**：**REGION、AK/SK、PROJECT_ID、RDS_ENDPOINT、OBS_ENDPOINT 五项逐项核验正确无误**：
+   - **AK/SK、REGION、PROJECT_ID、RDS_ENDPOINT 四项**：一次 `diagnostics discover` 实际调用同时验证——凭据有应答 = AK/SK 正确；局点可解析 = REGION 有效；应答含该值 = PROJECT_ID 正确；endpoint 可达 = RDS_ENDPOINT 正常（可加 `--probe`；**AK/SK 凭据时命令须带 `SUPABASE_TRANSPORT=sdk_core`**）
+   - **OBS_ENDPOINT**：按第 6 项连接测试规则复测（DNS 解析 + HTTP 探测，任意状态码即通）
+   - 任一项不通过 → **对接卡片反馈用户**（哪项、实测现象）→ **二次输入确认**：用户修正该值后**仅复测该项**，通过才计入就绪；仍不通过 → 如实报告该项不可用，**不写 `environment_ready`**（禁止带病通过）
+9. **缺失清单处置**：存在缺失项 → 以**对接卡片**表格呈现（检查项 | 状态 ✅/❌/⏳ | 获取方式，格式见 SKILL.md 输出格式），显式提醒用户逐项设置并等待补齐（不得猜测、不得跳过、不得以默认值代替）；补齐后重新检查
+10. 全部就绪且**五项终检通过** → 写 webapp.json（`environment` 段：region/rds_endpoint/obs_endpoint/project_id/credential_source + stages: environment_ready；终检的 discover 调用与探测记 trace）→ gate → 步骤报告
 
-**输出断言**：🔍 凭据、uv、Region、RDS 接入点、OBS 接入点（**连接测试通过**）、PROJECT_ID 全部已在**项目内配置**（缺失清单为空；无一项取自进程/全局环境）｜🤖 gate PASS（environment 契约）
+**输出断言**：🔍 凭据、uv、Region、RDS 接入点、OBS 接入点（**连接测试通过**）、PROJECT_ID 全部已在**项目内配置**（缺失清单为空；无一项取自进程/全局环境）且**经五项终检核验正确**（discover 实际调用 + 连接探测）｜🤖 gate PASS（environment 契约 + trace 强制）
 
 **工具白名单**：允许：`diagnostics discover`（只读 IAM 查询）、读写 webapp.json；禁止：一切业务 MCP 工具（管理面尚未启动，实例操作不得提前执行）
 
@@ -43,6 +47,7 @@
 声明步骤一 → 凭据四选项勾选：A 项目 secrets/ ✓ → uv --version ✓ → 项目配置 environment.region=cn-north-4 ✓
 → discover --probe → 勾选 p-123 / 采纳 https://rds.cn-north-4.myhuaweicloud.com，写回项目配置 ✓
 → OBS 接入点推导 obs.cn-north-4.myhuaweicloud.com → 连接测试（dig 有解析 + curl 响应）✓ → 写回 → PROJECT_ID=p-123 写回 ✓
+→ 五项终检：discover 一次实际调用 ✓（AK/SK + REGION + PROJECT_ID + RDS_ENDPOINT 同验）+ OBS 复测 ✓
 → 缺失清单为空 → 写 webapp.json(environment 段 + environment_ready) → gate PASS → 步骤报告（下一步骤预告：需求澄清与设计）
 ```
 

@@ -101,7 +101,8 @@ def make_project(tables=("public.posts", "public.users"), exposed=("public.posts
         + "COMMIT;\n", encoding="utf-8")
     trace_lines = [json.dumps({"at": "2026-11-10T07:30:00Z", "stage": stage, "tool": tool,
                                "intent": "fixture", "status": "ok", "note": None})
-                   for stage, tool in (("instance_ready", "list_supabase_applications"),
+                   for stage, tool in (("environment_ready", "diagnostics discover"),
+                                       ("instance_ready", "list_supabase_applications"),
                                        ("mcp_connected", "get_project_url"),
                                        ("backend_deployed", "execute_sql"),
                                        ("frontend_built", "npm run build"))]
@@ -747,6 +748,13 @@ class VerifyTests(unittest.TestCase):
 
 
 class TraceEnforcementTests(unittest.TestCase):
+    def test_fail_environment_ready_without_trace(self):
+        project = make_project()
+        (project / ".hwsupabase" / "trace.jsonl").unlink()
+        result = run_gate(project, "check-stage", "--stage", "environment_ready")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("trace enforcement", result.stdout)
+
     def test_fail_when_trace_missing_for_required_stage(self):
         project = make_project()
         (project / ".hwsupabase" / "trace.jsonl").unlink()

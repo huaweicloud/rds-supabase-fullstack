@@ -7,6 +7,22 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-web-build` v0.11.3: step 1 ends with a five-item
+  final verification before environment_ready is written — REGION,
+  AK/SK, PROJECT_ID, RDS_ENDPOINT and OBS_ENDPOINT must all be proven
+  correct, not merely present. One diagnostics-discover call validates
+  four items at once (a response proves the credentials work, the
+  region resolves, the project id appears, the RDS endpoint is
+  reachable — --probe optional, sdk_core for AK/SK); the OBS endpoint
+  is re-probed per the connection-test rules. Any failing item is fed
+  back to the user with the measured symptom; the second-input round
+  has the user correct just that item, which alone is re-tested —
+  still failing means an honest report and NO environment_ready (no
+  passing with a broken config). The final check is machine-enforced:
+  environment_ready joins the trace-required stages. Also fixes a
+  latent miss: local_verified was silently absent from TRACE_REQUIRED
+  (indentation mismatch in the v0.9.5 edit) — both stages now enforced.
+  One new test.
 - Skill `rds-supabase-web-build` v0.11.2: deployment-timing and network
   discipline for the management-plane MCP. Hard install gate: the mgr
   MCP is dynamically installed only after credentials (AK/SK or token),

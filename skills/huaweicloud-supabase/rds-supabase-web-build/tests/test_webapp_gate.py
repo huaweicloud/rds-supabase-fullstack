@@ -87,7 +87,8 @@ def make_project(tables=("public.posts", "public.users"), exposed=("public.posts
         "backend": {"current_batch": "b1", "deployments": [deployment],
                     "teardown_ref": ".hwsupabase/teardown.sql"},
         "frontend": {"record_ref": ".hwsupabase/frontend/prod/environment.json",
-                     "project_dir": "web", "framework": "react-vite-ts"},
+                     "project_dir": "web", "framework": "react-vite-ts",
+                     "hosting_mode": "production"},
         "stages": {"last_completed_stage": "frontend_built", "updated_at": "2026-11-10T09:00:00Z",
                    "history": [{"stage": s, "status": "passed", "at": "2026-11-10T07:00:00Z", "note": None}
                                for s in ("environment_ready", "requirements_confirmed", "instance_ready",
@@ -397,48 +398,80 @@ class StorageCapabilityTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout)
 
 
+def make_published(ssl_enabled, stable_url):
+    project = make_project()
+    path = project / ".hwsupabase" / "webapp.json"
+    data = json.loads(path.read_text())
+    data["instance"]["ssl_enabled"] = ssl_enabled
+    data["stages"]["last_completed_stage"] = "hosting_published"
+    data["stages"]["history"].append({"stage": "hosting_published", "status": "passed",
+                                      "at": "2026-11-10T10:00:00Z", "note": None})
+    path.write_text(json.dumps(data))
+    with (project / ".hwsupabase" / "trace.jsonl").open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps({"at": "2026-11-10T10:00:00Z", "stage": "hosting_published",
+                                 "tool": "hcloud obs cp", "intent": "publish v1",
+                                 "status": "ok", "note": None}) + "\n")
+    env_dir = project / ".hwsupabase" / "frontend" / "prod"
+    env_dir.mkdir(parents=True)
+    (env_dir / "environment.json").write_text(json.dumps({"stable_url": stable_url}), encoding="utf-8")
+    return project
+
 class StableUrlProtocolTests(unittest.TestCase):
-    def make_published(self, ssl_enabled, stable_url):
-        project = make_project()
-        path = project / ".hwsupabase" / "webapp.json"
-        data = json.loads(path.read_text())
-        data["instance"]["ssl_enabled"] = ssl_enabled
-        data["stages"]["last_completed_stage"] = "hosting_published"
-        data["stages"]["history"].append({"stage": "hosting_published", "status": "passed",
-                                          "at": "2026-11-10T10:00:00Z", "note": None})
-        path.write_text(json.dumps(data))
-        with (project / ".hwsupabase" / "trace.jsonl").open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps({"at": "2026-11-10T10:00:00Z", "stage": "hosting_published",
-                                     "tool": "hcloud obs cp", "intent": "publish v1",
-                                     "status": "ok", "note": None}) + "\n")
-        env_dir = project / ".hwsupabase" / "frontend" / "prod"
-        env_dir.mkdir(parents=True)
-        (env_dir / "environment.json").write_text(json.dumps({"stable_url": stable_url}), encoding="utf-8")
-        return project
 
     def test_pass_http_entry_when_ssl_disabled(self):
-        project = self.make_published(False, "http://cdn.example.com")
+        project = make_published(False, "http://cdn.example.com")
         result = run_gate(project, "check-stage", "--stage", "hosting_published")
         self.assertEqual(result.returncode, 0, result.stdout)
 
     def test_fail_https_entry_when_ssl_disabled(self):
-        project = self.make_published(False, "https://cdn.example.com")
+        project = make_published(False, "https://cdn.example.com")
         result = run_gate(project, "check-stage", "--stage", "hosting_published")
         self.assertEqual(result.returncode, 1)
         self.assertIn("mixed content", result.stdout)
 
     def test_fail_http_entry_when_ssl_enabled(self):
-        project = self.make_published(True, "http://cdn.example.com")
+        project = make_published(True, "http://cdn.example.com")
         result = run_gate(project, "check-stage", "--stage", "hosting_published")
         self.assertEqual(result.returncode, 1)
         self.assertIn("HTTPS entry required", result.stdout)
 
     def test_fail_frontend_record_missing(self):
-        project = self.make_published(False, "http://cdn.example.com")
+        project = make_published(False, "http://cdn.example.com")
         (project / ".hwsupabase" / "frontend" / "prod" / "environment.json").unlink()
         result = run_gate(project, "check-stage", "--stage", "hosting_published")
         self.assertEqual(result.returncode, 1)
         self.assertIn("record_ref file not found", result.stdout)
+
+
+class HostingModeTests(unittest.TestCase):
+    def test_fail_hosting_mode_missing(self):
+        project = make_published(False, "http://cdn.example.com")
+        path = project / ".hwsupabase" / "webapp.json"
+        data = json.loads(path.read_text())
+        del data["frontend"]["hosting_mode"]
+        path.write_text(json.dumps(data))
+        result = run_gate(project, "check-stage", "--stage", "hosting_published")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("hosting_mode", result.stdout)
+
+    def test_fail_hosting_mode_invalid(self):
+        project = make_project()
+        path = project / ".hwsupabase" / "webapp.json"
+        data = json.loads(path.read_text())
+        data["frontend"]["hosting_mode"] = "preview"
+        path.write_text(json.dumps(data))
+        result = run_gate(project, "check-contract")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("hosting_mode", result.stdout)
+
+    def test_pass_hosting_mode_temporary(self):
+        project = make_published(False, "http://cdn.example.com")
+        path = project / ".hwsupabase" / "webapp.json"
+        data = json.loads(path.read_text())
+        data["frontend"]["hosting_mode"] = "temporary"
+        path.write_text(json.dumps(data))
+        result = run_gate(project, "check-stage", "--stage", "hosting_published")
+        self.assertEqual(result.returncode, 0, result.stdout)
 
 
 class TeardownTests(unittest.TestCase):

@@ -277,25 +277,30 @@
 
 ## 步骤八 · 构建与托管
 
-**目的**：静态产物发布到步骤三预建桶，经 CDN 形成稳定入口，完成回调回路。
+**目的**：静态产物发布到步骤三预建桶，按用户确认的托管场景（临时访问 / 正式上线）形成稳定入口，完成回调回路。
 
 **输入**：步骤六 产物源码；步骤三 预建桶与域名（证书仅 HTTPS 入口——`ssl_enabled=true` 时必需）；上一断点 `local_verified`
 
 **动作序列**：
 
 1. 声明步骤九
-2. frontend 技能：构建环境核对（Node/包管理器，不擅自升级）→ build → 上传步骤三预建桶 → CDN 刷新 → 版本记录（`.hwsupabase/frontend/` 契约）。**托管入口协议跟随实例 SSL**：`ssl_enabled=true` → HTTPS 入口（域名/证书就绪）；`false` → HTTP 入口（无需证书，**不得 HTTPS**——HTTPS 页面调用 HTTP 网关属混合内容，被浏览器拦截，站点不可用）
-3. **回调回路（步骤八↻）**：域名确定 → 管理面 `update_supabase_auth_config` 配 site_url/redirect_uris（展示差异后确认）→ 前端按最终地址**重建再发布**。未执行此回路 = auth 登录回调 404
-4. frontend checks（entry/assets/routes/negative_paths/cache）
-5. 写 webapp.json（hosting_published）→ gate → 步骤报告
+2. frontend 技能：构建环境核对（Node/包管理器，不擅自升级）→ build → 上传步骤三预建桶 → 版本记录（`.hwsupabase/frontend/` 契约；CDN 刷新仅正式模式）。**托管入口协议跟随实例 SSL**：`ssl_enabled=true` → HTTPS 入口（域名/证书就绪）；`false` → HTTP 入口（无需证书，**不得 HTTPS**——HTTPS 页面调用 HTTP 网关属混合内容，被浏览器拦截，站点不可用）
+3. **托管场景选择——交互式勾选（禁止跳过）**：产物上传后、入口配置前，以选择清单呈现两种场景方式，未获用户确认不得推进（不得代为默认）：
+   - **临时访问（原型验证/测试验证）**：适用无正式域名与备案的快速验证——用户已有或临时指定的自定义域名（如已持有域名的子域）绑定桶静态网站托管；**不购买域名、不办理 ICP 备案、不接 CDN**，流程精简、快速直观看到成效；向用户明示局限（非正式商用入口、可能不具备 HTTPS/加速能力）与升级路径（后续可转正式模式重走正式链路）
+   - **正式上线（线上商用）**：购买域名 → 实名认证 → ICP 备案（中国大陆区域要求，审核时效以官方为准）→ 绑定自有域名 → 按需接入 CDN 加速与 HTTPS 证书（obs-cdn 路线）；费用与周期在确认清单中列示
+   - 选择记入 webapp.json `frontend.hosting_mode`（`temporary`/`production`）；两种场景的入口协议均跟随实例 SSL
+4. **回调回路（步骤八↻）**：域名确定（按所选场景入口）→ 管理面 `update_supabase_auth_config` 配 site_url/redirect_uris（展示差异后确认）→ 前端按最终地址**重建再发布**。未执行此回路 = auth 登录回调 404
+5. frontend checks（entry/assets/routes/negative_paths/cache）
+6. 写 webapp.json（hosting_published + `frontend.hosting_mode`）→ gate → 步骤报告
 
-**输出断言**：🔍 frontend checks 全必需项 passed + stable_url 协议跟随实例 SSL（true→HTTPS / false→HTTP，gate 读 frontend record 机器核验一致性）｜🤖 gate PASS
+**输出断言**：🔍 托管场景经用户显式勾选确认（temporary/production）｜🔍 frontend checks 全必需项 passed + stable_url 协议跟随实例 SSL（true→HTTPS / false→HTTP，gate 读 frontend record 机器核验一致性）｜🤖 gate PASS
 
 **工具白名单**：允许：管理面 `update_supabase_auth_config`、frontend 技能工具链（KooCLI/OBS/CDN/npm）；禁止：`execute_sql`、实例级管理面写（删除/改密等）
 
 **黄金路径**：
 ```
-声明步骤八 → 构建环境核对 → npm run build → 上传 obs://webapp-123/v1 → CDN 刷新
+声明步骤八 → 构建环境核对 → npm run build → 上传 obs://webapp-123/v1
+→ 托管场景勾选：用户选「正式上线」→ 购买域名 demo.example.com + 备案 + CDN（选「临时访问」则绑定已有临时域名，免购免备案）
 → 用户确定域名 https://demo.example.com（本例实例 SSL 开启故入口 https；未开启时入口为 http 且无需证书）→ update_supabase_auth_config(site_url + redirect_uris，差异确认)
 → 前端重建再发布 v2 → frontend checks 全 passed（entry 2xx / assets 2xx / routes / 404 路径 / cache 头）
 → 写 webapp.json(hosting_published) → gate PASS → 步骤报告（步骤八）

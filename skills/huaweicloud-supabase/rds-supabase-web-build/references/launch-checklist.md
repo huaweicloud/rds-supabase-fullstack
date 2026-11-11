@@ -37,6 +37,7 @@
 【上线报告】
 项目：<name>（.hwsupabase/webapp.json）
 实例：<supabase_application_id> @ <gateway_url>
+托管场景：<temporary（临时访问——原型/测试验证入口，非正式商用）/ production（正式上线——商用）>
 后端：批次 <current_batch>（对象 N 项 · advisors 无新增 · REST 200 · anon 可见性符合设计）
 前端：<version>（checks 全必需项 passed · stable_url 协议跟随实例 SSL）
 连通：站点渲染 ✓ · API 可见性 ✓ · 多用户隔离抽检 ✓ · 回调 ✓

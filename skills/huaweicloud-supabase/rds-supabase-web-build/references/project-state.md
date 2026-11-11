@@ -109,6 +109,7 @@
 | record_ref | string | 指向 `.hwsupabase/frontend/<env>/environment.json` |
 | project_dir | string | 前端项目目录（相对项目根） |
 | framework | string | 如 `react-vite-ts` |
+| hosting_mode | string/null | 步骤八 托管场景选择后必填：`temporary`（临时访问——原型/测试验证，免购域名免备案）或 `production`（正式上线——购买域名/备案/CDN 商用链路）；hosting_published 起 gate 校验枚举 |
 
 ### stages
 

@@ -226,6 +226,9 @@ def check_contract(data, missing):
             for key in ("record_ref", "project_dir", "framework"):
                 if not isinstance(frontend.get(key), str):
                     missing.append(f"frontend.{key} must be a string")
+            mode = frontend.get("hosting_mode")
+            if mode is not None and mode not in ("temporary", "production"):
+                missing.append("frontend.hosting_mode must be 'temporary' or 'production'")
     stages = data.get("stages")
     if isinstance(stages, dict):
         if stages.get("last_completed_stage") not in STAGES:
@@ -286,6 +289,11 @@ def check_stage(data, stage, missing, project_dir=None):
         mcp = data.get("mcp")
         if not isinstance(mcp, dict) or not isinstance((mcp.get("config_paths") or {}).get("data"), str):
             missing.append("mcp.config_paths.data must be a project-level config path from mcp_connected onward")
+    if stage in ("hosting_published", "launched"):
+        mode = (data.get("frontend") or {}).get("hosting_mode")
+        if mode not in ("temporary", "production"):
+            missing.append("frontend.hosting_mode must be 'temporary' or 'production' "
+                           "from hosting_published onward (user-confirmed hosting scenario)")
     if stage in ("hosting_published", "launched") and project_dir is not None:
         record_ref = (data.get("frontend") or {}).get("record_ref")
         if isinstance(record_ref, str):

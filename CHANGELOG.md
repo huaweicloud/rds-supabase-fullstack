@@ -7,6 +7,22 @@ semantic versioning.
 
 ### Changed
 
+- Skills `rds-supabase-web-build` v0.10.1 + `rds-supabase-frontend` v0.2.2:
+  the hosting phase now demands an explicit user-confirmed hosting
+  scenario, chosen interactively after asset upload and before entry
+  configuration (skipping forbidden, no defaulting). temporary —
+  prototype/test verification: bind a user-owned or ad-hoc custom
+  domain to static website hosting, no domain purchase, no ICP filing,
+  no CDN — a lean path to visible results, with its limits (not a
+  commercial entry) and upgrade path stated up front. production —
+  the full commercial chain: domain purchase, real-name
+  authentication, ICP filing (mainland regions), custom-domain binding,
+  CDN acceleration and HTTPS certificates. The choice is recorded as
+  frontend.hosting_mode (temporary/production) and machine-verified by
+  the gate from hosting_published onward; the launch report carries the
+  scenario line; CDN refresh is production-only in the playbook; the
+  frontend skill's entry prerequisites describe both scenarios. Three
+  new tests.
 - Skills `rds-supabase-web-build` v0.10.0 + `rds-supabase-frontend` v0.2.1:
   two refinements. (1) Credential resolution in step 1 is now a mandatory
   four-option interactive selection (skipping forbidden): A project

@@ -57,7 +57,8 @@ class ProtocolTests(unittest.IsolatedAsyncioTestCase):
                         self.assertEqual(state['state'], 'cancelled')
                         result = await session.call_tool('get_supabase_capabilities', {})
                         capabilities = result.structured_content or json.loads(result.content[0].text)
-                        self.assertFalse(capabilities['cloud_verified'])
+                        self.assertEqual(len(capabilities['scenarios']), 6)
+                        self.assertTrue(capabilities['implemented_operations'])
 
     async def test_local_cancel_obeys_read_only_policy(self):
         from mcp_server_supabase.service.plans import PlanStore

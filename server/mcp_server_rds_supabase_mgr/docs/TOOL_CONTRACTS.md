@@ -13,7 +13,7 @@
 
 | 工具 | 输入（?可选） | 输出/语义 | 风险 |
 |---|---|---|---|
-| get_supabase_capabilities | 无 | 已实现子集、缺失能力；cloud_verified=false，不探测云状态 | READ |
+| get_supabase_capabilities | 无 | 列出可用能力范围（模式/策略/已实现操作/六场景契约）；离线声明，不探测云状态 | READ |
 | plan_supabase_creation | manage_type=newly_instance/existed_instance | planning_only，缺失契约；不是执行方案，无提交 | READ |
 | plan_supabase_ssl | enable_ssl?=true | 证书选择步骤/缺口；无提交 | READ |
 | list_supabase_applications | limit?=10, offset?=0 | 应用列表（可能含其他类型），脱敏并限长 | READ |

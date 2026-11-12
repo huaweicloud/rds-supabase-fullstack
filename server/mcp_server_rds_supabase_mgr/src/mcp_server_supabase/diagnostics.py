@@ -96,7 +96,9 @@ async def protocol_report(mode, application_id=None, job_id=None):
                         passed = bool(predicate(data))
                     checks.append({'check':name,'passed':passed})
                     return data if passed else {}
-                await call('get_supabase_capabilities',{},lambda d:d.get('cloud_verified') is False)
+                await call('get_supabase_capabilities',{},
+                           lambda d: len(d.get('scenarios') or {})==6
+                           and isinstance(d.get('implemented_operations'),list))
                 if offline:
                     await call('plan_supabase_creation',{'manage_type':'newly_instance'},
                                lambda d:d.get('execution')=='not_executed')

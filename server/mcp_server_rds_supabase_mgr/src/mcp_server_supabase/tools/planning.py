@@ -8,7 +8,7 @@ def register(server):
     @server.tool()
     @guard(risk=ToolRisk.READ)
     async def get_supabase_capabilities() -> dict[str, object]:
-        """Discover six scenario contract states. Run first; returns offline capabilities, never cloud status."""
+        """List the available capabilities of the RDS Supabase management MCP. Run first; returns an offline scope declaration (transport mode, execution policies, implemented operations, six scenario contracts), never cloud status."""
         return service.capabilities()
 
     @server.tool()

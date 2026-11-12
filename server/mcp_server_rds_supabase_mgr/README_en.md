@@ -30,8 +30,8 @@ Database / RDS Supabase fully-managed lifecycle (control plane)
 **Application query**
 
 - List and inspect Supabase applications in the current project
-- Report the MCP's own capability subset and gaps (cloud_verified=false; no
-  cloud probing)
+- List the available capabilities of the RDS Supabase management MCP
+  (offline declaration; no cloud probing)
 
 **Application creation**
 
@@ -83,7 +83,7 @@ Database / RDS Supabase fully-managed lifecycle (control plane)
 
 | Tool | Scenario | Risk | Notes |
 |---|---|---|---|
-| `get_supabase_capabilities` | Query MCP capabilities and gaps | READ | cloud_verified=false |
+| `get_supabase_capabilities` | List the available capabilities of the RDS Supabase management MCP | READ | Offline declaration, no cloud probing |
 | `list_supabase_applications` | List applications (paginated) | READ | May include other types; verify type=supabase |
 | `show_supabase_application` | Application detail and status | READ | Status is not proof of completion |
 | `list_supabase_api_keys` | ApiKey metadata query | READ | Whitelisted output, no plaintext |

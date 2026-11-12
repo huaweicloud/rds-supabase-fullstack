@@ -25,7 +25,7 @@ RDS 管理接口操作 Supabase 应用。SQL 与数据操作属独立数据面�
 **应用查询**
 
 - 查询当前项目的 Supabase 应用列表与详情
-- 查询 MCP 自身能力子集与缺失项（cloud_verified=false，不探测云状态）
+- 列出 RDS Supabase 管理 MCP 的可用能力范围（离线声明，不探测云状态）
 
 **应用创建**
 
@@ -70,7 +70,7 @@ RDS 管理接口操作 Supabase 应用。SQL 与数据操作属独立数据面�
 
 | 工具 | 场景 | 风险级别 | 说明 |
 |---|---|---|---|
-| `get_supabase_capabilities` | 查询 MCP 能力与缺失项 | READ | cloud_verified=false |
+| `get_supabase_capabilities` | 列出 RDS Supabase 管理 MCP 的可用能力范围 | READ | 离线声明，不探测云状态 |
 | `list_supabase_applications` | 应用列表（分页） | READ | 列表可能含其他类型，须核验 type=supabase |
 | `show_supabase_application` | 应用详情与状态 | READ | 状态非完成证明 |
 | `list_supabase_api_keys` | ApiKey 元数据查询 | READ | 白名单输出，不含明文 |

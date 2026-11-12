@@ -7,6 +7,18 @@ semantic versioning.
 
 ### Changed
 
+- `mcp_server_rds_supabase_mgr` v0.4.0a2: `get_supabase_capabilities` now
+  describes its actual purpose — listing the available capability scope of
+  the RDS Supabase management MCP (transport mode, execution policies,
+  implemented operations, six scenario contracts) — instead of the
+  narrower "six scenario contract states" wording. The constant
+  `cloud_verified: false` field is removed from the payload: a hardcoded
+  constant carries no decision-relevant information, and the "offline
+  declaration, never cloud status" semantics remain in the tool
+  description and the scenario pending items. The protocol test and the
+  `diagnostics discover` self-check now validate the manifest shape (six
+  scenario contracts, non-empty implemented operations) instead of the
+  removed flag. README, README_en and TOOL_CONTRACTS aligned.
 - Skills `rds-supabase-web-build` v0.11.6 + `rds-supabase-frontend` v0.2.4:
   uploaded static hosting objects (HTML/CSS/js/images/fonts) must now be
   set to public-read at the **object level** (`-acl=public-read` on every

@@ -7,6 +7,21 @@ semantic versioning.
 
 ### Changed
 
+- `mcp_server_rds_supabase_mgr` v0.4.0a6: `show_supabase_auth_config` returns a
+  normalized configuration object aligned with the real backend payload. The
+  description now states its scope: user registration settings, access
+  control, identity providers (email and GitHub) and email template
+  configuration. All nine top-level fields (enable_account_sign_up,
+  enable_anonymous_users, api_external_url, site_url, allow_redirect_urls,
+  github_oauth_provider, email_oauth_provider, email_template_config) are
+  mandatory and fail closed when missing, with boolean/string/object type
+  anchoring; nested sections (smtp_config, the six mailer templates) pass
+  through the recursive bounded sanitizer; secrets (SMTP credentials, OAuth
+  client secrets) are dropped at any depth while identifiers
+  (oauth_client_id, smtp_user) remain; empty strings mean not configured.
+  The return no longer echoes limit/offset and its note declares the object
+  the baseline for update_supabase_auth_config previews and accepted-plan
+  reconciliation. Tests lock the real payload as the fixture contract.
 - `mcp_server_rds_supabase_mgr` v0.4.0a5: `show_supabase_application` now
   returns a normalized detail object aligned with the real backend payload.
   The description states its purpose: querying RDS Supabase application

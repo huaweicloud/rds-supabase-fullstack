@@ -71,7 +71,22 @@ def register(server):
     @server.tool()
     @guard(risk=ToolRisk.READ)
     async def show_supabase_auth_config(application_id: str) -> dict:
-        """Query authentication configuration with secret fields excluded."""
+        """Query the Auth configuration of an RDS Supabase application: user registration
+        settings, access control, identity providers (email and GitHub) and email
+        template configuration.
+
+        Args: application_id from application discovery.
+        Returns: the normalized configuration object — registration flags
+        (enable_account_sign_up, enable_anonymous_users), URLs (api_external_url,
+        site_url, allow_redirect_urls), provider sections (github_oauth_provider;
+        email_oauth_provider with smtp_config) and email_template_config
+        (confirmation, invite, recovery, email_change, magic_link,
+        reauthentication). Mandatory fields fail closed when missing; secrets
+        (SMTP credentials, OAuth client secrets) are excluded at any depth while
+        identifiers (oauth_client_id, smtp_user) remain; empty strings mean not
+        configured. Baseline for update_supabase_auth_config previews and
+        accepted-plan reconciliation.
+        """
         return await service.read("auth", application_id)
 
     @server.tool()

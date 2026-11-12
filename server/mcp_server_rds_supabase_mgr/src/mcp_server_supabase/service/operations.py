@@ -11,7 +11,8 @@ from mcp_server_supabase.client.rest import segment
 from mcp_server_supabase.client.sdk_core import configured_client
 from mcp_server_supabase.service.contracts import (api_key_query, application_detail,
                                                    application_metadata, application_query,
-                                                   key_metadata, ssl_body, accepted_job)
+                                                   auth_config_detail, key_metadata, ssl_body,
+                                                   accepted_job)
 
 ROOT = "/v3/{project}/ai-application"
 
@@ -154,12 +155,24 @@ class Operations:
             except ValueError:
                 raise McpToolError("MCP_SDK_ERROR", "Unrecognized application detail response",
                                    hint="Verify the endpoint response contract before continuing.") from None
+        if kind == "auth":
+            try:
+                data = auth_config_detail(data)
+            except ValueError:
+                raise McpToolError("MCP_SDK_ERROR", "Unrecognized auth configuration response",
+                                   hint="Verify the endpoint response contract before continuing.") from None
         if kind == "application":
             return {"data": safe(data),
                     "note": "Access address assembly: scheme from enable_ssl (true->https, "
                             "false->http), host from public_ip (public; null when no EIP is bound) "
                             "or private_ip/traffic_vip (internal), port from port. "
                             "Secret fields excluded; nested objects bounded."}
+        if kind == "auth":
+            return {"data": safe(data),
+                    "note": "Baseline for update_supabase_auth_config previews and accepted-plan "
+                            "reconciliation. Secrets (SMTP credentials, OAuth client secrets) are "
+                            "excluded; identifiers (oauth_client_id, smtp_user) remain. Empty "
+                            "strings mean not configured."}
         if kind == "keys":
             try:
                 data = key_metadata(data)

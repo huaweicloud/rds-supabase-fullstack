@@ -76,7 +76,7 @@ RDS 管理接口操作 Supabase 应用。SQL 与数据操作属独立数据面�
 | `list_supabase_api_keys` | ApiKey 元数据查询 | READ | 白名单输出，不含明文 |
 | `reset_supabase_api_key` | ApiKey 重置（需确认） | DANGEROUS | 提交前按 ID 校验唯一 normal 记录 |
 | `deliver_supabase_api_key` | 指定 Key 交付到本地文件（需确认） | DANGEROUS | 经 delivery_ref 别名 |
-| `show_supabase_auth_config` | Auth 配置查询 | READ | 秘密排除 |
+| `show_supabase_auth_config` | 查询 Auth 认证配置（注册/访问控制/邮箱与 GitHub 提供商/邮箱模板） | READ | 秘密任意深度排除；空串=未配置；update/reconcile 对照基准 |
 | `update_supabase_auth_flags` | 注册/匿名开关（需确认） | WRITE | 仅更新明确指定的布尔项 |
 | `update_supabase_auth_config` | Auth 提供方/URL/模板（需确认） | WRITE | 经本地 request_ref |
 | `update_supabase_storage` | OBS 存储配置（需确认） | WRITE | 首次启用需完整凭据 |

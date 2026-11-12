@@ -89,7 +89,7 @@ Database / RDS Supabase fully-managed lifecycle (control plane)
 | `list_supabase_api_keys` | ApiKey metadata query | READ | Whitelisted output, no plaintext |
 | `reset_supabase_api_key` | Reset ApiKey (confirm required) | DANGEROUS | Pre-submit exact-ID uniqueness check |
 | `deliver_supabase_api_key` | Deliver designated key to local file (confirm required) | DANGEROUS | Via delivery_ref alias |
-| `show_supabase_auth_config` | Auth configuration query | READ | Secrets excluded |
+| `show_supabase_auth_config` | Query the Auth configuration (registration, access control, email/GitHub providers, email templates) | READ | Secrets excluded at any depth; empty string = not configured; baseline for update/reconcile |
 | `update_supabase_auth_flags` | Sign-up/anonymous flags (confirm required) | WRITE | Only explicitly provided booleans are updated |
 | `update_supabase_auth_config` | Auth providers/URL/templates (confirm required) | WRITE | Via local request_ref |
 | `update_supabase_storage` | OBS storage configuration (confirm required) | WRITE | Full credentials required on first enablement |

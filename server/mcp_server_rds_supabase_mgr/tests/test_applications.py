@@ -255,3 +255,97 @@ class ApplicationDetailTests(unittest.IsolatedAsyncioTestCase):
             with self.subTest(payload=payload):
                 with self.assertRaises(McpToolError):
                     await self.ops.read('application', 'app-1')
+
+
+REAL_AUTH_CONFIG = {
+    'enable_account_sign_up': True,
+    'enable_anonymous_users': False,
+    'api_external_url': 'http://localhost:8443',
+    'site_url': 'http://localhost:3000',
+    'allow_redirect_urls': '',
+    'github_oauth_provider': {'enable_github': False, 'oauth_client_id': '', 'redirect_uri': ''},
+    'email_oauth_provider': {
+        'enable_email_sign_up': False,
+        'enable_email_auto_confirm': True,
+        'smtp_config': {'smtp_host': '', 'smtp_port': 587, 'smtp_user': '',
+                        'smtp_admin_email': '', 'smtp_sender_name': '', 'smtp_max_frequency': 60}},
+    'email_template_config': {
+        'mailer_confirmation': {'subject': '', 'url': ''},
+        'mailer_invite': {'subject': '', 'url': ''},
+        'mailer_recovery': {'subject': '', 'url': ''},
+        'mailer_email_change': {'subject': '', 'url': ''},
+        'mailer_magic_link': {'subject': '', 'url': ''},
+        'mailer_reauthentication': {'subject': '', 'url': ''}},
+}
+
+
+class AuthConfigTests(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        self.client = AsyncMock()
+        self.ops = Operations(self.client)
+
+    async def test_real_auth_config_projection(self):
+        self.client.request.return_value = (200, dict(REAL_AUTH_CONFIG))
+        result = await self.ops.read('auth', 'app-1')
+        row = result['data']
+        self.assertTrue(row['enable_account_sign_up'])
+        self.assertFalse(row['enable_anonymous_users'])
+        self.assertEqual(row['site_url'], 'http://localhost:3000')
+        self.assertEqual(row['api_external_url'], 'http://localhost:8443')
+        self.assertEqual(row['allow_redirect_urls'], '')
+        self.assertFalse(row['github_oauth_provider']['enable_github'])
+        self.assertEqual(row['email_oauth_provider']['smtp_config']['smtp_port'], 587)
+        self.assertEqual(row['email_oauth_provider']['smtp_config']['smtp_max_frequency'], 60)
+        for template in ('mailer_confirmation', 'mailer_invite', 'mailer_recovery',
+                         'mailer_email_change', 'mailer_magic_link', 'mailer_reauthentication'):
+            self.assertIn(template, row['email_template_config'])
+        self.assertNotIn('limit', result)
+        self.assertNotIn('offset', result)
+        self.assertIn('reconciliation', result['note'])
+
+    async def test_auth_missing_mandatory_fails_closed(self):
+        for field in ('enable_account_sign_up', 'site_url', 'github_oauth_provider',
+                      'email_oauth_provider', 'email_template_config'):
+            record = dict(REAL_AUTH_CONFIG)
+            del record[field]
+            self.client.request.return_value = (200, record)
+            with self.subTest(field=field):
+                with self.assertRaises(McpToolError) as error:
+                    await self.ops.read('auth', 'app-1')
+                self.assertEqual(error.exception.code, 'MCP_SDK_ERROR')
+
+    async def test_auth_flag_and_section_types_enforced(self):
+        for field, value in (('enable_account_sign_up', 1), ('enable_anonymous_users', 'false'),
+                             ('site_url', None), ('github_oauth_provider', []),
+                             ('email_template_config', 'x')):
+            record = dict(REAL_AUTH_CONFIG)
+            record[field] = value
+            self.client.request.return_value = (200, record)
+            with self.subTest(field=field):
+                with self.assertRaises(McpToolError) as error:
+                    await self.ops.read('auth', 'app-1')
+                self.assertEqual(error.exception.code, 'MCP_SDK_ERROR')
+
+    async def test_auth_smtp_secret_dropped_identifiers_remain(self):
+        record = dict(REAL_AUTH_CONFIG)
+        provider = dict(record['email_oauth_provider'])
+        provider['smtp_config'] = dict(provider['smtp_config'], smtp_pwd='fixture-secret',
+                                       smtp_password='fixture-secret')
+        record['email_oauth_provider'] = provider
+        github = dict(record['github_oauth_provider'], client_secret='fixture-secret',
+                      oauth_client_id='client-id-1')
+        record['github_oauth_provider'] = github
+        self.client.request.return_value = (200, record)
+        row = (await self.ops.read('auth', 'app-1'))['data']
+        self.assertNotIn('smtp_pwd', row['email_oauth_provider']['smtp_config'])
+        self.assertNotIn('smtp_password', row['email_oauth_provider']['smtp_config'])
+        self.assertNotIn('client_secret', row['github_oauth_provider'])
+        self.assertEqual(row['github_oauth_provider']['oauth_client_id'], 'client-id-1')
+        self.assertNotIn('fixture-secret', str(row))
+
+    async def test_auth_malformed_fails_closed(self):
+        for payload in ([], 'x', None):
+            self.client.request.return_value = (200, payload)
+            with self.subTest(payload=payload):
+                with self.assertRaises(McpToolError):
+                    await self.ops.read('auth', 'app-1')

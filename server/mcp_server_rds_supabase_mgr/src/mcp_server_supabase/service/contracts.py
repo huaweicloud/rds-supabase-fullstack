@@ -166,6 +166,45 @@ def application_detail(body: dict[str, Any]) -> dict[str, object]:
     return _project(body, APPLICATION_DETAIL_MANDATORY_FIELDS, _APPLICATION_DETAIL_OPTIONAL_FIELDS)
 
 
+AUTH_CONFIG_MANDATORY_FIELDS = ('enable_account_sign_up', 'enable_anonymous_users',
+                                'api_external_url', 'site_url', 'allow_redirect_urls',
+                                'github_oauth_provider', 'email_oauth_provider',
+                                'email_template_config')
+_AUTH_FLAG_FIELDS = ('enable_account_sign_up', 'enable_anonymous_users')
+_AUTH_STRING_FIELDS = ('api_external_url', 'site_url', 'allow_redirect_urls')
+_AUTH_OBJECT_FIELDS = ('github_oauth_provider', 'email_oauth_provider', 'email_template_config')
+
+
+def auth_config_detail(body: dict[str, Any]) -> dict[str, object]:
+    """Accept the auth configuration object; enforce the documented schema shape.
+
+    Secrets (SMTP credentials, OAuth client secrets) are dropped at any depth;
+    identifiers such as oauth_client_id and smtp_user remain. Empty strings
+    mean "not configured".
+    """
+    if not isinstance(body, dict):
+        raise ValueError('Unrecognized auth configuration response')
+    item: dict[str, object] = {}
+    for field in AUTH_CONFIG_MANDATORY_FIELDS:
+        if field not in body:
+            raise ValueError('Mandatory auth configuration field missing: ' + field)
+        value = body[field]
+        if field in _AUTH_FLAG_FIELDS and type(value) is not bool:
+            raise ValueError('Auth configuration flag must be boolean: ' + field)
+        if field in _AUTH_STRING_FIELDS and not isinstance(value, str):
+            raise ValueError('Auth configuration URL field must be a string: ' + field)
+        if field in _AUTH_OBJECT_FIELDS and not isinstance(value, dict):
+            raise ValueError('Auth configuration section must be an object: ' + field)
+        item[field] = _normalize_value(field, value)
+    for key, value in body.items():
+        if key in item:
+            continue
+        if any(marker in key.lower() for marker in _SECRET_MARKERS) or key.lower() in ('ak', 'sk'):
+            continue
+        item[key] = _normalize_value(key, value)
+    return item
+
+
 
 def key_metadata(body: dict[str, Any]) -> dict[str, object]:
     """Accept the confirmed list envelope and expose only bounded metadata."""

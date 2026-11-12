@@ -41,6 +41,74 @@ def api_key_query(limit: int = 10, offset: int = 0, status: str | None = None,
     return query
 
 
+APPLICATION_SORT_KEYS = ('name', 'status', 'mode', 'created_time', 'updated_time')
+APPLICATION_MANDATORY_FIELDS = ('id', 'name', 'public_ip', 'port', 'flavor_ref', 'mode',
+                                'created_time', 'remark')
+_APPLICATION_ALIASES = {
+    'id': ('id', 'application_id'),
+    'name': ('name',),
+    'public_ip': ('public_ip', 'public_ip_address', 'eip_address'),
+    'port': ('port', 'gateway_port'),
+    'flavor_ref': ('flavor_ref', 'flavor'),
+    'mode': ('mode', 'deploy_mode'),
+    'created_time': ('created_time', 'created_at', 'create_time'),
+    'remark': ('remark', 'description'),
+}
+_SECRET_MARKERS = ('password', 'pwd', 'secret', 'token', 'api_key')
+
+
+def application_query(limit: int = 10, offset: int = 0, application_id: str | None = None,
+                      name: str | None = None, sort_key: str = 'created_time',
+                      sort_dir: str = 'desc') -> dict[str, object]:
+    """Applications are always scoped to type=supabase; the type filter is not configurable."""
+    if type(limit) is not int or not 1 <= limit <= 100:
+        raise ValueError('limit must be an integer from 1 to 100')
+    if type(offset) is not int or offset < 0:
+        raise ValueError('offset must be a non-negative integer')
+    if sort_key not in APPLICATION_SORT_KEYS or sort_dir not in ('asc', 'desc'):
+        raise ValueError('Unsupported sort')
+    if name is not None and (not isinstance(name, str) or not 1 <= len(name) <= 128):
+        raise ValueError('Invalid name filter')
+    query: dict[str, object] = {'limit': limit, 'offset': offset, 'type': 'supabase',
+                                'sort_key': sort_key, 'sort_dir': sort_dir}
+    if name is not None:
+        query['name'] = name
+    if application_id is not None:
+        if not isinstance(application_id, str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,128}', application_id):
+            raise ValueError('Invalid application identifier')
+        query['id'] = application_id
+    return query
+
+
+def application_metadata(body: dict[str, Any]) -> dict[str, object]:
+    """Accept the applications envelope; enforce mandatory fields with bounded passthrough."""
+    rows, total = body.get('applications'), body.get('total_count')
+    if not isinstance(rows, list) or type(total) is not int or total < len(rows):
+        raise ValueError('Unrecognized application metadata envelope')
+    result = []
+    for row in rows[:100]:
+        if not isinstance(row, dict):
+            raise ValueError('Invalid application record')
+        item: dict[str, object] = {}
+        for field in APPLICATION_MANDATORY_FIELDS:
+            source = next((alias for alias in _APPLICATION_ALIASES[field] if alias in row), None)
+            if source is None:
+                raise ValueError('Mandatory application field missing: ' + field)
+            value = row[source]
+            if value is not None and type(value) not in (str, int, float, bool):
+                raise ValueError('Invalid application field: ' + field)
+            item[field] = value[:2000] if isinstance(value, str) else value
+        for key, value in row.items():
+            if key in item or any(key in aliases for aliases in _APPLICATION_ALIASES.values()):
+                continue
+            if any(marker in key.lower() for marker in _SECRET_MARKERS) or key.lower() in ('ak', 'sk'):
+                continue
+            if isinstance(value, (str, int, float, bool)) or value is None:
+                item[key] = value[:2000] if isinstance(value, str) else value
+        result.append(item)
+    return {'total_count': total, 'data': result}
+
+
 def key_metadata(body: dict[str, Any]) -> dict[str, object]:
     """Accept the confirmed list envelope and expose only bounded metadata."""
     rows, total = body.get('data'), body.get('total_count')

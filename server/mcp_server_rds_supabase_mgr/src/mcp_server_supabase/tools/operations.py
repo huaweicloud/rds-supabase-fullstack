@@ -7,9 +7,27 @@ def register(server):
 
     @server.tool()
     @guard(risk=ToolRisk.READ)
-    async def list_supabase_applications(limit: int = 10, offset: int = 0) -> dict:
-        """Query application inventory. Requests type=supabase; verify returned identity before selecting."""
-        return await service.read("applications", limit=limit, offset=offset)
+    async def list_supabase_applications(limit: int = 10, offset: int = 0,
+                                         name: str | None = None,
+                                         application_id: str | None = None,
+                                         sort_key: str = 'created_time',
+                                         sort_dir: str = 'desc') -> dict:
+        """Paginated query of all RDS Supabase applications in the current project,
+        with sorting and filtering. Use it to locate a target or an available application.
+
+        Args: limit 1-100 (default 10), offset >= 0 for pagination.
+        name: optional fuzzy-match filter on the application name.
+        application_id: optional exact identifier filter (1-128 [A-Za-z0-9_-]).
+        sort_key: name/status/mode/created_time/updated_time (default created_time).
+        sort_dir: asc/desc (default desc).
+        type is fixed to supabase server-side and cannot be overridden.
+        Returns: data containing total_count and bounded sanitized records with the
+        mandatory fields id/name/public_ip/port/flavor_ref/mode/created_time/remark
+        plus other non-secret fields. Verify identity before selecting a target.
+        """
+        return await service.read("applications", limit=limit, offset=offset, name=name,
+                                  application_id=application_id, sort_key=sort_key,
+                                  sort_dir=sort_dir)
 
     @server.tool()
     @guard(risk=ToolRisk.READ)

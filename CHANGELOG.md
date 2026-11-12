@@ -7,6 +7,22 @@ semantic versioning.
 
 ### Changed
 
+- `mcp_server_rds_supabase_mgr` v0.4.0a3: `list_supabase_applications` is now a
+  full inventory query — paginated listing of all RDS Supabase applications in
+  the current project with sorting and filtering, used to locate a target or
+  an available application. New optional parameters: `name` (fuzzy filter),
+  `application_id` (exact filter, mirrors the api-keys `key_id` pattern) and
+  `sort_key`/`sort_dir` (default `created_time desc`). The `type` filter is
+  fixed to `supabase` server-side and cannot be overridden. The response is
+  normalized into `{total_count, data}` (mirroring the key metadata
+  envelope) and each record is validated to carry the mandatory fields
+  id/name/public_ip/port/flavor_ref/mode/created_time/remark — known backend
+  aliases (flavor, description, gateway_port, public_ip_address, ...) are
+  promoted to the canonical names, missing mandatory fields fail closed as
+  `MCP_SDK_ERROR`, and other non-secret fields pass through bounded (arrays
+  capped at 100, strings at 2000, secret-marked keys dropped). The tool
+  return now echoes `offset` alongside `limit`. 7 new tests; TOOL_CONTRACTS
+  records the 0.4.0a3 contract increment.
 - `mcp_server_rds_supabase_mgr` v0.4.0a2: `get_supabase_capabilities` now
   describes its actual purpose — listing the available capability scope of
   the RDS Supabase management MCP (transport mode, execution policies,

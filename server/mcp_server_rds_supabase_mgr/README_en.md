@@ -84,7 +84,7 @@ Database / RDS Supabase fully-managed lifecycle (control plane)
 | Tool | Scenario | Risk | Notes |
 |---|---|---|---|
 | `get_supabase_capabilities` | List the available capabilities of the RDS Supabase management MCP | READ | Offline declaration, no cloud probing |
-| `list_supabase_applications` | List applications (paginated) | READ | May include other types; verify type=supabase |
+| `list_supabase_applications` | Paginated list of all RDS Supabase applications (sortable, filterable) | READ | type fixed to supabase; returns total_count and mandatory fields (name/id/public IP/port/flavor/mode/created time/remark) |
 | `show_supabase_application` | Application detail and status | READ | Status is not proof of completion |
 | `list_supabase_api_keys` | ApiKey metadata query | READ | Whitelisted output, no plaintext |
 | `reset_supabase_api_key` | Reset ApiKey (confirm required) | DANGEROUS | Pre-submit exact-ID uniqueness check |

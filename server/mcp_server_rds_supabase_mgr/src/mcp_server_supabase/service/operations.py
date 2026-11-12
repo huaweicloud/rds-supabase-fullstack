@@ -9,7 +9,9 @@ from mcp_server_supabase.service.network_contracts import ssl_followup
 from huaweicloud_mcp_core.errors import McpToolError
 from mcp_server_supabase.client.rest import segment
 from mcp_server_supabase.client.sdk_core import configured_client
-from mcp_server_supabase.service.contracts import api_key_query, key_metadata, ssl_body, accepted_job
+from mcp_server_supabase.service.contracts import (api_key_query, application_metadata,
+                                                   application_query, key_metadata, ssl_body,
+                                                   accepted_job)
 
 ROOT = "/v3/{project}/ai-application"
 
@@ -120,7 +122,12 @@ class Operations:
             raise McpToolError("MCP_INVALID_ARGS", "Invalid pagination")
         query = None
         if kind == "applications":
-            path, query = ROOT + "/applications", {"limit":limit, "offset":offset, "type":"supabase"}
+            path = ROOT + "/applications"
+            try:
+                query = application_query(limit, offset, application_id=application_id, **key_filters)
+            except (ValueError, TypeError):
+                raise McpToolError("MCP_INVALID_ARGS", "Invalid application filters",
+                                   hint="Use the supported filter and sort values.") from None
         else:
             path = self.app(application_id)
             if kind == "keys":
@@ -135,13 +142,19 @@ class Operations:
             elif kind != "application":
                 raise McpToolError("MCP_INVALID_ARGS", "Unsupported query")
         _, data = await self.client.request("GET", path, query=query)
+        if kind == "applications":
+            try:
+                data = application_metadata(data)
+            except ValueError:
+                raise McpToolError("MCP_SDK_ERROR", "Unrecognized application metadata response",
+                                   hint="Verify the endpoint response contract before continuing.") from None
         if kind == "keys":
             try:
                 data = key_metadata(data)
             except ValueError:
                 raise McpToolError("MCP_SDK_ERROR", "Unrecognized key metadata response",
                                    hint="Verify the endpoint response contract before continuing.") from None
-        return {"data":safe(data), "limit":limit, "note":"Output capped at 100 entries per array; use pagination. Secret fields excluded."}
+        return {"data":safe(data), "limit":limit, "offset":offset, "note":"Output capped at 100 entries per array; use pagination. Secret fields excluded."}
 
     async def job(self, job_id):
         job_id = segment(job_id)

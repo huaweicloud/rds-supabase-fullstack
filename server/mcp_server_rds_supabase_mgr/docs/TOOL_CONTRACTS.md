@@ -16,7 +16,7 @@
 | get_supabase_capabilities | 无 | 列出可用能力范围（模式/策略/已实现操作/六场景契约）；离线声明，不探测云状态 | READ |
 | plan_supabase_creation | manage_type=newly_instance/existed_instance | planning_only，缺失契约；不是执行方案，无提交 | READ |
 | plan_supabase_ssl | enable_ssl?=true | 证书选择步骤/缺口；无提交 | READ |
-| list_supabase_applications | limit?=10, offset?=0 | 应用列表（可能含其他类型），脱敏并限长 | READ |
+| list_supabase_applications | limit?=10, offset?=0, name?, application_id?, sort_key?=created_time, sort_dir?=desc | 分页应用列表；type 固定 supabase 不可指定；返回 total_count + 必备字段（名称/ID/公网IP/端口/规格/模式/创建时间/备注）+ 其余非秘密字段，脱敏限长 | READ |
 | show_supabase_application | application_id | 应用状态；非完成证明 | READ |
 | list_supabase_api_keys | application_id, limit?=10, offset?=0, status?, key_type?, key_id?, sort_key?=created_time, sort_dir?=desc | 元数据白名单；name/时间过滤尚未开放 | READ |
 | show_supabase_auth_config | application_id | 配置查询，秘密排除 | READ |
@@ -48,6 +48,8 @@
 未来适配层以业务动作、非敏感结果和分类错误为边界，REST 与 SDK 不直接暴露各自模型到 Skill。字段删除/语义变更需要新契约版本和兼容矩阵；新增可选字段先验证旧 Skill。
 
 0.3.2a1：ApiKey输出白名单为id/name/status/type/created_time/updated_time；响应包裹data/total_count不符则拒绝。重置前检查不替代后端授权/状态校验。
+
+0.4.0a3：应用列表新增 name/application_id 过滤与 sort_key/sort_dir 排序（缺省 created_time desc）；type 固定 supabase 不可指定。响应信封 applications+total_count 不符即拒绝；记录必备 id/name/public_ip/port/flavor_ref/mode/created_time/remark（flavor/description/gateway_port 等别名归一），缺一拒绝；其余非秘密字段限长透传。
 
 ## 0.3.7a1增量
 任务单次判定、有界只读观察及补充资料冲突处置见[采纳与验收说明](SUPPLEMENT_REVIEW.md)。任务completed不等于资源/业务验收，账本不自动解除。创建信息已补充，秘密通道及剩余约束仍待完成。

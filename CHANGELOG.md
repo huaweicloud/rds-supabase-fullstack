@@ -7,6 +7,24 @@ semantic versioning.
 
 ### Changed
 
+- `mcp_server_rds_supabase_mgr` v0.4.0a5: `show_supabase_application` now
+  returns a normalized detail object aligned with the real backend payload.
+  The description states its purpose: querying RDS Supabase application
+  details — status, SSL, IP addresses and other specifics — from which the
+  complete access address can be assembled (scheme from enable_ssl, host
+  from public_ip/direct_eip publicly or private_ip/traffic_vip internally,
+  port from port; the return note spells out the rule). Mandatory fields
+  id/name/mode/status/port/enable_ssl/private_ip/created_time fail closed
+  when missing; direct_eip is normalized to public_ip (null when no EIP is
+  bound); traffic_vip/manage_ip/updated_time/remark are nullable;
+  epoch-millisecond timestamps (including inside nodes[]) become RFC 3339
+  UTC; nested objects (spec_flavor, data_volume, nodes, dnat, az_details,
+  managed_instance, storage_component) pass through the recursive bounded
+  sanitizer; the detail return no longer echoes the meaningless
+  limit/offset pagination fields. The list and detail projections now share
+  one projector where alias keys are skipped from passthrough only when
+  actually consumed. Tests lock the real detail payload as the fixture
+  contract.
 - `mcp_server_rds_supabase_mgr` v0.4.0a4: `list_supabase_applications`
   response handling corrected against the real backend payload. The list
   envelope is `{total_count, data}` (same family as the api-keys endpoint),

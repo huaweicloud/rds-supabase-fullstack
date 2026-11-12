@@ -45,6 +45,10 @@ APPLICATION_SORT_KEYS = ('name', 'status', 'mode', 'created_time', 'updated_time
 APPLICATION_MANDATORY_FIELDS = ('id', 'name', 'public_ip', 'port', 'flavor_ref', 'mode',
                                 'created_time')
 _APPLICATION_OPTIONAL_FIELDS = ('updated_time', 'remark')
+APPLICATION_DETAIL_MANDATORY_FIELDS = ('id', 'name', 'mode', 'status', 'port', 'enable_ssl',
+                                       'private_ip', 'created_time')
+_APPLICATION_DETAIL_OPTIONAL_FIELDS = ('public_ip', 'traffic_vip', 'manage_ip', 'updated_time',
+                                       'remark')
 _APPLICATION_ALIASES = {
     'id': ('id', 'application_id'),
     'name': ('name',),
@@ -112,6 +116,36 @@ def application_query(limit: int = 10, offset: int = 0, application_id: str | No
     return query
 
 
+def _project(row: dict, mandatory: tuple, optional: tuple) -> dict[str, object]:
+    """Project one record: promote aliases, enforce mandatory fields, bounded passthrough.
+
+    Alias keys are skipped from passthrough only when actually consumed as the
+    source of a projected field.
+    """
+    item: dict[str, object] = {}
+    consumed = set()
+    for field in mandatory + optional:
+        source = next((alias for alias in _APPLICATION_ALIASES.get(field, (field,)) if alias in row),
+                      None)
+        if source is not None:
+            value = row[source]
+            if field in mandatory and value is not None and not isinstance(value, (str, int, float, bool)):
+                raise ValueError('Invalid application field: ' + field)
+            item[field] = _normalize_value(field, value)
+            consumed.add(source)
+        elif field in mandatory:
+            raise ValueError('Mandatory application field missing: ' + field)
+        else:
+            item[field] = None
+    for key, value in row.items():
+        if key in item or key in consumed:
+            continue
+        if any(marker in key.lower() for marker in _SECRET_MARKERS) or key.lower() in ('ak', 'sk'):
+            continue
+        item[key] = _normalize_value(key, value)
+    return item
+
+
 def application_metadata(body: dict[str, Any]) -> dict[str, object]:
     """Accept the confirmed applications envelope; enforce mandatory fields with bounded passthrough."""
     rows, total = body.get('data'), body.get('total_count')
@@ -121,28 +155,15 @@ def application_metadata(body: dict[str, Any]) -> dict[str, object]:
     for row in rows[:100]:
         if not isinstance(row, dict):
             raise ValueError('Invalid application record')
-        item: dict[str, object] = {}
-        for field in APPLICATION_MANDATORY_FIELDS:
-            source = next((alias for alias in _APPLICATION_ALIASES[field] if alias in row), None)
-            if source is None:
-                raise ValueError('Mandatory application field missing: ' + field)
-            value = row[source]
-            if value is not None and not isinstance(value, (str, int, float, bool)):
-                raise ValueError('Invalid application field: ' + field)
-            item[field] = _normalize_value(field, value)
-        for field in _APPLICATION_OPTIONAL_FIELDS:
-            if field in item:
-                continue
-            source = next((alias for alias in _APPLICATION_ALIASES[field] if alias in row), None)
-            item[field] = _normalize_value(field, row[source]) if source is not None else None
-        for key, value in row.items():
-            if key in item or any(key in aliases for aliases in _APPLICATION_ALIASES.values()):
-                continue
-            if any(marker in key.lower() for marker in _SECRET_MARKERS) or key.lower() in ('ak', 'sk'):
-                continue
-            item[key] = _normalize_value(key, value)
-        result.append(item)
+        result.append(_project(row, APPLICATION_MANDATORY_FIELDS, _APPLICATION_OPTIONAL_FIELDS))
     return {'total_count': total, 'data': result}
+
+
+def application_detail(body: dict[str, Any]) -> dict[str, object]:
+    """Accept the application detail object; enforce mandatory fields with bounded passthrough."""
+    if not isinstance(body, dict):
+        raise ValueError('Unrecognized application detail response')
+    return _project(body, APPLICATION_DETAIL_MANDATORY_FIELDS, _APPLICATION_DETAIL_OPTIONAL_FIELDS)
 
 
 

@@ -36,7 +36,19 @@ def register(server):
     @server.tool()
     @guard(risk=ToolRisk.READ)
     async def show_supabase_application(application_id: str) -> dict:
-        """Read application state before any change; excludes secret fields."""
+        """Query RDS Supabase application details; use it for status, SSL, IP address
+        and other specifics, and to assemble the complete access address from the result.
+
+        Args: application_id from application discovery.
+        Returns: a normalized detail object. Access-address assembly: scheme from
+        enable_ssl (true->https, false->http), host from public_ip (direct_eip,
+        public; null when no EIP is bound) or private_ip/traffic_vip (internal),
+        port from port. Mandatory fields id/name/mode/status/port/enable_ssl/
+        private_ip/created_time fail closed when missing; epoch-millisecond
+        timestamps become RFC 3339 UTC; nested objects (spec_flavor, data_volume,
+        nodes, dnat, az_details, managed_instance, storage_component) pass
+        through bounded; secrets excluded. Status is not proof of completion.
+        """
         return await service.read("application", application_id)
 
     @server.tool()

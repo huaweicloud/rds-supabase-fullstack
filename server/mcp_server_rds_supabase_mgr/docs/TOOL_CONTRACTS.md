@@ -17,7 +17,7 @@
 | plan_supabase_creation | manage_type=newly_instance/existed_instance | planning_only，缺失契约；不是执行方案，无提交 | READ |
 | plan_supabase_ssl | enable_ssl?=true | 证书选择步骤/缺口；无提交 | READ |
 | list_supabase_applications | limit?=10, offset?=0, name?, application_id?, sort_key?=created_time, sort_dir?=desc | 分页应用列表；type 固定 supabase 不可指定；返回 total_count + 必备字段（名称/ID/公网IP/端口/规格/模式/创建时间/备注）+ 其余非秘密字段，脱敏限长 | READ |
-| show_supabase_application | application_id | 应用状态；非完成证明 | READ |
+| show_supabase_application | application_id | 应用详情（状态/SSL/IP/规格/节点/存储/托管实例）；direct_eip 归一 public_ip、时间戳 RFC 3339、嵌套递归透传；访问地址拼接：协议←enable_ssl、主机←public_ip（公网）/private_ip·traffic_vip（内网）、端口←port；状态非完成证明 | READ |
 | list_supabase_api_keys | application_id, limit?=10, offset?=0, status?, key_type?, key_id?, sort_key?=created_time, sort_dir?=desc | 元数据白名单；name/时间过滤尚未开放 | READ |
 | show_supabase_auth_config | application_id | 配置查询，秘密排除 | READ |
 | show_supabase_job | job_id | 原始状态证据、completion_verified=false；不推断终态 | READ |
@@ -52,6 +52,8 @@
 0.4.0a3：应用列表新增 name/application_id 过滤与 sort_key/sort_dir 排序（缺省 created_time desc）；type 固定 supabase 不可指定。响应信封 applications+total_count 不符即拒绝；记录必备 id/name/public_ip/port/flavor_ref/mode/created_time/remark（flavor/description/gateway_port 等别名归一），缺一拒绝；其余非秘密字段限长透传。
 
 0.4.0a4：按真实返回体修正——信封键为 data+total_count（与 ApiKey 同族，applications 键拒绝）；公网 IP 实际字段 direct_eip，归一为 public_ip；remark 后端可缺省，降为可空字段（updated_time 同）；created_time/updated_time 毫秒时间戳归一为 RFC 3339 UTC（毫秒精度）；嵌套对象/数组（az_details、managed_instance、current_actions 等）递归脱敏透传（秘密键名剔除、数组 100、字符串 2000、深度 8）。必备字段缺一仍拒绝。
+
+0.4.0a5：show_supabase_application 按真实详情载荷对齐——必备 id/name/mode/status/port/enable_ssl/private_ip/created_time 缺一拒绝；direct_eip 归一 public_ip（未绑 EIP 为 null）；traffic_vip/manage_ip/updated_time/remark 可空；嵌套 spec_flavor/data_volume/nodes/dnat/az_details/managed_instance/storage_component 递归脱敏透传（nodes 内时间戳同样归一）；返回不再回显 limit/offset，note 写明访问地址拼接规则（协议←enable_ssl，主机←public_ip 或内网 IP，端口←port）。投影器与列表共享（别名仅在实际提升时跳过透传）。
 
 ## 0.3.7a1增量
 任务单次判定、有界只读观察及补充资料冲突处置见[采纳与验收说明](SUPPLEMENT_REVIEW.md)。任务completed不等于资源/业务验收，账本不自动解除。创建信息已补充，秘密通道及剩余约束仍待完成。

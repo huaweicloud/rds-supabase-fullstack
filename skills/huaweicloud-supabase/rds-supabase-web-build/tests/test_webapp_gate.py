@@ -90,7 +90,7 @@ def make_project(tables=("public.posts", "public.users"), exposed=("public.posts
                     "teardown_ref": ".hwsupabase/teardown.sql"},
         "frontend": {"record_ref": ".hwsupabase/frontend/prod/environment.json",
                      "project_dir": "web", "framework": "react-vite-ts",
-                     "hosting_mode": "production"},
+                     "hosting_mode": "production", "objects_acl": "public-read"},
         "stages": {"last_completed_stage": "frontend_built", "updated_at": "2026-11-10T09:00:00Z",
                    "history": [{"stage": s, "status": "passed", "at": "2026-11-10T07:00:00Z", "note": None}
                                for s in ("environment_ready", "requirements_confirmed", "instance_ready",
@@ -556,6 +556,38 @@ class HostingModeTests(unittest.TestCase):
         path.write_text(json.dumps(data))
         result = run_gate(project, "check-stage", "--stage", "hosting_published")
         self.assertEqual(result.returncode, 0, result.stdout)
+
+
+class ObjectsAclTests(unittest.TestCase):
+    def test_fail_objects_acl_missing(self):
+        project = make_published(False, "http://cdn.example.com")
+        path = project / ".hwsupabase" / "webapp.json"
+        data = json.loads(path.read_text())
+        del data["frontend"]["objects_acl"]
+        path.write_text(json.dumps(data))
+        result = run_gate(project, "check-stage", "--stage", "hosting_published")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("objects_acl", result.stdout)
+
+    def test_fail_objects_acl_private(self):
+        project = make_published(False, "http://cdn.example.com")
+        path = project / ".hwsupabase" / "webapp.json"
+        data = json.loads(path.read_text())
+        data["frontend"]["objects_acl"] = "private"
+        path.write_text(json.dumps(data))
+        result = run_gate(project, "check-stage", "--stage", "hosting_published")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("objects_acl", result.stdout)
+
+    def test_fail_objects_acl_private_contract(self):
+        project = make_project()
+        path = project / ".hwsupabase" / "webapp.json"
+        data = json.loads(path.read_text())
+        data["frontend"]["objects_acl"] = "private"
+        path.write_text(json.dumps(data))
+        result = run_gate(project, "check-contract")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("objects_acl", result.stdout)
 
 
 class TeardownTests(unittest.TestCase):

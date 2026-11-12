@@ -302,7 +302,7 @@
 **动作序列**：
 
 1. 声明步骤九
-2. frontend 技能：构建环境核对（Node/包管理器，不擅自升级）→ build → 上传步骤三预建桶 → 版本记录（`.hwsupabase/frontend/` 契约；CDN 刷新仅正式模式）。**托管入口协议跟随实例 SSL**：`ssl_enabled=true` → HTTPS 入口（域名/证书就绪）；`false` → HTTP 入口（无需证书，**不得 HTTPS**——HTTPS 页面调用 HTTP 网关属混合内容，被浏览器拦截，站点不可用）
+2. frontend 技能：构建环境核对（Node/包管理器，不擅自升级）→ build → 上传步骤三预建桶（**对象级公共读硬约束**：每个静态资源对象——HTML/CSS/JS/图片/字体等——上传时显式 `-acl=public-read`；OBS 默认上传对象为**私有**，私有对象经入口/CDN 匿名访问 403，不得依赖桶策略单点兜底；上传后 `stat` 抽验入口与代表性资源对象 ACL）→ 版本记录（`.hwsupabase/frontend/` 契约；CDN 刷新仅正式模式）。**托管入口协议跟随实例 SSL**：`ssl_enabled=true` → HTTPS 入口（域名/证书就绪）；`false` → HTTP 入口（无需证书，**不得 HTTPS**——HTTPS 页面调用 HTTP 网关属混合内容，被浏览器拦截，站点不可用）
 3. **托管场景选择——交互式勾选（禁止跳过）**：产物上传后、入口配置前，以选择清单呈现两种场景方式，未获用户确认不得推进（不得代为默认）：
    - **临时访问（原型验证/测试验证）**：适用无正式域名与备案的快速验证——**确定性自动配置**，不购买域名、不办理 ICP 备案、不接 CDN：
      1. **域名确定（可复现，不随机不询问）**：`<应用名英文化>.huaweicloud-rds.com`——英文化 slug 规则同桶名（小写字母/数字/连字符、3–63）；slug 为空或与现存未清理映射冲突 → 追加短 uuid 后缀
@@ -319,9 +319,9 @@
    - 选择记入 webapp.json `frontend.hosting_mode`（`temporary`/`production`）；两种场景的入口协议均跟随实例 SSL
 4. **回调回路（步骤八↻）**：域名确定（按所选场景入口）→ 管理面 `update_supabase_auth_config` 配 site_url/redirect_uris（展示差异后确认）→ 前端按最终地址**重建再发布**。未执行此回路 = auth 登录回调 404
 5. frontend checks（entry/assets/routes/negative_paths/cache）
-6. 写 webapp.json（hosting_published + `frontend.hosting_mode`）→ gate → 步骤报告
+6. 写 webapp.json（hosting_published + `frontend.hosting_mode` + `frontend.objects_acl=public-read`）→ gate → 步骤报告
 
-**输出断言**：🔍 托管场景经用户显式勾选确认（temporary/production）｜🔍 frontend checks 全必需项 passed + stable_url 协议跟随实例 SSL（true→HTTPS / false→HTTP，gate 读 frontend record 机器核验一致性）｜🤖 gate PASS
+**输出断言**：🔍 托管场景经用户显式勾选确认（temporary/production）｜🔍 托管对象 ACL 公共读（上传显式 `-acl=public-read` + stat 抽验非私有，gate 校验 `objects_acl`）｜🔍 frontend checks 全必需项 passed + stable_url 协议跟随实例 SSL（true→HTTPS / false→HTTP，gate 读 frontend record 机器核验一致性）｜🤖 gate PASS
 
 **工具白名单**：允许：管理面 `update_supabase_auth_config`、frontend 技能工具链（KooCLI/OBS/CDN/npm）；禁止：`execute_sql`、实例级管理面写（删除/改密等）
 

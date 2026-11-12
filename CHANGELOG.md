@@ -7,6 +7,22 @@ semantic versioning.
 
 ### Changed
 
+- Skills `rds-supabase-web-build` v0.11.6 + `rds-supabase-frontend` v0.2.4:
+  uploaded static hosting objects (HTML/CSS/js/images/fonts) must now be
+  set to public-read at the **object level** (`-acl=public-read` on every
+  upload). OBS uploads default to private object ACLs, which previously
+  left anonymous readability dependent on the bucket policy alone — a
+  single point of failure that returns 403 at the entry or the CDN origin
+  whenever the policy is missing, not yet applied, or overridden by a
+  reused bucket's history. The upload discipline in obs-release.md now
+  sets the ACL in the same single pass as MIME and Cache-Control and
+  spot-checks the entry and representative asset objects via `stat`;
+  hosting.md states the object-level hard constraint (distinct from the
+  bucket-level public-read policy, and scoped to the hosting bucket —
+  private Supabase storage buckets stay private). webapp.json gains
+  `frontend.objects_acl`, required to be `public-read` from
+  hosting_published onward and enforced by the gate at both the contract
+  and stage levels. 3 new tests (79 total).
 - Skill `rds-supabase-web-build` v0.11.5: the step-3 storage integration
   is now strictly condition-driven instead of a blanket bucket
   preparation. No backend OBS bucket is ever created unconditionally —

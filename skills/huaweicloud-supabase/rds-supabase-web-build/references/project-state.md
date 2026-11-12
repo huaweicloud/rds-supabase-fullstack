@@ -123,6 +123,7 @@
 | project_dir | string | 前端项目目录（相对项目根） |
 | framework | string | 如 `react-vite-ts` |
 | hosting_mode | string/null | 步骤八 托管场景选择后必填：`temporary`（临时访问——原型/测试验证，免购域名免备案）或 `production`（正式上线——购买域名/备案/CDN 商用链路）；hosting_published 起 gate 校验枚举 |
+| objects_acl | string/null | 托管对象 ACL——步骤八上传后必填且**固定 `public-read`**：静态资源对象（HTML/CSS/JS/图片/字体等）上传时显式 `-acl=public-read`（OBS 默认上传对象为**私有**，私有对象经入口/CDN 匿名访问 403——不得依赖桶策略单点兜底）；上传后 stat 抽验；hosting_published 起 gate 校验 |
 
 ### test_accounts
 

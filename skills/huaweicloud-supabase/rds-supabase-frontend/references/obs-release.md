@@ -6,7 +6,7 @@
 
 1. 复用本轮只读快照，核对与记录一致；取得并验证本次产物，完成秘密检查及本地预览。已有合格产物按来源、源码/配置/锁文件摘要及产物 manifest 哈希对账后直接复用；mtime 仅是线索，不为确定性验证重复构建。核对来源、公开配置与资源 URL；仅在需要新产物时执行生产构建。显式回退始终使用归档原产物。为本次发布分配唯一版本，以内容哈希 URL 或 `/releases/<版本>/` 保持资源不可变；版本前缀需在构建配置中生成正确资源 URL。HTML 中引用的图片、字体、动态 import 和无哈希 public 文件均需纳入清单。
 2. 单一环境串行发布；切换前再次核对远端入口摘要与发布前快照一致。发现其他发布变更立即停止并对账，不能覆盖另一发布者。保存上一个已验证版本的原始入口字节、响应元数据和配置；回退不重新构建旧源码。
-3. 上传前使用本机帮助确认的 `bucketpolicy --method=get` 读取策略，检查匿名 GetObject 是否覆盖本次所有对象键，包含显式 Deny/条件；复用本轮快照即可。范围不足时先在授权内修正，不等首轮 403 后返工。上传时以 `-meta` 同时设置规范 MIME 与 Cache-Control：JS/模块 JS 为 `application/javascript`，CSS 为 `text/css`，HTML 为 `text/html`，其他类型按清单。每个对象单遍上传，避免上传后再补元数据。先上传全部不可变资源，检查上传清单、大小及校验和，再通过授权读取验证对象内容与 MIME。分段对象 ETag 不一定是 MD5，不能仅比较 ETag 当作内容校验。允许已存在且摘要相同的对象；同一版本键内容不同则停止。
+3. 上传前使用本机帮助确认的 `bucketpolicy --method=get` 读取策略，检查匿名 GetObject 是否覆盖本次所有对象键，包含显式 Deny/条件；复用本轮快照即可。范围不足时先在授权内修正，不等首轮 403 后返工。上传时以 `-acl=public-read` 显式设置**对象级公共读**（硬约束——OBS 默认上传对象 ACL 为私有，私有对象匿名访问 403），并以 `-meta` 同时设置规范 MIME 与 Cache-Control：JS/模块 JS 为 `application/javascript`，CSS 为 `text/css`，HTML 为 `text/html`，其他类型按清单。每个对象单遍上传，避免上传后再补元数据或 ACL。先上传全部不可变资源，检查上传清单、大小及校验和，再通过授权读取验证对象内容、MIME 与对象 ACL（`stat` 抽验入口与代表性资源对象为 `public-read`）。分段对象 ETag 不一定是 MD5，不能仅比较 ETag 当作内容校验。允许已存在且摘要相同的对象；同一版本键内容不同则停止。
 4. 匿名读策略就位后再上传可被公众读取的入口文件；未确认命名空间前不上传探测对象，只读预检不上传任何对象。
 5. 确认全部依赖可用后才更新公开入口文件；静态多页入口逐个更新并记录完成进度，不能声称多对象原子切换。需要域名绑定、静态网站托管或改写规则变更时保存旧配置，并把恢复顺序写入本次计划。应用必须允许发布期间新旧页面共存。
 6. 不可变资源长期缓存，例如 `public, max-age=31536000, immutable`；HTML 用 `no-cache` 或经过确认的短 TTL。`obs-domain` 由对象元数据与浏览器决定缓存；`obs-cdn` 还须让入口与页面规则重新验证或短缓存，不能让默认扩展名/目录规则覆盖入口策略。
@@ -27,10 +27,10 @@
 
 ```sh
 hcloud obs cp "$FRONTEND_ENTRY_FILE" "obs://$FRONTEND_BUCKET/index.html" \
-  -vmd5 -meta='Content-Type:text/html#Cache-Control:no-cache'
+  -vmd5 -acl=public-read -meta='Content-Type:text/html#Cache-Control:no-cache'
 ```
 
-执行前运行 `hcloud obs help cp` 核对当前版本参数及凭证配置；仅上传清单内产物，不递归上传整个项目。命令依据见官方 [上传对象](https://support.huaweicloud.com/utiltg-obs/obs_11_0013.html)。`obs-cdn` 的刷新命令版本也须核对，先 `--help`，再按实际 schema 生成请求，不混用旧版字段。
+执行前运行 `hcloud obs help cp` 核对当前版本参数及凭证配置（含 `-acl` 取值）；仅上传清单内产物，不递归上传整个项目。命令依据见官方 [上传对象](https://support.huaweicloud.com/utiltg-obs/obs_11_0013.html)与[对象 ACL](https://support.huaweicloud.com/api-obs/obs_04_0123.html)。`obs-cdn` 的刷新命令版本也须核对，先 `--help`，再按实际 schema 生成请求，不混用旧版字段。
 
 ## 失败恢复与回退
 

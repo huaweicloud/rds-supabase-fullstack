@@ -3,7 +3,7 @@ name: rds-supabase-web-build
 description: 'RDS Supabase 全栈开发编排技能：AI Agent 通过自然语言创建并托管 Web 应用网站的端到端工作流——需求澄清与设计、前端代码生成、后端声明式配置（DDL/GRANT/RLS/RPC）生成与部署、本地 L0 测试验证、前端静态资源 OBS+CDN 全托管、端到端上线与生命周期管理（更新/回滚/下线）。Use when：创建 Web 网站、搭建 AI 应用、全栈应用从零到上线、已有 RDS Supabase 应用的迭代更新与托管维护。编排管理面与数据面两台 MCP（均由工作流步骤动态安装：管理面→步骤三、数据面→步骤四）及 rds-supabase-mgr-mcp / rds-supabase-mcp / rds-supabase-usage / rds-supabase-frontend / rds-supabase-postgres-best-practices / rds-supabase-function-graph 六个专项技能。v1 后端边界为数据层；复杂业务逻辑由 function-graph 技能（云函数）承接，SSR 后端部署不支持。'
 license: MIT
 metadata:
-  version: "0.11.5"
+  version: "0.11.6"
 ---
 
 # RDS Supabase 全栈开发编排（web-build）
@@ -181,13 +181,13 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 
 ### 步骤八 · 构建与托管 → 断点 `hosting_published`
 
-1. frontend 技能：build → 上传步骤三预建桶 → 版本记录（CDN 刷新仅正式模式）。**托管入口协议跟随实例 SSL**：`ssl_enabled=true` → HTTPS 入口（域名/证书就绪）；`false` → HTTP 入口（无需证书，**不得 HTTPS**——HTTPS 页面调用 HTTP 网关属混合内容，被浏览器拦截，站点不可用）
+1. frontend 技能：build → 上传步骤三预建桶（**对象级公共读硬约束**：静态资源对象显式 `-acl=public-read`——OBS 默认上传为私有，私有对象匿名访问 403；上传后 stat 抽验）→ 版本记录（CDN 刷新仅正式模式）。**托管入口协议跟随实例 SSL**：`ssl_enabled=true` → HTTPS 入口（域名/证书就绪）；`false` → HTTP 入口（无需证书，**不得 HTTPS**——HTTPS 页面调用 HTTP 网关属混合内容，被浏览器拦截，站点不可用）
 2. **托管场景选择——交互式勾选（禁止跳过）**：产物上传后、入口配置前，向用户呈现两种场景方式并确认，未获用户确认不得推进：
    - **临时访问（原型验证/测试验证）**：**无需购买正式域名与 ICP 备案**，确定性自动配置——① 域名固定 `<应用名英文化>.huaweicloud-rds.com`（slug 规则同桶名；为空/冲突追加短 uuid）；② OBS 域名管理为托管桶**新增该自定义域名**；③ 解析 OBS endpoint IP → **hosts 追加** `IP → 域名` 映射（按 OS 定位与命令，**只追加带标记行、禁止破坏已有映射**，先备份、经用户确认执行）；④ `curl`/浏览器验证可达。明示局限（本机映射、非正式商用入口）与升级路径（可转正式模式）
    - **正式上线（线上商用）**：购买域名 → 实名认证 → ICP 备案（中国大陆区域）→ 绑定自有域名 → 接入 CDN 加速与 HTTPS 证书（obs-cdn 路线）——完整商用链路
    选择记入 webapp.json `frontend.hosting_mode`（`temporary`/`production`，gate 校验）
 3. **步骤八↻ 回调回路**：域名确定（按所选场景入口，协议跟随实例 SSL）→ `update_supabase_auth_config` 配 site_url/redirect_uris（差异确认）→ 前端按最终地址**重建再发布**
-4. 验证：frontend checks 全必需项 passed + **stable_url 协议跟随实例 SSL**（gate 读 frontend record 机器核验与 `ssl_enabled` 一致）→ 写 webapp.json（含 `hosting_mode`）→ gate PASS
+4. 验证：frontend checks 全必需项 passed + **stable_url 协议跟随实例 SSL**（gate 读 frontend record 机器核验与 `ssl_enabled` 一致）→ 写 webapp.json（含 `hosting_mode`、`objects_acl=public-read`）→ gate PASS
 
 ### 步骤九 · 端到端上线 → 断点 `launched`
 

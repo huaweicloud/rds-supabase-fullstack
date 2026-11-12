@@ -17,6 +17,7 @@
 |---|---|
 | entry | stable_url GET 2xx + 浏览器访问通过 + 非附件响应 |
 | assets | 静态资源 2xx |
+| 对象 ACL | 入口与代表性资源对象 `stat` 抽验 = `public-read`（OBS 默认上传为私有，私有对象匿名 403） |
 | routes | 路由可达（SPA fallback 正确） |
 | negative_paths | 预期 4xx |
 | cache | 缓存头符合 frontend 契约 |

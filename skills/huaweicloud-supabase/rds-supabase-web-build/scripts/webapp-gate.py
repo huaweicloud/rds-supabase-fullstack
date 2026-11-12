@@ -245,6 +245,10 @@ def check_contract(data, missing):
             mode = frontend.get("hosting_mode")
             if mode is not None and mode not in ("temporary", "production"):
                 missing.append("frontend.hosting_mode must be 'temporary' or 'production'")
+            acl = frontend.get("objects_acl")
+            if acl is not None and acl != "public-read":
+                missing.append("frontend.objects_acl must be 'public-read' (OBS uploads default to "
+                               "private object ACLs; private objects are not anonymously readable)")
     accounts = data.get("test_accounts")
     if accounts is not None:
         if not isinstance(accounts, list):
@@ -324,6 +328,12 @@ def check_stage(data, stage, missing, project_dir=None):
         if mode not in ("temporary", "production"):
             missing.append("frontend.hosting_mode must be 'temporary' or 'production' "
                            "from hosting_published onward (user-confirmed hosting scenario)")
+    if stage in ("hosting_published", "launched"):
+        acl = (data.get("frontend") or {}).get("objects_acl")
+        if acl != "public-read":
+            missing.append("frontend.objects_acl must be 'public-read' from hosting_published onward "
+                           "(uploaded static objects default to private in OBS and would fail "
+                           "anonymous access)")
     if stage == "launched":
         caps = (data.get("project") or {}).get("baas_capabilities") or []
         if "auth" in caps:

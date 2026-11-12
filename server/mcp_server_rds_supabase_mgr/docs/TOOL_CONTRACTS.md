@@ -51,6 +51,8 @@
 
 0.4.0a3：应用列表新增 name/application_id 过滤与 sort_key/sort_dir 排序（缺省 created_time desc）；type 固定 supabase 不可指定。响应信封 applications+total_count 不符即拒绝；记录必备 id/name/public_ip/port/flavor_ref/mode/created_time/remark（flavor/description/gateway_port 等别名归一），缺一拒绝；其余非秘密字段限长透传。
 
+0.4.0a4：按真实返回体修正——信封键为 data+total_count（与 ApiKey 同族，applications 键拒绝）；公网 IP 实际字段 direct_eip，归一为 public_ip；remark 后端可缺省，降为可空字段（updated_time 同）；created_time/updated_time 毫秒时间戳归一为 RFC 3339 UTC（毫秒精度）；嵌套对象/数组（az_details、managed_instance、current_actions 等）递归脱敏透传（秘密键名剔除、数组 100、字符串 2000、深度 8）。必备字段缺一仍拒绝。
+
 ## 0.3.7a1增量
 任务单次判定、有界只读观察及补充资料冲突处置见[采纳与验收说明](SUPPLEMENT_REVIEW.md)。任务completed不等于资源/业务验收，账本不自动解除。创建信息已补充，秘密通道及剩余约束仍待完成。
 

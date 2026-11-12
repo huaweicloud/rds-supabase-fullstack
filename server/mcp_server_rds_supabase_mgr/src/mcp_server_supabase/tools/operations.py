@@ -22,8 +22,12 @@ def register(server):
         sort_dir: asc/desc (default desc).
         type is fixed to supabase server-side and cannot be overridden.
         Returns: data containing total_count and bounded sanitized records with the
-        mandatory fields id/name/public_ip/port/flavor_ref/mode/created_time/remark
-        plus other non-secret fields. Verify identity before selecting a target.
+        mandatory fields id/name/public_ip/port/flavor_ref/mode/created_time plus
+        nullable remark/updated_time; other non-secret fields (flavor_id, vcpus, ram,
+        private_ip, traffic_vip, availability_zone, az_details, managed_instance,
+        current_actions, ...) pass through bounded. direct_eip is normalized to
+        public_ip; epoch-millisecond timestamps become RFC 3339 UTC. Verify identity
+        before selecting a target.
         """
         return await service.read("applications", limit=limit, offset=offset, name=name,
                                   application_id=application_id, sort_key=sort_key,

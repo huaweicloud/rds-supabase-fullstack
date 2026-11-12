@@ -43,18 +43,50 @@ def api_key_query(limit: int = 10, offset: int = 0, status: str | None = None,
 
 APPLICATION_SORT_KEYS = ('name', 'status', 'mode', 'created_time', 'updated_time')
 APPLICATION_MANDATORY_FIELDS = ('id', 'name', 'public_ip', 'port', 'flavor_ref', 'mode',
-                                'created_time', 'remark')
+                                'created_time')
+_APPLICATION_OPTIONAL_FIELDS = ('updated_time', 'remark')
 _APPLICATION_ALIASES = {
     'id': ('id', 'application_id'),
     'name': ('name',),
-    'public_ip': ('public_ip', 'public_ip_address', 'eip_address'),
+    'public_ip': ('public_ip', 'direct_eip', 'public_ip_address', 'eip_address'),
     'port': ('port', 'gateway_port'),
     'flavor_ref': ('flavor_ref', 'flavor'),
     'mode': ('mode', 'deploy_mode'),
     'created_time': ('created_time', 'created_at', 'create_time'),
+    'updated_time': ('updated_time', 'updated_at'),
     'remark': ('remark', 'description'),
 }
-_SECRET_MARKERS = ('password', 'pwd', 'secret', 'token', 'api_key')
+_SECRET_MARKERS = ('password', 'pwd', 'secret', 'token', 'api_key', 'credential')
+_TIME_FIELDS = ('created_time', 'updated_time')
+
+
+def _epoch_ms_to_rfc3339(value: int) -> str:
+    from datetime import datetime, timezone
+    seconds, millis = divmod(value, 1000)
+    stamp = datetime.fromtimestamp(seconds, timezone.utc)
+    return stamp.strftime('%Y-%m-%dT%H:%M:%S') + '.%03dZ' % millis
+
+
+def _normalize_value(key: str, value, depth: int = 0):
+    """Bounded sanitize: drop secret-marked keys, cap arrays/strings/depth; normalize epoch-ms times."""
+    if depth > 8:
+        return None
+    if key in _TIME_FIELDS and isinstance(value, int) and not isinstance(value, bool):
+        try:
+            return _epoch_ms_to_rfc3339(value)
+        except (ValueError, OSError, OverflowError):
+            return value
+    if isinstance(value, dict):
+        return {k: _normalize_value(k, v, depth + 1) for k, v in value.items()
+                if not any(marker in k.lower() for marker in _SECRET_MARKERS)
+                and k.lower() not in ('ak', 'sk')}
+    if isinstance(value, list):
+        return [_normalize_value(key, entry, depth + 1) for entry in value[:100]]
+    if isinstance(value, str):
+        return value[:2000]
+    if isinstance(value, (int, float, bool)) or value is None:
+        return value
+    return None
 
 
 def application_query(limit: int = 10, offset: int = 0, application_id: str | None = None,
@@ -81,8 +113,8 @@ def application_query(limit: int = 10, offset: int = 0, application_id: str | No
 
 
 def application_metadata(body: dict[str, Any]) -> dict[str, object]:
-    """Accept the applications envelope; enforce mandatory fields with bounded passthrough."""
-    rows, total = body.get('applications'), body.get('total_count')
+    """Accept the confirmed applications envelope; enforce mandatory fields with bounded passthrough."""
+    rows, total = body.get('data'), body.get('total_count')
     if not isinstance(rows, list) or type(total) is not int or total < len(rows):
         raise ValueError('Unrecognized application metadata envelope')
     result = []
@@ -95,18 +127,23 @@ def application_metadata(body: dict[str, Any]) -> dict[str, object]:
             if source is None:
                 raise ValueError('Mandatory application field missing: ' + field)
             value = row[source]
-            if value is not None and type(value) not in (str, int, float, bool):
+            if value is not None and not isinstance(value, (str, int, float, bool)):
                 raise ValueError('Invalid application field: ' + field)
-            item[field] = value[:2000] if isinstance(value, str) else value
+            item[field] = _normalize_value(field, value)
+        for field in _APPLICATION_OPTIONAL_FIELDS:
+            if field in item:
+                continue
+            source = next((alias for alias in _APPLICATION_ALIASES[field] if alias in row), None)
+            item[field] = _normalize_value(field, row[source]) if source is not None else None
         for key, value in row.items():
             if key in item or any(key in aliases for aliases in _APPLICATION_ALIASES.values()):
                 continue
             if any(marker in key.lower() for marker in _SECRET_MARKERS) or key.lower() in ('ak', 'sk'):
                 continue
-            if isinstance(value, (str, int, float, bool)) or value is None:
-                item[key] = value[:2000] if isinstance(value, str) else value
+            item[key] = _normalize_value(key, value)
         result.append(item)
     return {'total_count': total, 'data': result}
+
 
 
 def key_metadata(body: dict[str, Any]) -> dict[str, object]:

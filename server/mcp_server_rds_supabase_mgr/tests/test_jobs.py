@@ -54,7 +54,7 @@ class JobTests(unittest.IsolatedAsyncioTestCase):
         self.client.request.assert_not_awaited()
 
     async def test_inventory_is_scoped_to_supabase(self):
-        self.client.request.return_value=(200,{'applications':[],'total_count':0})
+        self.client.request.return_value=(200,{'data':[],'total_count':0})
         await self.service.read('applications')
         self.assertEqual(self.client.request.call_args.kwargs['query']['type'],'supabase')
 

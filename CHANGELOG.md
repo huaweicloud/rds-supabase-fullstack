@@ -7,6 +7,22 @@ semantic versioning.
 
 ### Changed
 
+- `mcp_server_rds_supabase_mgr` v0.4.0a4: `list_supabase_applications`
+  response handling corrected against the real backend payload. The list
+  envelope is `{total_count, data}` (same family as the api-keys endpoint),
+  not `{applications, ...}` — the previous key was inferred from a discovery
+  probe mock and is now rejected. The public IP field is `direct_eip` on the
+  wire and is normalized to the canonical `public_ip`; `remark` is not
+  guaranteed by the backend and becomes a nullable optional field (as is
+  `updated_time`). Epoch-millisecond timestamps (`created_time`,
+  `updated_time`) are normalized to RFC 3339 UTC with millisecond
+  precision. Nested objects and arrays (`az_details`, `managed_instance`,
+  `current_actions`, ...) now pass through a recursive bounded sanitizer
+  (secret-marked keys dropped at every depth, arrays capped at 100, strings
+  at 2000, depth at 8) instead of being silently dropped as non-scalars.
+  Mandatory fields remain id/name/public_ip/port/flavor_ref/mode/
+  created_time; missing mandatory fields and malformed envelopes still fail
+  closed. Tests now lock the real payload as the fixture contract.
 - `mcp_server_rds_supabase_mgr` v0.4.0a3: `list_supabase_applications` is now a
   full inventory query — paginated listing of all RDS Supabase applications in
   the current project with sorting and filtering, used to locate a target or

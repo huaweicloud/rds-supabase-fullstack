@@ -71,7 +71,7 @@ RDS 管理接口操作 Supabase 应用。SQL 与数据操作属独立数据面�
 | 工具 | 场景 | 风险级别 | 说明 |
 |---|---|---|---|
 | `get_supabase_capabilities` | 列出 RDS Supabase 管理 MCP 的可用能力范围 | READ | 离线声明，不探测云状态 |
-| `list_supabase_applications` | 分页查询当前项目所有 RDS Supabase 应用（支持排序过滤） | READ | type 固定 supabase；返回 total_count 与必备字段（名称/ID/公网IP/端口/规格/模式/创建时间/备注） |
+| `list_supabase_applications` | 分页查询当前项目所有 RDS Supabase 应用（支持排序过滤） | READ | type 固定 supabase；返回 total_count 与必备字段（名称/ID/公网IP/端口/规格/模式/创建时间，备注可空），嵌套对象脱敏透传 |
 | `show_supabase_application` | 应用详情与状态 | READ | 状态非完成证明 |
 | `list_supabase_api_keys` | ApiKey 元数据查询 | READ | 白名单输出，不含明文 |
 | `reset_supabase_api_key` | ApiKey 重置（需确认） | DANGEROUS | 提交前按 ID 校验唯一 normal 记录 |

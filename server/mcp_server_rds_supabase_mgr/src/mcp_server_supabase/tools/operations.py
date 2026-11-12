@@ -57,13 +57,19 @@ def register(server):
                                     status: str | None = None, key_type: str | None = None,
                                     sort_key: str = 'created_time', sort_dir: str = 'desc',
                                     key_id: str | None = None) -> dict:
-        """List whitelisted key metadata; never retrieves plaintext values.
+        """List the API keys of an RDS Supabase application: id-bearing metadata
+        records for service_role, anon, publishable and secret keys. Plaintext
+        values are never returned.
 
-        Args: application_id from application discovery; limit 1-100, offset >=0.
+        Args: application_id from application discovery; limit 1-100, offset >= 0.
         status: normal/creating/createfail/deleted. key_type: publishable/secret/anon/service_role.
         sort_key: name/status/type/created_user/updated_user/created_time/updated_time.
         sort_dir: asc/desc. key_id: optional exact identifier filter.
-        Returns: data containing total_count and bounded metadata records.
+        Returns: data containing total_count and bounded whitelisted records —
+        id/name/status/type are mandatory, created_time/updated_time/remark are
+        nullable with timestamps as RFC 3339 UTC. Unknown fields are dropped,
+        not passed through; use deliver_supabase_api_key to obtain one key value
+        into a protected local file.
         """
         return await service.read("keys", application_id, limit, offset, status=status,
                                   key_type=key_type, sort_key=sort_key, sort_dir=sort_dir, key_id=key_id)

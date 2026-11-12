@@ -13,7 +13,7 @@ class KeyDeliveryTests(unittest.IsolatedAsyncioTestCase):
         self.env=patch.dict(os.environ,{'SUPABASE_REQUESTS_FILE':str(self.registry),'SUPABASE_ENABLE_WRITES':'true','HUAWEICLOUD_MCP_READ_ONLY':'false'});self.env.start();self.addCleanup(self.env.stop)
         self.client=AsyncMock();self.client.endpoint='https://example.invalid';self.client.project='project';self.client.token='fixture'
         self.ops=Operations(self.client,PlanStore(Path(self.tmp.name)/'ledger.db'))
-    def responses(self):return [(200,{'id':'app','status':'normal'}),(200,{'total_count':1,'data':[{'id':'key','status':'normal'}]}),(200,{'api_key':'fixture-private-value'})]
+    def responses(self):return [(200,{'id':'app','status':'normal'}),(200,{'total_count':1,'data':[{'id':'key','status':'normal','name':'test-key','type':'secret'}]}),(200,{'api_key':'fixture-private-value'})]
     async def test_plaintext_never_returns_to_model_or_ledger(self):
         preview=await self.ops.deliver_key('app','key','delivery')
         self.assertFalse(self.output.exists());self.client.request.assert_not_awaited()

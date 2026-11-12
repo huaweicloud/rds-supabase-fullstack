@@ -86,7 +86,7 @@ Database / RDS Supabase fully-managed lifecycle (control plane)
 | `get_supabase_capabilities` | List the available capabilities of the RDS Supabase management MCP | READ | Offline declaration, no cloud probing |
 | `list_supabase_applications` | Paginated list of all RDS Supabase applications (sortable, filterable) | READ | type fixed to supabase; returns total_count, mandatory fields (name/id/public IP/port/flavor/mode/created time; nullable remark) and bounded nested passthrough |
 | `show_supabase_application` | Query application details (status/SSL/IP; assembles the access address) | READ | Status is not proof of completion; direct_eip normalized to public_ip, RFC 3339 timestamps, bounded nested passthrough |
-| `list_supabase_api_keys` | ApiKey metadata query | READ | Whitelisted output, no plaintext |
+| `list_supabase_api_keys` | API key list (id records for service_role/anon/publishable/secret; no values) | READ | Whitelisted output, no plaintext; RFC 3339 timestamps; values only via deliver |
 | `reset_supabase_api_key` | Reset ApiKey (confirm required) | DANGEROUS | Pre-submit exact-ID uniqueness check |
 | `deliver_supabase_api_key` | Deliver designated key to local file (confirm required) | DANGEROUS | Via delivery_ref alias |
 | `show_supabase_auth_config` | Query the Auth configuration (registration, access control, email/GitHub providers, email templates) | READ | Secrets excluded at any depth; empty string = not configured; baseline for update/reconcile |

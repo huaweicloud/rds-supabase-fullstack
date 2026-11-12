@@ -7,6 +7,17 @@ semantic versioning.
 
 ### Changed
 
+- `mcp_server_rds_supabase_mgr` v0.4.0a7: `list_supabase_api_keys` aligned with
+  the real backend payload. The description now states the scope: id-bearing
+  metadata records for service_role, anon, publishable and secret keys, with
+  plaintext values never returned. The whitelist gains `remark` (a field the
+  backend actually returns); id/name/status/type are promoted to mandatory
+  fields that fail closed when missing; created_time/updated_time/remark are
+  nullable; epoch-millisecond timestamps are normalized to RFC 3339 UTC.
+  Unknown fields are still dropped rather than passed through — key records
+  deliberately keep whitelist semantics, unlike the application projections'
+  bounded passthrough. Tests lock the real four-key payload as the fixture
+  contract.
 - `mcp_server_rds_supabase_mgr` v0.4.0a6: `show_supabase_auth_config` returns a
   normalized configuration object aligned with the real backend payload. The
   description now states its scope: user registration settings, access

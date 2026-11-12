@@ -206,24 +206,34 @@ def auth_config_detail(body: dict[str, Any]) -> dict[str, object]:
 
 
 
+KEY_METADATA_MANDATORY_FIELDS = ('id', 'name', 'status', 'type')
+KEY_METADATA_OPTIONAL_FIELDS = ('created_time', 'updated_time', 'remark')
+
+
 def key_metadata(body: dict[str, Any]) -> dict[str, object]:
-    """Accept the confirmed list envelope and expose only bounded metadata."""
+    """Accept the confirmed list envelope and expose only whitelisted bounded metadata.
+
+    Plaintext values are never present; unknown fields are dropped, not passed through.
+    Epoch-millisecond timestamps are normalized to RFC 3339 UTC.
+    """
     rows, total = body.get('data'), body.get('total_count')
     if not isinstance(rows, list) or type(total) is not int or total < len(rows):
         raise ValueError('Unrecognized key metadata envelope')
-    allowed = ('id', 'name', 'status', 'type', 'created_time', 'updated_time')
     result = []
     for row in rows[:100]:
         if not isinstance(row, dict):
             raise ValueError('Invalid key metadata record')
-        item = {}
-        for field in allowed:
+        item: dict[str, object] = {}
+        for field in KEY_METADATA_MANDATORY_FIELDS + KEY_METADATA_OPTIONAL_FIELDS:
             if field not in row:
+                if field in KEY_METADATA_MANDATORY_FIELDS:
+                    raise ValueError('Mandatory key metadata field missing: ' + field)
+                item[field] = None
                 continue
             value = row[field]
-            if value is not None and type(value) not in (str, int):
+            if value is not None and not isinstance(value, (str, int)):
                 raise ValueError('Invalid key metadata field')
-            item[field] = value[:2000] if isinstance(value, str) else value
+            item[field] = _normalize_value(field, value)
         result.append(item)
     return {'total_count': total, 'data': result}
 

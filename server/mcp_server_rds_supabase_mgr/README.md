@@ -73,7 +73,7 @@ RDS 管理接口操作 Supabase 应用。SQL 与数据操作属独立数据面�
 | `get_supabase_capabilities` | 列出 RDS Supabase 管理 MCP 的可用能力范围 | READ | 离线声明，不探测云状态 |
 | `list_supabase_applications` | 分页查询当前项目所有 RDS Supabase 应用（支持排序过滤） | READ | type 固定 supabase；返回 total_count 与必备字段（名称/ID/公网IP/端口/规格/模式/创建时间，备注可空），嵌套对象脱敏透传 |
 | `show_supabase_application` | 查询应用详情（状态/SSL/IP 等，可拼完整访问地址） | READ | 状态非完成证明；direct_eip 归一 public_ip，时间戳 RFC 3339，嵌套对象脱敏透传 |
-| `list_supabase_api_keys` | ApiKey 元数据查询 | READ | 白名单输出，不含明文 |
+| `list_supabase_api_keys` | API Key 列表（service_role/anon/publishable/secret 四类 ID 记录，无 value 值） | READ | 白名单输出不含明文；时间戳 RFC 3339；value 须走 deliver |
 | `reset_supabase_api_key` | ApiKey 重置（需确认） | DANGEROUS | 提交前按 ID 校验唯一 normal 记录 |
 | `deliver_supabase_api_key` | 指定 Key 交付到本地文件（需确认） | DANGEROUS | 经 delivery_ref 别名 |
 | `show_supabase_auth_config` | 查询 Auth 认证配置（注册/访问控制/邮箱与 GitHub 提供商/邮箱模板） | READ | 秘密任意深度排除；空串=未配置；update/reconcile 对照基准 |

@@ -18,7 +18,7 @@
 | plan_supabase_ssl | enable_ssl?=true | 证书选择步骤/缺口；无提交 | READ |
 | list_supabase_applications | limit?=10, offset?=0, name?, application_id?, sort_key?=created_time, sort_dir?=desc | 分页应用列表；type 固定 supabase 不可指定；返回 total_count + 必备字段（名称/ID/公网IP/端口/规格/模式/创建时间/备注）+ 其余非秘密字段，脱敏限长 | READ |
 | show_supabase_application | application_id | 应用详情（状态/SSL/IP/规格/节点/存储/托管实例）；direct_eip 归一 public_ip、时间戳 RFC 3339、嵌套递归透传；访问地址拼接：协议←enable_ssl、主机←public_ip（公网）/private_ip·traffic_vip（内网）、端口←port；状态非完成证明 | READ |
-| list_supabase_api_keys | application_id, limit?=10, offset?=0, status?, key_type?, key_id?, sort_key?=created_time, sort_dir?=desc | 元数据白名单；name/时间过滤尚未开放 | READ |
+| list_supabase_api_keys | application_id, limit?=10, offset?=0, status?, key_type?, key_id?, sort_key?=created_time, sort_dir?=desc | Key 列表——service_role/anon/publishable/secret 四类 ID 记录，无 value 值；白名单 id/name/status/type 必备、created_time/updated_time/remark 可空；时间戳 RFC 3339；未知字段丢弃不透传；name/时间过滤尚未开放 | READ |
 | show_supabase_auth_config | application_id | Auth 认证配置：注册开关/访问控制/URL、身份认证提供商（邮箱+SMTP、GitHub）、六类邮箱模板；9 个顶层字段必备缺一拒绝（布尔/字符串/对象类型锚定）；秘密（SMTP 凭据、OAuth client secret）任意深度剔除，标识符（oauth_client_id/smtp_user）保留；空串=未配置；是 update 预览与 reconcile 的对照基准 | READ |
 | show_supabase_job | job_id | 原始状态证据、completion_verified=false；不推断终态 | READ |
 | change_supabase_ssl | application_id, enable_ssl, cert_id?, confirm?, plan_id? | 开启需证书ID；关闭null；不自动改URL | WRITE |
@@ -56,6 +56,8 @@
 0.4.0a5：show_supabase_application 按真实详情载荷对齐——必备 id/name/mode/status/port/enable_ssl/private_ip/created_time 缺一拒绝；direct_eip 归一 public_ip（未绑 EIP 为 null）；traffic_vip/manage_ip/updated_time/remark 可空；嵌套 spec_flavor/data_volume/nodes/dnat/az_details/managed_instance/storage_component 递归脱敏透传（nodes 内时间戳同样归一）；返回不再回显 limit/offset，note 写明访问地址拼接规则（协议←enable_ssl，主机←public_ip 或内网 IP，端口←port）。投影器与列表共享（别名仅在实际提升时跳过透传）。
 
 0.4.0a6：show_supabase_auth_config 按真实载荷对齐——描述明确为"注册配置/访问控制/身份认证提供商（邮箱与 GitHub）/邮箱模板"；9 个顶层字段（enable_account_sign_up、enable_anonymous_users、api_external_url、site_url、allow_redirect_urls、github_oauth_provider、email_oauth_provider、email_template_config）必备缺一拒绝，布尔/字符串/对象类型锚定；嵌套（smtp_config、六类 mailer 模板）递归脱敏透传；秘密（SMTP 凭据、OAuth client secret）任意深度剔除、标识符保留；空串=未配置；返回不回显 limit/offset，note 声明其为 update 预览与 reconcile 的对照基准。
+
+0.4.0a7：list_supabase_api_keys 按真实载荷对齐——描述明确为"service_role/anon/publishable/secret 四类 Key 的 ID 记录列表，永不返回 value 值"；白名单扩展 remark（后端实际返回的备注字段）；id/name/status/type 升为必备缺一拒绝；created_time/updated_time/remark 可空；毫秒时间戳归一 RFC 3339 UTC；未知字段仍丢弃不透传（Key 场景保持白名单语义，区别于应用场景的透传语义）。
 
 ## 0.3.7a1增量
 任务单次判定、有界只读观察及补充资料冲突处置见[采纳与验收说明](SUPPLEMENT_REVIEW.md)。任务completed不等于资源/业务验收，账本不自动解除。创建信息已补充，秘密通道及剩余约束仍待完成。

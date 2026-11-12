@@ -130,10 +130,44 @@ class HttpTests(unittest.IsolatedAsyncioTestCase):
         result = await self.service.read('keys','app',20,0,
             status='normal', key_type='secret', sort_key='name', sort_dir='asc')
         self.assertNotIn('private-value', str(result))
-        self.assertEqual(result['data']['data'][0], {'id':'key-1','status':'normal','type':'secret','name':'test'})
+        self.assertEqual(result['data']['data'][0], {'id':'key-1','status':'normal','type':'secret','name':'test',
+            'created_time':None,'updated_time':None,'remark':None})
         self.assertIn('status=normal',Handler.calls[0][1])
         self.assertIn('type=secret',Handler.calls[0][1])
         self.assertIn('sort_key=name',Handler.calls[0][1])
+
+    async def test_real_key_payload_projection(self):
+        from datetime import datetime, timezone
+        def rfc3339(epoch_ms):
+            seconds, millis = divmod(epoch_ms, 1000)
+            return datetime.fromtimestamp(seconds, timezone.utc).strftime('%Y-%m-%dT%H:%M:%S') + '.%03dZ' % millis
+        Handler.keys_payload = {'total_count': 4, 'data': [
+            {'id': 'e5b26656-e8df-4139-a2af-19771d6b9cb4', 'name': 'default-secret-api-key',
+             'remark': '应用默认API KEY', 'status': 'normal', 'type': 'secret',
+             'created_time': 1794025857205, 'updated_time': 1794025857205},
+            {'id': 'e53e7aaa-131a-4f37-b0dd-2dc89a5c4357', 'name': 'default-publishable-api-key',
+             'remark': '应用默认API KEY', 'status': 'normal', 'type': 'publishable',
+             'created_time': 1794025857201, 'updated_time': 1794025857201},
+            {'id': 'ae1f33dc-4d51-4e0d-a562-c221285b0832', 'name': 'default-service-role-api-key',
+             'remark': '应用默认API KEY', 'status': 'normal', 'type': 'service_role',
+             'created_time': 1794025857197, 'updated_time': 1794025857197},
+            {'id': 'c3dacd90-610f-4929-b404-06e9d9ec892f', 'name': 'default-anon-api-key',
+             'remark': '应用默认API KEY', 'status': 'normal', 'type': 'anon',
+             'created_time': 1794025857187, 'updated_time': 1794025857187}]}
+        result = await self.service.read('keys','app')
+        rows = result['data']['data']
+        self.assertEqual(result['data']['total_count'], 4)
+        self.assertEqual(len(rows), 4)
+        by_type = {row['type']: row for row in rows}
+        self.assertEqual(set(by_type), {'secret', 'publishable', 'service_role', 'anon'})
+        secret = by_type['secret']
+        self.assertEqual(secret['name'], 'default-secret-api-key')
+        self.assertEqual(secret['remark'], '应用默认API KEY')
+        self.assertEqual(secret['status'], 'normal')
+        self.assertEqual(secret['created_time'], rfc3339(1794025857205))
+        self.assertEqual(secret['updated_time'], rfc3339(1794025857205))
+        self.assertEqual(by_type['anon']['created_time'], rfc3339(1794025857187))
+        self.assertNotIn('value', str(result))
 
     async def test_invalid_key_filter_never_calls_backend(self):
         with self.assertRaises(McpToolError) as error:

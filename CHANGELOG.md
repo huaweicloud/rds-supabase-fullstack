@@ -7,6 +7,30 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-mgr-mcp` v0.5.0: full scenario-based rewrite. The
+  skill is now organized around the user journey instead of revision
+  history: preparation (five environment items + MCP install/verify with
+  repair loop), scenario 1 create-a-usable-application (two creation
+  routes, 20-30 minute wait protocol, public network enablement with EIP
+  binding and the three security-group rules, access-info delivery),
+  scenario 2 use-an-existing-application, scenario 3 on-demand
+  enhancements (storage/email/GitHub login with field-level interactive
+  guidance), scenario 4 day-2 change quick reference, scenario 5
+  access-info query (reusable sub-flow), scenario 6 deletion with a
+  residual-resource checklist. Terminology overhauled (台账/账本 → 本地执行记录,
+  对账 → 结果核验, 码道 removed, 未决 → 结果不明); the 12 scattered
+  disclaimers collapsed into one results-boundary discipline. Eleven
+  stale statements fixed against server 0.4.0a7, including the deleted
+  SUPABASE_VPC_ENDPOINT guidance and the outdated key whitelist.
+  References restructured: workflows.md, six-scenario-matrix.md and
+  exception-dialogues.md merged into scenarios.md and acceptance.md;
+  local-requests.md rewritten (self-contradiction removed, VPC section
+  dropped); requirements.md and open-questions.md moved to docs/pm/ as
+  project-management material. New scripts/skill-lint.py enforces the
+  scenario structure, the jargon blacklist, the declared-server-version
+  ceiling and reference integrity. Confirmed product decisions embedded:
+  CLOUDSSD disk type, DB port omitted (backend default 5432), 8443
+  full-open only via KooCLI after explicit user confirmation.
 - `mcp_server_rds_supabase_mgr` v0.4.0a7: `list_supabase_api_keys` aligned with
   the real backend payload. The description now states the scope: id-bearing
   metadata records for service_role, anon, publishable and secret keys, with

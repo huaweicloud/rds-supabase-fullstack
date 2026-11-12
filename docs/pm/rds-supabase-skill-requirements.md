@@ -1,3 +1,5 @@
+# 迁移说明：本文件原位于技能 references/ 目录，属项目管理材料，2026-11-12 随技能 v0.5.0 重构迁至 docs/pm/。技能执行材料见 skills/huaweicloud-supabase/rds-supabase-mgr-mcp/。
+
 # 需求二：Supabase 专项 Skill
 
 版本 v0.4；2026-11-02。责任人/需求单/宿主版本/交付日期由项目负责人补录。独立包、独立分支、独立验收，依赖版本化 MCP 工具契约。

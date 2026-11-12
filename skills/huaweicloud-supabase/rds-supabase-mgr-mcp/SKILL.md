@@ -5,7 +5,7 @@ description: RDS Supabase 应用全生命周期管理技能：从零创建一个
 
 # RDS Supabase 应用全生命周期管理
 
-版本 0.5.0；配套服务端 mcp_server_supabase ≥ 0.4.0a7（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
+版本 0.5.1；配套服务端 mcp_server_supabase ≥ 0.4.0a7（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
 
 贯穿所有场景的四条铁律：
 1. **写操作两段式**：先预览（confirm=false），把参数、影响、费用展示给用户；用户确认后才提交（confirm=true + 预览返回的 plan_id）。预览 10 分钟有效，参数变了重新预览。
@@ -29,10 +29,30 @@ description: RDS Supabase 应用全生命周期管理技能：从零创建一个
 | RDS 端点 | 按 Region 推导 `https://rds.<region>.myhuaweicloud.com`，discover 可一并验证 | 用户输入后复测 |
 | OBS 端点 | 按 Region 推导 `obs.<region>.myhuaweicloud.com`，DNS + HTTP 探测验证 | 用户输入后复测 |
 
-环境变量名必须是：`HUAWEICLOUD_ACCESS_KEY`、`HUAWEICLOUD_SECRET_KEY`（不是 SECRET_ACCESS_KEY 之类的变体）；临时密钥须设 `SUPABASE_TRANSPORT=sdk_core` 并配 `HUAWEICLOUD_SECURITY_TOKEN`。
+环境变量名必须是：`HUAWEICLOUD_ACCESS_KEY`、`HUAWEICLOUD_SECRET_KEY`（不是 SECRET_ACCESS_KEY 之类的变体）；带 SecurityToken 的是临时密钥，标记下来（影响存储对接）。凭据走哪种传输模式在第二步安装时定——模式选错，所有调用都会失败。
 
-**第二步：安装管理面 MCP**
-按当前 Agent 的规则注册（opencode 用项目 opencode.json；Claude Code 用项目 .mcp.json；其他宿主见配套安装说明），注入上表五项环境变量。禁止注册到用户级/全局配置。
+**第二步：安装管理面 MCP（来源只有本仓 GitHub）**
+
+服务端**没有发布到 PyPI/npm**——`mcp-huaweicloud-rds-supabase-mgr` 是安装后的入口脚本名，不是包名；PyPI 上存在同名第三方包，装上就是错误的服务器。唯一正确来源是本仓 GitHub：
+
+```
+https://github.com/huaweicloud/rds-supabase-fullstack
+└── server/mcp_server_rds_supabase_mgr/    ← 管理面服务端源码 + README（安装方式的权威定义）
+```
+
+动手前先读该目录的 README.md，按它给出的方式安装使能（结论已固化在[安装手册](references/install.md)，含宿主注册模板和网络逃生通道）：
+
+| 方式 | 适用 | 做法 |
+|---|---|---|
+| uvx 直接从 GitHub 运行（推荐） | 有外网 | `uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr" mcp-huaweicloud-rds-supabase-mgr`；生产建议 URL 加 `@<commit>` 锁版本 |
+| 克隆本仓本地运行 | 内网/离线 | `git clone` 本仓 → `cd server/mcp_server_rds_supabase_mgr` → `uv sync` → `uv run mcp-huaweicloud-rds-supabase-mgr` |
+
+凭据模式**二选一**（选错=每次调用都报 MCP_PERMISSION_DENIED）：
+- **AK/SK（含临时密钥）**：必须设 `SUPABASE_TRANSPORT=sdk_core`。只填 AK/SK 不设 sdk_core，服务端按 REST 模式启动并完全忽略 AK/SK
+- **服务 Token**：默认 REST 模式，注入 `HUAWEICLOUD_AUTH_TOKEN`
+- 两种模式共同必填：`SUPABASE_RDS_ENDPOINT` + `HUAWEICLOUD_PROJECT_ID`
+
+注册到**当前项目**的 MCP 配置（opencode 项目 opencode.json；Claude Code / Cursor / Trae 项目 .mcp.json，模板见安装手册），禁止注册到用户级/全局配置。首次接入保持只读（`HUAWEICLOUD_MCP_READ_ONLY=true`、`SUPABASE_ENABLE_WRITES=false`），验证通过再按需放开。git 拉取不通时的 ZIP 逃生通道见安装手册——**任何情况下都不去 PyPI/npm/第三方源找包**。
 
 **第三步：验证装好了没**
 调 `get_supabase_capabilities`：能返回说明进程活着；**核对返回里的 mode 字段**和预期传输一致（不一致说明配置错了）。再调 `list_supabase_applications`（limit=1）验证真实可用。
@@ -251,6 +271,7 @@ Key 值**永远不会出现在对话里**——这是红线，用户要也是本
 | 错误码 | 意思 | 下一步 |
 |---|---|---|
 | MCP_INVALID_ARGS | 参数不对 | 按提示改参数重新预览 |
+| MCP_PERMISSION_DENIED | 凭据缺失/无效（401/403）或凭据模式配错 | 核对模式：AK/SK 须 `SUPABASE_TRANSPORT=sdk_core`，Token 模式须 `HUAWEICLOUD_AUTH_TOKEN`；凭据问题交操作员，不在对话里收凭据、不自动换身份 |
 | MCP_READ_ONLY | 写开关没开 | 操作员设 SUPABASE_ENABLE_WRITES=true 后重启 MCP |
 | MCP_GUARDRAIL_BLOCKED | 护栏拒绝（状态不对/重复提交/目标不符） | 按提示核对，**不绕过** |
 | MCP_SDK_ERROR | 网络或响应异常 | 写操作结果不明时：`inspect_supabase_plan(plan_id)` 查本地记录，**禁止重新提交**，人工核对 |
@@ -275,7 +296,7 @@ Key 值**永远不会出现在对话里**——这是红线，用户要也是本
 | 建 OBS 桶 | `hcloud obs mb obs://<桶名> -location=<region> -acl=private`（多 AZ 加 -multiAZ） |
 | 加出方向/全网入方向安全组规则 | `hcloud VPC` 安全组规则命令（direction=egress 或 0.0.0.0/0，先 --help 核实） |
 
-**环境变量**：`HUAWEICLOUD_ACCESS_KEY/SECRET_KEY/SECURITY_TOKEN`、`SUPABASE_TRANSPORT`、`HUAWEICLOUD_PROJECT_ID`、`SUPABASE_RDS_ENDPOINT`、`SUPABASE_REQUESTS_FILE`（请求文件路径）、`SUPABASE_STATE_FILE`（本地记录库路径）、`SUPABASE_ENABLE_WRITES`（写开关）。
+**环境变量**：凭据两模式（AK/SK：`HUAWEICLOUD_ACCESS_KEY/SECRET_KEY/SECURITY_TOKEN` + `SUPABASE_TRANSPORT=sdk_core`；Token：`HUAWEICLOUD_AUTH_TOKEN`）、`HUAWEICLOUD_PROJECT_ID`、`SUPABASE_RDS_ENDPOINT`、`SUPABASE_REQUESTS_FILE`（请求文件路径）、`SUPABASE_STATE_FILE`（本地记录库路径）、`SUPABASE_ENABLE_WRITES`（写开关）、`HUAWEICLOUD_MCP_READ_ONLY`（只读拦截）。完整清单见[安装手册](references/install.md)。
 
 **术语表**：
 - **plan_id**：预览凭证。预览时生成的编号，提交时带上，10 分钟有效，用过作废
@@ -285,6 +306,7 @@ Key 值**永远不会出现在对话里**——这是红线，用户要也是本
 - **受理**：服务端收到了请求，不代表做完
 
 **延伸阅读**（按需加载，不必全读）：
+- 安装与使能（来源锁定、安装方式、宿主注册模板、凭据模式、网络逃生通道） → [安装手册](references/install.md)
 - 各场景的详细步骤、失败处置与用户必供字段清单 → [场景手册](references/scenarios.md)
 - 本地请求文件的字段级契约（存储/邮箱/GitHub/改密/创建/Key 交付） → [本地请求与字段契约](references/local-requests.md)
 - 行为验收用例（单轮 + 多轮异常对话） → [验收手册](references/acceptance.md)

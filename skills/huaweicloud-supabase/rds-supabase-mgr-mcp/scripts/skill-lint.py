@@ -32,7 +32,7 @@ SCENARIOS = [
     "场景六：删除应用",
 ]
 JARGON_BLACKLIST = ("台账", "账本", "码道", "未决", "对账")
-EXPECTED_REFERENCES = {"scenarios.md", "acceptance.md", "local-requests.md"}
+EXPECTED_REFERENCES = {"scenarios.md", "acceptance.md", "local-requests.md", "install.md"}
 VERSION_RE = re.compile(r"mcp_server_supabase\s*≥\s*(\d+)\.(\d+)\.(\d+)a(\d+)")
 
 

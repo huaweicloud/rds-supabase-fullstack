@@ -7,6 +7,24 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-mgr-mcp` v0.5.1: installation step rewritten from a
+  dead pointer into a source-locked procedure. The management-plane server
+  is not published to PyPI or npm (a same-named third-party package exists
+  there); the only valid source is this repository's GitHub
+  server/mcp_server_rds_supabase_mgr directory. SKILL.md now instructs the
+  agent to read that directory's README, then install via uvx-from-git
+  (commit-pinning recommended) or a local clone, and explicitly bans bare
+  `uvx <entry-name>`, pip/npm installs and third-party mirrors. New
+  references/install.md consolidates host registration templates
+  (opencode project opencode.json and Claude Code/Cursor/Trae .mcp.json),
+  the two credential modes (AK/SK requires SUPABASE_TRANSPORT=sdk_core -
+  previously the skill implied permanent keys could skip it, which would
+  leave the server in REST mode ignoring AK/SK entirely and failing every
+  call with MCP_PERMISSION_DENIED; that error code is now in the error
+  table), the full environment-variable checklist, a ZIP-archive escape
+  hatch for blocked git fetches and a three-layer verification flow
+  (process / registration / cloud). skill-lint expected-references set
+  updated accordingly.
 - Skill `rds-supabase-mgr-mcp` v0.5.0: full scenario-based rewrite. The
   skill is now organized around the user journey instead of revision
   history: preparation (five environment items + MCP install/verify with

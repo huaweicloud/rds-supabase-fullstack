@@ -4,7 +4,7 @@ description: '华为云 RDS Supabase 管理技能：服务 Web 全栈开发流�
 license: MIT
 metadata:
   tags: [huawei-cloud, rds, supabase, postgresql, mcp, database, baas]
-  version: "2.6.1"
+  version: "2.6.2"
 ---
 
 # 华为云 RDS Supabase 管理
@@ -56,7 +56,7 @@ metadata:
 ## 前置条件
 
 1. RDS Supabase 实例已创建完成或选定，三项配置信息已从开发流程获得：`SUPABASE_URL`（网关地址）、`SUPABASE_ANON_KEY`、`SUPABASE_SERVICE_ROLE_KEY`（SQL 执行与用户管理所必需）；据此按 references/install.md 动态安装本 MCP 服务器
-2. 数据库已部署 `sql/mcp-execute-sql.sql`：创建受限的 `execute_sql` 函数（仅 service_role 可调用，`read_only` 语句白名单）
+2. 数据库已部署 [`sql/mcp-execute-sql.sql`](https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase/sql/mcp-execute-sql.sql)（仓库 `server/mcp_server_rds_supabase/sql/` 下，技能包内不含 `server/` 目录）：创建受限的 `execute_sql` 函数（仅 service_role 可调用，`read_only` 语句白名单）
 3. 仅需只读访问时，建议设置 `HUAWEICLOUD_MCP_READ_ONLY=true`
 
 ## 工作流
@@ -134,11 +134,11 @@ NOTIFY pgrst, 'reload schema';            -- PostgREST 立即感知结构变更�
 | SQL 执行 | execute_sql | 执行任意 SQL；执行迁移脚本（init.sql）部署后端定义时，整批为单一事务，失败自动回滚；支持 read_only 参数 |
 | 结构查询 | list_tables, list_table_columns, list_indexes, list_constraints, list_foreign_keys, list_triggers, list_database_functions, get_function_definition, get_trigger_definition | 表、列、索引、约束、外键、触发器、函数定义 |
 | 安全检查 | get_rls_status, list_rls_policies, get_advisors | RLS 状态、策略明细、安全与性能建议 |
-| 运行排查 | get_database_connections, explain_query | 活跃连接、执行计划 |
+| 运行排查 | get_database_connections, get_database_stats, get_logs, explain_query | 活跃连接、数据库与 bgwriter 统计快照、服务日志（analytics → CSV 级联，未配置时返回空列表与说明）、执行计划 |
 | 扩展 | list_extensions, list_available_extensions | 已安装 / 可安装的扩展 |
 | 用户管理 | list/get/create/update/delete_auth_user | 登录用户的增删改查 |
 | 存储与平台 | get_storage_config, update_storage_config, rebuild_hooks, verify_jwt_secret, get_project_url, list_cron_jobs, get_cron_job_history, list_vector_indexes, get_index_stats, get_vector_index_stats | 存储配置、平台信息、定时任务、索引统计 |
-| 不可用工具（当前部署） | list_storage_buckets, list_storage_objects, list_realtime_publications, generate_typescript_types, get_database_stats, get_logs | 此部署形态下无法提供数据，调用时返回明确的错误说明；详见 README |
+| 不可用工具（当前部署） | list_storage_buckets, list_storage_objects, list_realtime_publications, generate_typescript_types | 此部署形态已移除数据库直连通道，调用时返回明确的错误说明；详见 references/related-tools.md |
 
 ## 参数确认
 

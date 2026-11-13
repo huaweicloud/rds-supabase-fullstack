@@ -8,7 +8,7 @@ uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack \
   mcp-server-huaweicloud-rds-supabase
 ```
 
-或从检出目录：`pip install ./server/mcp_server_rds_supabase`。
+或本地已克隆仓库时等价运行：`uv run --directory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase`（虚拟环境只生成于仓内目录；生产建议 pin `@<commit>`）。禁止 `pip install` / `uv tool install` 装入用户级或系统级环境——入口与包将跨项目可见，违反项目级隔离约束。
 
 ## 客户端配置（stdio）
 
@@ -50,6 +50,4 @@ uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack \
 
 ## execute_sql 函数部署
 
-`sql/mcp-execute-sql.sql` 为加固版定义（仅 service_role、read_only 语句白名单）。
-经 psql 或管理通道部署一次即可；若同时具备 service-role 密钥与直连，服务器启动期会
-在函数缺失时自动部署。
+[`sql/mcp-execute-sql.sql`](https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase/sql/mcp-execute-sql.sql) 为加固版定义（仅 service_role、read_only 语句白名单），位于仓库 `server/mcp_server_rds_supabase/sql/` 下（技能包内不含 `server/` 目录，以上述 URL 为准）。经 psql 或管理通道部署一次即可；未部署时仅 execute_sql 不可用，其余工具不受影响。

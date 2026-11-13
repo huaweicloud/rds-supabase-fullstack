@@ -20,7 +20,7 @@
 ## 前置条件
 
 - 客户端环境已安装 uv（含 uvx）：`curl -LsSf https://astral.sh/uv/install.sh | sh`
-- 数据库侧已部署 `sql/mcp-execute-sql.sql` 加固函数；未部署时仅 execute_sql 不可用，不影响其余工具（见 mcp-installation-guide.md）
+- 数据库侧已部署加固函数 [`sql/mcp-execute-sql.sql`](https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase/sql/mcp-execute-sql.sql)（仓库 `server/mcp_server_rds_supabase/sql/` 下，技能包内不含 `server/` 目录）；未部署时仅 execute_sql 不可用，不影响其余工具（见 mcp-installation-guide.md）
 
 ## 配置模板（stdio，本地推荐）
 
@@ -116,5 +116,5 @@
 
 - 依赖拉取失败：检查网络；私有仓库需配置 Git 凭证
 - 401 / 403：核对密钥与 URL（应为网关地址，非数据库地址）
-- execute_sql 报函数缺失：部署 `sql/mcp-execute-sql.sql`（见 mcp-installation-guide.md）
+- execute_sql 报函数缺失：部署[加固函数 SQL](https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase/sql/mcp-execute-sql.sql)（见 mcp-installation-guide.md）
 - 其余错误码与含义见 related-tools.md

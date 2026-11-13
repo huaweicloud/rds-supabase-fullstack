@@ -7,6 +7,28 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-mcp` v2.6.2: accuracy and packaging fixes plus a
+  human-facing README. The tool table now matches the server (0.4.0):
+  get_database_stats (pg_stat_database + bgwriter via RPC) and get_logs
+  (analytics-to-CSV cascade that returns an empty list with an
+  explanation when unconfigured) are documented as available under
+  runtime diagnostics; the unavailable set is corrected to the four
+  tools that actually fail without the removed direct-connection
+  channel (list_storage_buckets, list_storage_objects,
+  list_realtime_publications, generate_typescript_types). references/
+  related-tools.md gained get_cron_job_history and the unavailable-tools
+  group, and its server-README link now uses the absolute GitHub URL so
+  links survive standalone skill installs. mcp-installation-guide.md:
+  the local-clone alternative is now `uv run --directory` (the previous
+  `pip install` suggestion violated the project-level isolation rule),
+  the hardened execute_sql SQL is linked by absolute URL, and the stale
+  "auto-deployed at startup" claim (impossible since direct connections
+  were removed) was replaced with manual one-time deployment. New
+  README.md: positioning, workflow and tool overview with guardrails,
+  and a two-step quick install - natural-language skill install plus a
+  natural-language MCP onboarding sentence pointing at
+  references/install.md, with the stdio template, the three connection
+  variables, and the project-level registration constraints.
 - `mcp_server_rds_supabase_mgr` v0.4.0a11: creation options opened to the
   full product surface, verified against the API Explorer
   CreateSupabaseApplication contract. Deployment mode now accepts Single

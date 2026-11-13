@@ -93,7 +93,7 @@ Database / RDS Supabase fully-managed lifecycle (control plane)
 | `update_supabase_auth_flags` | Sign-up/anonymous flags (confirm required) | WRITE | Only explicitly provided booleans are updated |
 | `update_supabase_auth_config` | Auth providers/URL/templates (confirm required) | WRITE | Via local request_ref |
 | `update_supabase_storage` | OBS storage configuration (confirm required) | WRITE | Full credentials required on first enablement |
-| `plan_supabase_creation` | Creation planning | READ | planning_only, not an execution plan |
+| `plan_supabase_creation` | Creation planning (intent-driven) | READ | phase-structured plan by route/storage/public-access/SSL/login intents; planning_only, not an execution plan |
 | `list_supabase_flavors` | Supabase flavor candidates | READ | creation_ready=false, not a quote |
 | `list_supabase_manageable_instances` | Manageable PG query | READ | Same |
 | `create_supabase_application` | Single creation submission (confirm required) | DANGEROUS | Via local request_ref; Single mode only |

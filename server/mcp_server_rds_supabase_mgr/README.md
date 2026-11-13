@@ -80,7 +80,7 @@ RDS 管理接口操作 Supabase 应用。SQL 与数据操作属独立数据面�
 | `update_supabase_auth_flags` | 注册/匿名开关（需确认） | WRITE | 仅更新明确指定的布尔项 |
 | `update_supabase_auth_config` | Auth 提供方/URL/模板（需确认） | WRITE | 经本地 request_ref |
 | `update_supabase_storage` | OBS 存储配置（需确认） | WRITE | 首次启用需完整凭据 |
-| `plan_supabase_creation` | 创建规划 | READ | planning_only，非执行方案 |
+| `plan_supabase_creation` | 创建规划（意图驱动） | READ | 按路线/存储/公网/SSL/登录意图输出阶段化准备方案；planning_only，非执行 |
 | `list_supabase_flavors` | Supabase 规格候选 | READ | creation_ready=false，非报价 |
 | `list_supabase_manageable_instances` | 可托管 PG 查询 | READ | 同上 |
 | `create_supabase_application` | Single 创建提交（需确认） | DANGEROUS | 经本地 request_ref；仅 Single 模式 |

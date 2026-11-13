@@ -7,6 +7,31 @@ semantic versioning.
 
 ### Changed
 
+- `mcp_server_rds_supabase_mgr` v0.4.0a9: `plan_supabase_creation`
+  rebuilt from a static checklist into an intent-driven phase planner,
+  aligned with the skill's creation scenario. New optional tri-state
+  intents (needs_storage / needs_public_access / needs_ssl /
+  needs_email_login / needs_github_login; omit = open decision point,
+  true = plan the branch, false = plan the exclusion) join the now
+  optional manage_type. Output is phase-structured: decision_points,
+  pre_creation (route branch, OBS bucket decision with full-credential
+  rule, security-group prep with the cannot-attach-later warning,
+  KooCLI flavor/disk-type acquisition), creation (two-job wait for
+  route A), post_creation (EIP + three security-group rules +
+  mandatory api_external_url sync + probe; CCM certificate purchase as
+  external dependency for https; email/GitHub setup with secret
+  boundaries; access-info delivery), external_dependencies,
+  security_notes and the honesty `missing` list. Dead fields
+  (recommendation always None, discovery always offline stub) removed.
+  Backward compatible: diagnostics/smoke/protocol probes keep passing
+  (execution == not_executed preserved). Tests rewritten to cover the
+  four intent combinations.
+- Skill `rds-supabase-mgr-mcp` v0.5.4: scenario 1 step 1 retitled
+  "route and intent"; the agent now asks four questions (database
+  route, file storage, public access, https) and feeds the answers to
+  plan_supabase_creation to get the phase-structured plan, with
+  undecided intents surfaced as decision_points to follow up. Declared
+  server floor raised to 0.4.0a9.
 - Skill `rds-supabase-mgr-mcp` v0.5.3: EIP binding now mandates an
   auth-URL sync step. After a successful bind, scenario 1 step 4.1
   requires updating api_external_url to the assembled public access

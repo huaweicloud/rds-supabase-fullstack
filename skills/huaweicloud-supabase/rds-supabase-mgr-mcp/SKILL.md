@@ -5,7 +5,7 @@ description: RDS Supabase 应用全生命周期管理技能：从零创建一个
 
 # RDS Supabase 应用全生命周期管理
 
-版本 0.5.3；配套服务端 mcp_server_supabase ≥ 0.4.0a8（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
+版本 0.5.4；配套服务端 mcp_server_supabase ≥ 0.4.0a9（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
 
 贯穿所有场景的四条铁律：
 1. **写操作两段式**：先预览（confirm=false），把参数、影响、费用展示给用户；用户确认后才提交（confirm=true + 预览返回的 plan_id）。预览 10 分钟有效，参数变了重新预览。
@@ -69,13 +69,15 @@ https://github.com/huaweicloud/rds-supabase-fullstack
 **这个场景的完成标准不是"创建成功"，而是"用户能用浏览器打开、能用密钥连上"。**
 所以创建只是第一步，公网开通（EIP + 安全组）和接入信息交付都在本场景内，缺一不可。
 
-### 第 1 步：选路线
+### 第 1 步：选路线、摸意图
 
-问用户一个问题：**数据库怎么办？**
-- **路线 A：一起新建数据库**（推荐新用户）——干净、自动配好
-- **路线 B：用已有的数据库**——适合已有 PG 实例想纳入 Supabase 托管
+问用户四个问题：
+- **数据库怎么办？** 路线 A：一起新建（推荐新用户，干净、自动配好）；路线 B：用已有的 PG 实例纳入托管
+- **要传文件吗？** 决定要不要备 OBS 桶（场景三第 1 节）
+- **要从公网访问吗？** 决定要不要 EIP + 安全组开通（第 4 步）
+- **要 https 吗？** 决定要不要买 CCM 证书（场景四 SSL 行）
 
-用 `plan_supabase_creation` 拿到对应路线的准备清单。
+把答案喂给 `plan_supabase_creation(manage_type, needs_storage, needs_public_access, needs_ssl)`（邮箱/GitHub 登录意图可加 `needs_email_login`/`needs_github_login`），拿回**分阶段的准备方案**：decision_points（待用户定的意图）/ 创建前准备（含路线分支与 OBS 桶决策）/ 创建与等待 / 创建后动作（公网开通、api_external_url 同步、SSL、登录配置、接入信息）/ 外部依赖 / 秘密边界。答案不全也能调：缺的意图会列在 decision_points，照着追问即可。
 
 ### 第 2 步：确定配置项
 

@@ -14,7 +14,7 @@
 | 工具 | 输入（?可选） | 输出/语义 | 风险 |
 |---|---|---|---|
 | get_supabase_capabilities | 无 | 列出可用能力范围（模式/策略/已实现操作/六场景契约）；离线声明，不探测云状态 | READ |
-| plan_supabase_creation | manage_type=newly_instance/existed_instance | planning_only，缺失契约；不是执行方案，无提交 | READ |
+| plan_supabase_creation | manage_type?=newly_instance/existed_instance；needs_storage?/needs_public_access?/needs_ssl?/needs_email_login?/needs_github_login?（三态意图：省略=决策点/true=规划分支/false=规划排除） | 阶段化规划（decision_points/pre_creation/creation/post_creation/external_dependencies/security_notes/missing）；planning_only，无提交 | READ |
 | plan_supabase_ssl | enable_ssl?=true | 证书选择步骤/缺口；无提交 | READ |
 | list_supabase_applications | limit?=10, offset?=0, name?, application_id?, sort_key?=created_time, sort_dir?=desc | 分页应用列表；type 固定 supabase 不可指定；返回 total_count + 必备字段（名称/ID/公网IP/端口/规格/模式/创建时间/备注）+ 其余非秘密字段，脱敏限长 | READ |
 | show_supabase_application | application_id | 应用详情（状态/SSL/IP/规格/节点/存储/托管实例）；direct_eip 归一 public_ip、时间戳 RFC 3339、嵌套递归透传；访问地址拼接：协议←enable_ssl、主机←public_ip（公网）/private_ip·traffic_vip（内网）、端口←port；状态非完成证明 | READ |

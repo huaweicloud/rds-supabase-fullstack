@@ -42,13 +42,16 @@ def api_key_query(limit: int = 10, offset: int = 0, status: str | None = None,
 
 
 APPLICATION_SORT_KEYS = ('name', 'status', 'mode', 'created_time', 'updated_time')
-APPLICATION_MANDATORY_FIELDS = ('id', 'name', 'public_ip', 'port', 'flavor_ref', 'mode',
+# public_ip is absent until an EIP is bound and private_ip may be absent while
+# the application is still creating, so both project as optional (None) and the
+# backend remains authoritative for field presence per state.
+APPLICATION_MANDATORY_FIELDS = ('id', 'name', 'port', 'flavor_ref', 'mode',
                                 'created_time')
-_APPLICATION_OPTIONAL_FIELDS = ('updated_time', 'remark')
+_APPLICATION_OPTIONAL_FIELDS = ('public_ip', 'updated_time', 'remark')
 APPLICATION_DETAIL_MANDATORY_FIELDS = ('id', 'name', 'mode', 'status', 'port', 'enable_ssl',
-                                       'private_ip', 'created_time')
-_APPLICATION_DETAIL_OPTIONAL_FIELDS = ('public_ip', 'traffic_vip', 'manage_ip', 'updated_time',
-                                       'remark')
+                                       'created_time')
+_APPLICATION_DETAIL_OPTIONAL_FIELDS = ('public_ip', 'private_ip', 'traffic_vip', 'manage_ip',
+                                       'updated_time', 'remark')
 _APPLICATION_ALIASES = {
     'id': ('id', 'application_id'),
     'name': ('name',),

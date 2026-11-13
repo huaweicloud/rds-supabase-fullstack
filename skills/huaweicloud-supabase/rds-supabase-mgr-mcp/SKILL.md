@@ -5,7 +5,7 @@ description: RDS Supabase 应用全生命周期管理技能：从零创建一个
 
 # RDS Supabase 应用全生命周期管理
 
-版本 0.5.9；配套服务端 mcp_server_supabase ≥ 0.4.0a12（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
+版本 0.6.0；配套服务端 mcp_server_supabase ≥ 0.4.0a13（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
 
 贯穿所有场景的四条铁律：
 1. **写操作两段式**：先预览（confirm=false），把参数、影响、费用展示给用户；用户确认后才提交（confirm=true + 预览返回的 plan_id）。预览 10 分钟有效，参数变了重新预览。
@@ -75,15 +75,16 @@ https://github.com/huaweicloud/rds-supabase-fullstack
 **这个场景的完成标准不是"创建成功"，而是"用户能用浏览器打开、能用密钥连上"。**
 所以创建只是第一步，公网开通（EIP + 安全组）和接入信息交付都在本场景内，缺一不可。
 
-### 第 1 步：选路线、摸意图
+### 第 1 步：选路线、摸意图（必须问，不许跳过、不许替用户决定）
 
-问用户四个问题：
+**这一步是提问环节，不是猜测环节。** 逐个把四个问题抛给用户、拿到明确答复才往下走；用户没答全就照 `plan_supabase_creation` 返回的 decision_points 继续追问。**禁止**凭"用户没提存储"就默认不要 OBS、凭"看着像测试"就默认 Single——没问就默认，等于把用户的业务决定偷走了：
+
 - **数据库怎么办？** 路线 A：一起新建（推荐新用户，干净、自动配好）；路线 B：用已有的 PG 实例纳入托管
-- **要传文件吗？** 决定要不要备 OBS 桶（场景三第 1 节）
-- **要从公网访问吗？** 决定要不要 EIP + 安全组开通（第 4 步）
-- **要 https 吗？** 决定要不要买 CCM 证书（场景四 SSL 行）
+- **要传文件吗？**（图片、视频、附件都算）要 → 按场景三第 1 节**先备好 OBS 桶**（复用私有桶还是新建专用桶，也问用户），桶名和凭据进创建请求的 storage_component；不要 → storage_component 写 `{enabled:false}`。**存储事后无法补开**，所以这一问必须在创建前问清
+- **要从公网访问吗？** 要 → EIP + 安全组开通（第 4 步）；不要 → 创建完成后提示用户当前只能内网访问
+- **要 https 吗？** 要 → 买 CCM 证书（场景四 SSL 行）
 
-把答案喂给 `plan_supabase_creation(manage_type, needs_storage, needs_public_access, needs_ssl)`（邮箱/GitHub 登录意图可加 `needs_email_login`/`needs_github_login`），拿回**分阶段的准备方案**：decision_points（待用户定的意图）/ 创建前准备（含路线分支与 OBS 桶决策）/ 创建与等待 / 创建后动作（公网开通、api_external_url 同步、SSL、登录配置、接入信息）/ 外部依赖 / 秘密边界。答案不全也能调：缺的意图会列在 decision_points，照着追问即可。
+把答案喂给 `plan_supabase_creation(manage_type, needs_storage, needs_public_access, needs_ssl)`（邮箱/GitHub 登录意图可加 `needs_email_login`/`needs_github_login`），拿回**分阶段的准备方案**：decision_points（待用户定的意图）/ 创建前准备（含路线分支与 OBS 桶决策）/ 创建与等待 / 创建后动作（公网开通、api_external_url 同步、SSL、登录配置、接入信息）/ 外部依赖 / 秘密边界。
 
 ### 第 2 步：确定配置项
 
@@ -94,7 +95,7 @@ https://github.com/huaweicloud/rds-supabase-fullstack
 | 区域 | 用环境里定的，不再问 | — |
 | 应用名称 | 用户起名（4-64 字符） | — |
 | 应用版本 | 填**当前可用的最高版本**，格式 x.y.z（Supabase 应用自身版本，不是 PG 引擎版本；现阶段是 1.0.0。暂无查询接口，拿不准让用户在控制台创建页看一眼版本选项） | — |
-| 应用规格 | 列出候选给用户选，**默认勾选 2U4G 档**（mode 跟部署模式走） | `list_supabase_flavors(az_code, mode)` |
+| 应用规格 | 列出候选给用户选，**默认勾选 2U4G 档**（mode 跟部署模式走）。**顺带用规格接口探测部署模式**：`list_supabase_flavors(az_code, mode='Ha')` 成功返回 → 该环境支持 Single 和 Ha，如实告诉用户可选；**报 400（后端拒绝）→ 该环境只有 Single**，告知用户并继续查 `mode='Single'` 的规格 | `list_supabase_flavors(az_code, mode)` |
 | 应用密码 | **本地随机生成**：8-32 位，至少含大写字母/小写字母/数字/特殊字符（`~!@#$%^*-_+=?,`）中的三种，只从这些字符里生成；直接写入请求文件，用户不用填，对话里也不出现。这是默认用户 supabase 的密码，也是 Dashboard 管理员的登录密码 | 本地命令 |
 | 存储 | 问一句"业务要传图片/视频/文件吗？"——要，按场景三第 1 节对接（结论回填创建请求）；不要，**storage_component 仍必须写进请求：`{enabled:false}`（三字段全空），不能整个省略** | — |
 | 安全组 | **应用安全组必须新建专用组**，Agent 自动创建（别复用已有组——共享组改规则会波及别的资源）：`create_supabase_security_group` 预览→确认，建好就把**出入两个方向的规则**配上（规则表见本步末尾）。路线 A 的数据库组同样新建专用组。**两个组 ID 都要进创建请求，事后没法补** | MCP + KooCLI |
@@ -104,7 +105,7 @@ https://github.com/huaweicloud/rds-supabase-fullstack
 
 | 配置 | 怎么定 | 说明 |
 |---|---|---|
-| 可用区 | 查 AZ 列表**自动选第一个可用**（与数据库保持一致，服务端强制） | KooCLI |
+| 可用区 | 查 AZ 列表。**Single 选一个**（自动选第一个可用）；**Ha 选两个不同的 AZ**（主 AZ + 备 AZ，接口会校验；只给一个会被拒）。数据库与同应用保持一致 | KooCLI |
 | 数据库版本 | 查版本列表，**自动选满足 ≥ 17.11.260900 的最高版** | KooCLI（查的是 PG 引擎版本，不是应用版本） |
 | 部署模式 | **问用户选**：单机 Single（自己用、学习、测试，成本低）或 主备 Ha（业务要高可用）。请求体的 ha 对象跟着选：Single 配 `{"mode":"Single","replication_mode":"async"}`，Ha 配 `{"mode":"Ha","replication_mode":"async"}`（要强同步用 sync） | — |
 | 计费方式 | **问用户选**：按需 postPaid（用多久付多久，随时可停）或 包周期 prePaid（**1-9 个月或 1-3 年**，价格更优）。包周期提交后返回的是**订单号**：用户去控制台支付，支付后才开始创建；MCP 不会自动支付 | — |

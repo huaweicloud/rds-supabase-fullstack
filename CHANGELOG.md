@@ -7,6 +7,33 @@ semantic versioning.
 
 ### Changed
 
+- `mcp_server_rds_supabase_mgr` v0.4.0a13: three real-testing fixes.
+  Application list/detail no longer fail with MCP_SDK_ERROR on rows without
+  public_ip (absent until an EIP is bound) or private_ip (absent while the
+  application is still creating): both now project as optional (None), with
+  the backend authoritative for field presence per state - the previous
+  mandatory check made a freshly created application unqueryable. The
+  intent planner now emits a GitHub-login decision point (it only appeared
+  in post-creation steps), and the storage decision point states that
+  storage cannot be enabled after creation. Route-A pre-creation steps
+  describe Ha AZ selection (one AZ for Single, two distinct AZs for Ha,
+  top-level availability_zone carries the primary) and the deployment-mode
+  probe: list_supabase_flavors with mode=Ha answering 400 means the
+  environment supports Single only. Tests: public_ip-less list rows and
+  private_ip-less creating-state detail rows project as None (mandatory
+  regression now deletes a genuinely mandatory field).
+- Skill `rds-supabase-mgr-mcp` v0.6.0: intent questions are now a hard
+  gate. The scenario-one step-1 and the scenario handbook both open with a
+  four-question table (database route, file storage, public access,
+  https) with the explicit discipline that none may be skipped or
+  defaulted on the user's behalf - omitting to ask is what sends the run
+  off the rails, and storage cannot be enabled after creation, so the
+  OBS question must be asked before creating. The deployment-mode row
+  adds the probe rule (list_supabase_flavors mode=Ha: success means both
+  modes, 400 means Single only, report honestly). The AZ row now requires
+  two distinct AZs for Ha (the request's availability_zone carries the
+  primary); the checklist and request-body notes were updated to match.
+  Server floor raised to 0.4.0a13.
 - `mcp_server_rds_supabase_mgr` v0.4.0a12: backend error codes and messages
   are now passed through on both transports, fixing a real-test blind spot.
   In sdk_core mode the Huawei Cloud SDK raises ServiceResponseException for

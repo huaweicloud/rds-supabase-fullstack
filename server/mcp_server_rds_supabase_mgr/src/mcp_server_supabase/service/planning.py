@@ -28,7 +28,7 @@ class PlanningService:
         if manage_type is None:
             decision.append("database route: newly_instance (create a new PG together) or existed_instance (manage an existing PG) - ask the user")
         if needs_storage is None:
-            decision.append("file storage requirement (images/videos/files): decides the OBS bucket and the storage_component in the creation request")
+            decision.append("file storage requirement (images/videos/files): decides the OBS bucket and the storage_component in the creation request - storage cannot be enabled after the application exists, so ask before creating")
         if needs_public_access is None:
             decision.append("public access requirement (browser/API from outside the VPC): decides EIP binding, security-group opening and api_external_url")
         if needs_ssl is None:
@@ -48,7 +48,8 @@ class PlanningService:
             pre.append("write storage_component as {enabled:false} - the field is mandatory even when storage is not used")
         pre.append("the application security group must be newly created and dedicated - never reuse an existing group (shared groups risk collateral damage); create it via create_supabase_security_group and configure both directions immediately: 8443 ingress from the user CIDR plus 5432 egress (KooCLI). On route A create a dedicated database group too (5432 ingress from the chosen subnet). Both IDs go into the creation request - they cannot be attached later")
         if manage_type == "newly_instance":
-            pre += ["choose the AZ via KooCLI RDS ListAvailableZones",
+            pre += ["choose the AZ via KooCLI RDS ListAvailableZones - one AZ for Single, two distinct AZs (primary and standby) for Ha; the top-level availability_zone carries the primary",
+                    "probe deployment-mode support with list_supabase_flavors(az_code, mode='Ha'): a successful answer means Single and Ha are both available; a 400 rejection means this environment supports Single only - report the result honestly",
                     "choose the PG engine version via KooCLI RDS ListDatastores",
                     "choose the database flavor via KooCLI RDS ListFlavors (depends on version and AZ - not the same list as the application flavor)",
                     "choose the disk type from the environment's available storage types via KooCLI RDS ListStorageTypes (prefer a high-performance SSD) and the size",

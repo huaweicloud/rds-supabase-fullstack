@@ -29,6 +29,17 @@ SKILL.md 是主文档；本文件是各场景的详细步骤、字段来源与�
 
 ## 场景一：从零创建可用应用
 
+### 意图四问（进入配置前必须问完，不许默认、不许替用户决定）
+
+| 问题 | 答案的后果 |
+|---|---|
+| 数据库怎么办？新建还是用已有 PG？ | 路线 A（newly_instance）/ 路线 B（existed_instance） |
+| **要传文件吗？**（图片、视频、附件都算） | 要 → **创建前**定 OBS 桶（复用私有桶 or 新建专用多 AZ 桶，也问用户），桶名+AK/SK 进 storage_component——**存储事后无法补开**；不要 → storage_component 写 {enabled:false} |
+| 要从公网访问吗？ | 要 → 创建后走 EIP + 安全组 + api_external_url 同步；不要 → 明确告知用户只能内网访问 |
+| 要 https 吗？ | 要 → 买 CCM 证书、创建后切 SSL；不要 → 走 http |
+
+**执行纪律**：逐个问、拿到明确答复才往下走；答全后喂给 `plan_supabase_creation(manage_type, needs_storage, needs_public_access, needs_ssl, ...)`。用户一笔带过需求时（"帮我建个应用"），四问一个都不能少——没问就默认等于替用户做了业务决定，走偏的根源就在这。部署模式是否支持 Ha 也别猜：`list_supabase_flavors(az_code, mode='Ha')` 成功 → Single/Ha 都可选；400 → 该环境仅 Single，如实告知。
+
 ### 配置字段来源分类（谁提供什么）
 
 | 来源 | 字段 |
@@ -49,7 +60,7 @@ SKILL.md 是主文档；本文件是各场景的详细步骤、字段来源与�
 
 **密码规则（应用密码与数据库密码同规则）**：8-32 位，至少包含大写字母、小写字母、数字、特殊字符（`~!@#$%^*-_+=?,`）中的**三种**；本地生成时只从这些字符里取。
 
-**公共必填**：name（4-64）、basic_config{region, vpc_id, subnet_id, 可选 time_zone 如 "UTC+08:00"}、version（**应用版本 x.y.z，取当前最高，不是 PG 引擎版本**）、mode（Single 或 Ha，和用户确认）、flavor_ref（应用规格，形如 rds.supabase.n1.large.2）、availability_zone、password（按上述密码规则；默认用户 supabase 的密码）、storage_component（不用存储时写 `{enabled:false}`，不能整个省略）、manage_type。
+**公共必填**：name（4-64）、basic_config{region, vpc_id, subnet_id, 可选 time_zone 如 "UTC+08:00"}、version（**应用版本 x.y.z，取当前最高，不是 PG 引擎版本**）、mode（Single 或 Ha，和用户确认）、flavor_ref（应用规格，形如 rds.supabase.n1.large.2）、availability_zone（Single 一个 AZ；Ha 两个不同 AZ，此处为主 AZ）、password（按上述密码规则；默认用户 supabase 的密码）、storage_component（不用存储时写 `{enabled:false}`，不能整个省略）、manage_type。
 **公共可选**：data_vip、security_group_id（应用安全组；**必须新建专用组**，ID 进创建请求，漏传事后无法补——没有换组工具）。
 
 - **路线 A（newly_instance）**追加 managed_instance：datastore{type=PostgreSQL, version=引擎版本（KooCLI 查，如 17.11.260901）}、ha{mode 与顶层 mode 一致：Single 或 Ha；replication_mode: async 或 sync}、charge_info（按需 {charge_mode:"postPaid"}；包周期 {charge_mode:"prePaid", period_type: 2=月/3=年, period_num: 1-9 个月或 1-3 年, 可选 is_auto_renew/is_auto_pay 布尔}）、flavor_ref（数据库规格，形如 rds.pg.n1.medium.2，KooCLI ListFlavors 查，和应用规格是两回事，别混用）、volume{type: 按环境查询结果选择的盘型（ListStorageTypes 查，如 ESSD）, size: 正整数（如 40）}、availability_zone（与顶层主 AZ 一致，服务端强制）、security_group_id（数据库安全组，必填，**新建专用组**）、password（按密码规则，可以和应用密码用同一个值）、port（固定 5432：显式传或省略）、enterprise_project_id（**默认 default 项目**，ID 为 "0"；多企业项目时让用户选）。可选 configuration_id（参数模板，默认不传）。
@@ -68,13 +79,13 @@ SKILL.md 是主文档；本文件是各场景的详细步骤、字段来源与�
 | 3 | version | **应用版本，取当前最高** | "1.0.0"（不是 17.11.x！） |
 | 4 | mode | Single | Single |
 | 5 | flavor_ref | 应用规格 | rds.supabase.n1.large.2 |
-| 6 | availability_zone | 可用区 | cn-east-3a |
+| 6 | availability_zone | Single 一个 AZ；Ha 两个不同 AZ（此处填主 AZ） | cn-east-3a |
 | 7 | password | 8-32 位三类字符，本地生成 | （已配置） |
 | 8 | storage_component | 不用存储 | {enabled:false} |
 | 9 | manage_type | 路线 A | newly_instance |
 | 10 | security_group_id（顶层） | 应用安全组 | （自建专用组 ID） |
 | 11 | datastore | PostgreSQL + 引擎版本 | 17.11.260901 |
-| 12 | ha | mode 与顶层 mode 一致 | {mode:"Single", replication_mode:"async"} |
+| 12 | ha | mode 与顶层 mode 一致（Single/Ha） | {mode:"Single", replication_mode:"async"} |
 | 13 | charge_info | 按需 {charge_mode:"postPaid"}；包周期带 period_type/period_num | postPaid |
 | 14 | managed flavor_ref | **数据库规格（≠应用规格）** | rds.pg.n1.medium.2 |
 | 15 | volume | 环境支持的盘型 + 容量 | ESSD / 40 |

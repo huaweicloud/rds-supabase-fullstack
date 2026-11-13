@@ -132,11 +132,22 @@ class ApplicationListTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_missing_mandatory_field_fails_closed(self):
         record = dict(REAL_RECORD)
-        del record['direct_eip']
+        del record['flavor_ref']
         self._respond({'total_count': 1, 'data': [record]})
         with self.assertRaises(McpToolError) as error:
             await self.ops.read('applications')
         self.assertEqual(error.exception.code, 'MCP_SDK_ERROR')
+
+    async def test_missing_ip_fields_do_not_fail(self):
+        # public_ip is absent until an EIP is bound; a freshly created row may
+        # carry neither address. Both must project as None, not MCP_SDK_ERROR.
+        record = dict(REAL_RECORD)
+        for key in ('direct_eip', 'public_ip', 'public_ip_address', 'eip_address'):
+            record.pop(key, None)
+        self._respond({'total_count': 1, 'data': [record]})
+        result = await self.ops.read('applications')
+        row = result['data']['data'][0]
+        self.assertIsNone(row['public_ip'])
 
     async def test_invalid_filters_never_call_backend(self):
         for kwargs in ({'sort_key': 'bogus'}, {'sort_dir': 'up'},
@@ -225,7 +236,7 @@ class ApplicationDetailTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('Access address', result['note'])
 
     async def test_detail_missing_mandatory_fails_closed(self):
-        for field in ('private_ip', 'enable_ssl', 'port', 'status', 'created_time'):
+        for field in ('enable_ssl', 'port', 'status', 'created_time'):
             record = dict(REAL_DETAIL)
             del record[field]
             self.client.request.return_value = (200, record)
@@ -233,6 +244,17 @@ class ApplicationDetailTests(unittest.IsolatedAsyncioTestCase):
                 with self.assertRaises(McpToolError) as error:
                     await self.ops.read('application', 'app-1')
                 self.assertEqual(error.exception.code, 'MCP_SDK_ERROR')
+
+    async def test_detail_missing_private_ip_while_creating_does_not_fail(self):
+        # While the application is still creating the backend omits private_ip;
+        # the detail query must project None instead of MCP_SDK_ERROR.
+        record = dict(REAL_DETAIL)
+        del record['private_ip']
+        record['status'] = 'creating'
+        self.client.request.return_value = (200, record)
+        row = (await self.ops.read('application', 'app-1'))['data']
+        self.assertIsNone(row['private_ip'])
+        self.assertEqual(row['status'], 'creating')
 
     async def test_detail_without_eip_yields_null_public_ip(self):
         record = dict(REAL_DETAIL)

@@ -5,7 +5,7 @@ description: RDS Supabase 应用全生命周期管理技能：从零创建一个
 
 # RDS Supabase 应用全生命周期管理
 
-版本 0.5.7；配套服务端 mcp_server_supabase ≥ 0.4.0a11（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
+版本 0.5.8；配套服务端 mcp_server_supabase ≥ 0.4.0a11（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
 
 贯穿所有场景的四条铁律：
 1. **写操作两段式**：先预览（confirm=false），把参数、影响、费用展示给用户；用户确认后才提交（confirm=true + 预览返回的 plan_id）。预览 10 分钟有效，参数变了重新预览。
@@ -49,6 +49,8 @@ https://github.com/huaweicloud/rds-supabase-fullstack
 |---|---|---|
 | opencode | 向项目 `opencode.json` 写入 `mcp.servers.rds-supabase-mgr` 条目（uvx 命令 + environment） | 保存即**自动连接**；未连上就在 `/mcps` 面板选中连接 |
 | Claude Code | 向项目根 `.mcp.json` 写入 `mcpServers` 条目（uvx 命令 + env） | 会话内弹出项目服务器**批准提示**（安全机制，一次），用户批准即连上；`/mcp` 面板核对 |
+| CodeArts | 写入 `mcp_settings.json`（设置页「MCP工具 → 配置MCP」打开；`mcpServers` 结构同 `.mcp.json`，项目级落位 `<项目根>/.codeartsdoer/`） | **保存即启动**（等待"工具启动完成"）；在「MCP工具 → 已安装」页签核对启用状态 |
+| OfficeAce | 写入该宿主的项目级 MCP 配置（以项目根为界，Agent 在该宿主内自知其结构） | 在宿主 MCP 管理入口启用/刷新；确无会话内机制时按一次性 reload 兜底并如实告知 |
 | Cursor / Trae / 其他 | 写入该宿主的项目级 MCP 配置（结构同 `.mcp.json`） | 按宿主自身的刷新机制使能；宿主确实只认重启时，如实告知用户执行一次宿主 reload——配置已就位，属一次性动作，不算安装失败 |
 
 凭据模式**二选一**（选错=每次调用都报 MCP_PERMISSION_DENIED）：

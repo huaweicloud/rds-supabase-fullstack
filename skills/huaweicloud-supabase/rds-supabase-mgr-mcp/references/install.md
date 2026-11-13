@@ -51,7 +51,7 @@ uv run mcp-huaweicloud-rds-supabase-mgr          # stdio（默认）
 
 ## 四、注册到当前项目（禁止全局）
 
-注册到**当前项目**的 MCP 配置：opencode 用项目 `opencode.json`；Claude Code / Cursor / Trae 用项目 `.mcp.json`（或各自 MCP 配置处，结构相同）。禁止注册到用户级/全局配置——凭据与项目绑定，全局注册等于跨项目泄漏。写入前确认目标配置文件已被 `.gitignore` 覆盖（凭据不随仓库提交）；宿主支持 `${ENV}` 引用时，优先用环境变量引用而不是内联明文。
+注册到**当前项目**的 MCP 配置：opencode 用项目 `opencode.json`（V2 结构 `mcp.servers.*`）；Claude Code / Cursor / Trae 用项目 `.mcp.json`；CodeArts用 `mcp_settings.json`（设置页「MCP工具 → 配置MCP」打开，项目级落位 `<项目根>/.codeartsdoer/`；`mcpServers` 条目结构同 `.mcp.json`，下述模板直接可用）。禁止注册到用户级/全局配置——凭据与项目绑定，全局注册等于跨项目泄漏。写入前确认目标配置文件已被 `.gitignore` 覆盖（凭据不随仓库提交）；宿主支持 `${ENV}` 引用时，优先用环境变量引用而不是内联明文。
 
 **模板一：AK/SK（sdk_core 模式）**——用访问密钥（含临时密钥）必须走这个模式：
 
@@ -126,6 +126,8 @@ opencode 项目 `opencode.json` 等价写法（V2 结构：服务器条目位于
 |---|---|---|
 | opencode | 保存 `opencode.json` 后新服务器**自动连接**；未自动连上时在 `/mcps` 面板选中该服务器连接。等价 CLI：`opencode mcp add rds-supabase-mgr --env K=V -- uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr" mcp-huaweicloud-rds-supabase-mgr`（注意 `--env` 的值会留在命令行历史里，写凭据建议直接编辑配置文件） | `opencode mcp list` 或 `/mcps` 显示 connected |
 | Claude Code | 保存 `.mcp.json` 后会话内弹出项目服务器**批准提示**（安全机制，每个项目服务器一次），用户批准即连接；提示未弹出时在 `/mcp` 面板找到该服务器批准/连接 | `/mcp` 面板显示 connected 与工具数量 |
+| CodeArts | MCP 配置在设置页「MCP工具 → 配置MCP」打开的 `mcp_settings.json` 中编辑（`mcpServers` 结构与 `.mcp.json` 相同，uvx 条目直接复用模板一；服务器名称 ≤64 字符），**保存即启动**（等待"工具启动完成"）；「MCP工具 → 已安装」页签可启用/停用/重启。官方明示：**编辑既有条目后 IDE 缓存可能不自动刷新，须在该页签点一次重启该 MCP** | 「MCP工具 → 已安装」页签显示该服务器且已启用 |
+| OfficeAce | 写入项目级 MCP 配置后，在宿主自身的 MCP 管理入口启用/刷新（无公开文档，Agent 在该宿主内按其设置界面操作）；确无会话内机制时按一次性 reload 兜底，如实告知用户——配置已就位，不算安装失败 | 宿主 MCP 管理界面显示已启用 |
 | Cursor / Trae / 其他 | 按宿主自身的 MCP 配置刷新机制使能；宿主确实只认重启时，如实告知用户执行一次宿主 reload——配置已就位，属一次性动作，不算安装失败 | 宿主 MCP 面板 |
 
 使能问题的判定顺序：工具列表里没有这个服务器 → 先按上表使能；服务器在但调用报错 → 回下节环境变量核对；进程起不来 → 看宿主 MCP 日志里 uvx 的 stderr（首次启动要拉依赖，稍候属正常）。

@@ -7,6 +7,21 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-mgr-mcp` v0.5.8: the dynamic-install host matrix now
+  covers CodeArts (Madao) and OfficeAce explicitly, verified against the
+  CodeArts Agent user guide. CodeArts: the MCP config is mcp_settings.json
+  (opened via Settings > MCP Tools > Configure MCP, project-level placement
+  under .codeartsdoer/, mcpServers entries identical in shape to .mcp.json
+  so the existing uvx template applies; server names limited to 64
+  characters), saving starts the tool without an IDE restart, and the
+  Installed tab is where enable/restart state is checked - the official
+  docs note that editing an existing entry requires one click of that
+  MCP's restart button because the IDE cache may not refresh itself.
+  OfficeAce has no public documentation: the project-level config rule
+  stands and enablement goes through the host's own MCP management entry,
+  with the honest one-time-reload fallback where no in-session mechanism
+  exists. The install manual's registration section now names the CodeArts
+  config file and placement alongside the opencode V2 structure note.
 - Skill `rds-supabase-mgr-mcp` v0.5.7: the management-plane MCP install
   step is now an agent-executed dynamic install that enables the server
   in the current session with no restart. After the environment check

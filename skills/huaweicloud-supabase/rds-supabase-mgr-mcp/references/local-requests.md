@@ -49,7 +49,7 @@
 
 ### 创建（create_supabase_application）
 
-公共必填与两分支字段见 [场景手册](scenarios.md)。秘密字段：顶层 password（应用密码）、managed_instance.password（路线 A 数据库密码）、existing_instance.database_pwd（路线 B）、storage_component 的 ak/sk。**创建路径没有"省略 SK"——启用存储必须全凭据**。managed_instance.volume.type 按环境查询结果选择（KooCLI ListStorageTypes），服务端不限定具体盘型，云端策略权威。
+公共必填与两分支字段见 [场景手册](scenarios.md)（含实测参考载荷与**预览前逐项核对清单**）。秘密字段：顶层 password（应用密码）、managed_instance.password（路线 A 数据库密码）、existing_instance.database_pwd（路线 B）、storage_component 的 ak/sk。**密码规则**（应用密码与数据库密码同规则）：8-32 位，至少含大写/小写/数字/特殊字符（`~!@#$%^*-_+=?,`）三类。**创建路径没有"省略 SK"——启用存储必须全凭据**。managed_instance.volume.type 按环境查询结果选择（KooCLI ListStorageTypes），服务端不限定具体盘型，云端策略权威。version 固定 "1.0.0"（应用版本）；ha 固定 `{"mode":"Single","replication_mode":"async"}`；port 传 5432 或省略。
 
 ### Key 交付（deliver_supabase_api_key）
 

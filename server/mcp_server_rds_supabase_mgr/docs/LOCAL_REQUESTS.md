@@ -26,10 +26,11 @@ Auth嵌套字段：
 
 Storage：首次启用必须SK。已启用组件更新可省略SK保持原值；MCP在提交前读取storage_component，只有enabled=true且AK与请求相同才允许省略，换身份须完整AK/SK。本节替代上文“省略SK未采纳”的早期描述。
 
-创建：`create_supabase_application(request_ref, confirm=false, plan_id=null)`，DANGEROUS。引用对象必填name（4–64）、basic_config（region/vpc_id/subnet_id，可选time_zone）、version、mode=Single、flavor_ref、availability_zone（单AZ）、password、storage_component、显式manage_type。
+创建：`create_supabase_application(request_ref, confirm=false, plan_id=null)`，DANGEROUS。引用对象必填name（4–64）、basic_config（region/vpc_id/subnet_id，可选time_zone）、version（应用版本，当前"1.0.0"，非PG引擎版本）、mode=Single、flavor_ref、availability_zone（单AZ）、password（8–32位，至少含大写/小写/数字/特殊字符~!@#$%^*-_+=?,中的三类）、storage_component、显式manage_type。
 - existed_instance：existing_instance包含instance_id、database_name（数据库用户名）、database_pwd；managed_instance省略或null。
-- newly_instance：managed_instance包含datastore（type=PostgreSQL/version）、charge_info（仅charge_mode=postPaid）、flavor_ref、volume（type=非空盘型代码，按环境查询结果选择；size=正整数）、availability_zone（与应用一致）、security_group_id、password、enterprise_project_id。可选configuration_id、port（2100–9500）、data_vip。existing_instance省略或null。
-- 顶层可选security_group_id和data_vip；不支持Ha、包周期、未确认tags结构或未知字段。local检查只保证已知结构；后端密码策略、PG最低版本、容量/可售范围及配额仍权威，不编造限制。创建时Storage启用必须全凭据。
+- newly_instance：managed_instance包含datastore（type=PostgreSQL/version）、ha（可选；mode仅Single、replication_mode为async/sync，实测载荷为Single+async）、charge_info（仅charge_mode=postPaid）、flavor_ref、volume（type=非空盘型代码，按环境查询结果选择；size=正整数）、availability_zone（与应用一致）、security_group_id、password（规则同顶层password）、enterprise_project_id。可选configuration_id、port（2100–9500，实测传5432或省略）、data_vip。existing_instance省略或null。
+- 顶层可选security_group_id和data_vip；不支持Ha部署、包周期、未确认tags结构或未知字段。local检查只保证已知结构；后端密码策略、PG最低版本、容量/可售范围及配额仍权威，不编造限制。创建时Storage启用必须全凭据。
+- 报错语义：本地校验失败点名具体字段（如ha.mode、volume.size、password）；后端4xx拒绝透传error_code/error_msg，计划标记failed，修正后重新预览提交；传输/超时/5xx仍为unknown，禁止重放。
 - 返回202+job_id+application_id与可选instance_id/instance_job_id；分别观察资源任务。意外订单进入unknown，不能自动支付或重试。未接入X-Client-Token，幂等保护仅限当前本地账本；不能跨机器重复提交。
 
 ApiKey：`deliver_supabase_api_key(application_id,key_id,delivery_ref,confirm=false,plan_id=null)`，DANGEROUS。引用对象为 `{ "output_file": "操作方选择的新文件绝对路径" }`。父目录须已存在、路径规范且非符号链接；Unix目录属于当前用户且0700，文件0600。Windows父目录须由操作方事先确认NTFS ACL仅受信用户可读，当前不自动核验。工具不返回文件路径或密钥，返回delivery_ref。需要本地写许可/写入开关，但云端只GET。

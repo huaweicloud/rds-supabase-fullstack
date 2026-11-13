@@ -47,7 +47,17 @@ class RestClient:
             if len(raw) > 1048576:
                 raise ValueError("oversized")
             if not 200 <= response.status < 300:
-                raise http_failure(response.status)
+                # Surface the backend error body instead of dropping it: the agent
+                # needs error_code/error_msg to repair the request.
+                detail=None
+                try:
+                    parsed=json.loads(raw) if raw else {}
+                except ValueError:
+                    parsed={}
+                if isinstance(parsed,dict):
+                    source=parsed.get('error') if isinstance(parsed.get('error'),dict) else parsed
+                    detail={k:str(source[k])[:300] for k in ('error_code','error_msg','code','message') if isinstance(source.get(k),(str,int))} or None
+                raise http_failure(response.status,detail)
             value = json.loads(raw) if raw else {}
             if not isinstance(value, dict):
                 raise ValueError("response shape")

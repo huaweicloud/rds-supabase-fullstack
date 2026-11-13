@@ -7,6 +7,47 @@ semantic versioning.
 
 ### Changed
 
+- `mcp_server_rds_supabase_mgr` v0.4.0a10: creation contract aligned to a
+  real backend-accepted route-A payload, plus end-to-end error
+  transparency. Contract: managed_instance now accepts the `ha` object
+  (mode must be Single, replication_mode async/sync - the captured
+  request carries Single+async and was previously rejected as an
+  unknown field, the root cause of repeated creation failures); the
+  top-level `version` is documented as the application version
+  ("1.0.0"), not the PG engine version; port 5432 is accepted
+  explicitly (matching the captured request) or omitted for the
+  default; passwords (application and managed-instance) must be 8-32
+  characters containing at least three of uppercase/lowercase/digits/
+  special characters (~!@#$%^*-_+=?,). Error transparency: local
+  validation failures now name the offending field (ha.mode,
+  volume.size, password, unexpected/missing fields, request alias vs
+  registry problems); the REST client parses and passes through the
+  backend error body (error_code/error_msg) on non-2xx instead of
+  dropping it; write submissions distinguish definitive rejections
+  (clean 4xx - plan marked failed, original error re-raised with
+  backend detail, re-preview and resubmit allowed) from genuinely
+  unknown outcomes (transport/timeout/5xx - plan unknown, replay
+  forbidden); the same split is applied to both create and mutate
+  paths. Tests: the real payload is locked in as a fixture (passwords
+  replaced), field-attribution, password-composition, failed-vs-unknown
+  and repair-loop cases added; existing timeout simulations updated to
+  the semantically correct RecoveryError transport form.
+- Skill `rds-supabase-mgr-mcp` v0.5.5: scenario 1 creation section
+  aligned to the same real payload. The config table gains the
+  application-version row (fixed "1.0.0", explicitly not the PG engine
+  version), the password rule (8-32 chars, three of four character
+  classes, locally generated from the allowed set only), the ha fixed
+  value, port-5432-or-omit guidance and the parameter-template caveat;
+  the mislabeled "database password" row is renamed "application
+  password" with the DB password getting its own route-A row. Step 3
+  now requires a field-by-field pre-preview checklist against the
+  20-item table added to scenarios.md (with the captured payload as
+  the reference column) - the three most common real failures (wrong
+  version, missing ha, non-compliant password) are caught before
+  submission. Error-table guidance updated for the new semantics:
+  field-level attribution, backend error pass-through, failed (fix and
+  re-preview) vs unknown (never replay). Server floor raised to
+  0.4.0a10.
 - `mcp_server_rds_supabase_mgr` v0.4.0a9: `plan_supabase_creation`
   rebuilt from a static checklist into an intent-driven phase planner,
   aligned with the skill's creation scenario. New optional tri-state

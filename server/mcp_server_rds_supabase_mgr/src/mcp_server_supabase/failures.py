@@ -15,7 +15,7 @@ class RecoveryError(McpToolError):
         return result
 
 
-def http_failure(status):
+def http_failure(status, detail=None):
     code, category, action = {
         400: ('MCP_INVALID_ARGS','invalid_request','Check the input contract; review a new plan before a changed write.'),
         401: ('MCP_PERMISSION_DENIED','authentication','Have the operator verify the configured identity; do not ask for credentials in chat.'),
@@ -25,4 +25,8 @@ def http_failure(status):
         429: ('MCP_SDK_ERROR','rate_limited','Pause queries and retry a read only under a bounded policy; reconcile any submitted write.'),
     }.get(status, ('MCP_SDK_ERROR','service_unavailable' if status >= 500 else 'unexpected_http',
                    'Check service availability and the API contract; reconcile any submitted write before retrying.'))
-    return RecoveryError(code, f'API returned HTTP {status}', category, action)
+    message=f'API returned HTTP {status}'
+    if detail:
+        parts=[f'{k}={detail[k]}' for k in ('error_code','code','error_msg','message') if k in detail]
+        if parts:message+=f' (backend: {", ".join(parts)})'
+    return RecoveryError(code, message, category, action)

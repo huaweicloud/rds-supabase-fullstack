@@ -55,7 +55,7 @@ class PlanStore:
             db.execute("UPDATE plans SET state='submitted' WHERE id=?",(plan,))
 
     def finish(self, plan, state, job=None):
-        if state not in ('accepted','unknown'):raise ValueError('Invalid execution state')
+        if state not in ('accepted','unknown','failed'):raise ValueError('Invalid execution state')
         with self.connect() as db:
             db.execute("UPDATE plans SET state=?,job=? WHERE id=? AND state='submitted'",(state,job,plan))
 

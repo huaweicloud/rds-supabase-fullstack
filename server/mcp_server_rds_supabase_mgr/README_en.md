@@ -96,7 +96,7 @@ Database / RDS Supabase fully-managed lifecycle (control plane)
 | `plan_supabase_creation` | Creation planning (intent-driven) | READ | phase-structured plan by route/storage/public-access/SSL/login intents; planning_only, not an execution plan |
 | `list_supabase_flavors` | Supabase flavor candidates | READ | creation_ready=false, not a quote |
 | `list_supabase_manageable_instances` | Manageable PG query | READ | Same |
-| `create_supabase_application` | Single creation submission (confirm required) | DANGEROUS | Via local request_ref; Single mode only |
+| `create_supabase_application` | Single creation submission (confirm required) | DANGEROUS | Via local request_ref; Single only; password 8-32 chars with 3 character classes; field-level and backend error pass-through |
 | `delete_supabase_application` | Delete application, retain PG (confirm required) | DANGEROUS | No PG cascade deletion |
 | `change_supabase_ssl` | SSL toggle (confirm required) | WRITE | Enable needs cert ID; disable passes null |
 | `plan_supabase_ssl` | SSL toggle planning | READ | Certificate steps and gaps, no submission |

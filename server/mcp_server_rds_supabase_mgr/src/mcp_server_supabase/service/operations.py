@@ -15,6 +15,10 @@ from mcp_server_supabase.service.contracts import (api_key_query, application_de
                                                    accepted_job)
 
 ROOT = "/v3/{project}/ai-application"
+# Recovery categories that prove the request was definitively rejected (never
+# accepted): a clean 4xx from the gateway/backend. Everything else (transport,
+# 429/5xx, unparseable responses) leaves the write result genuinely unknown.
+_DEFINITE_REJECTIONS = {"invalid_request", "authentication", "permission", "not_found", "state_conflict"}
 
 
 def safe(value, depth=0):
@@ -85,8 +89,19 @@ class Operations:
         if os.getenv('SUPABASE_ENABLE_WRITES')!='true' or os.getenv('HUAWEICLOUD_MCP_READ_ONLY','false').lower()=='true':
             raise McpToolError('MCP_READ_ONLY','Writes are disabled')
         self.plans.claim(plan_id,digest)
+        unknown=RecoveryError('MCP_SDK_ERROR','Creation result unknown','submission_unknown',
+                              'Inspect the plan and application/PG inventories. An unexpected order must be reconciled manually; do not pay, replay or auto-delete.',plan_id)
         try:
             status,data=await self.client.request('POST',path,body=body)
+        except RecoveryError as error:
+            if error.recovery.get('category') in _DEFINITE_REJECTIONS:
+                self.plans.finish(plan_id,'failed');raise
+            self.plans.finish(plan_id,'unknown');raise unknown from None
+        except McpToolError:
+            self.plans.finish(plan_id,'failed');raise
+        except BaseException:
+            self.plans.finish(plan_id,'unknown');raise unknown from None
+        try:
             if data.get('order_id'):raise ValueError()
             result=accepted_job(status,data)
             result['application_id']=segment(data.get('application_id'))
@@ -95,9 +110,7 @@ class Operations:
             self.plans.finish(plan_id,'accepted',result['job_id'])
             return {**result,**notices,'plan_id':plan_id}
         except BaseException:
-            self.plans.finish(plan_id,'unknown')
-            raise RecoveryError('MCP_SDK_ERROR','Creation result unknown','submission_unknown',
-                                'Inspect the plan and application/PG inventories. An unexpected order must be reconciled manually; do not pay, replay or auto-delete.',plan_id) from None
+            self.plans.finish(plan_id,'unknown');raise unknown from None
 
     async def mutate_reference(self, application_id, action, request_ref, confirm=False, plan_id=None):
         from mcp_server_supabase.service.request_refs import load_request, validate_request
@@ -314,12 +327,21 @@ class Operations:
                 raise McpToolError('MCP_GUARDRAIL_BLOCKED','Omitted SK requires already enabled Storage with the same AK',
                                    hint='For first enable or credential identity change, provision complete credentials locally and preview again.')
         self.plans.claim(plan_id, digest)
+        unknown=RecoveryError("MCP_SDK_ERROR", "Write result unknown", "submission_unknown",
+                              "Use inspect_supabase_plan, then query the associated job and resource; do not replay or delete the ledger.", plan_id)
         try:
             status, data = await self.client.request(method, path + suffix, body=body)
+        except RecoveryError as error:
+            if error.recovery.get('category') in _DEFINITE_REJECTIONS:
+                self.plans.finish(plan_id, "failed");raise
+            self.plans.finish(plan_id, "unknown");raise unknown from None
+        except McpToolError:
+            self.plans.finish(plan_id, "failed");raise
+        except BaseException:
+            self.plans.finish(plan_id, "unknown");raise unknown from None
+        try:
             result = accepted_job(status, data)
             self.plans.finish(plan_id, "accepted", result["job_id"])
             return {**result, **notices, "plan_id":plan_id}
         except BaseException:
-            self.plans.finish(plan_id, "unknown")
-            raise RecoveryError("MCP_SDK_ERROR", "Write result unknown", "submission_unknown",
-                                "Use inspect_supabase_plan, then query the associated job and resource; do not replay or delete the ledger.", plan_id) from None
+            self.plans.finish(plan_id, "unknown");raise unknown from None

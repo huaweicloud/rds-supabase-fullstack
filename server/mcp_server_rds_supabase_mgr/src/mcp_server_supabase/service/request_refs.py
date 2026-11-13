@@ -31,27 +31,33 @@ def load_request(alias):
         body=registry[alias]
         if not isinstance(body,dict):raise ValueError()
         return body
+    except KeyError:
+        raise McpToolError('MCP_INVALID_ARGS',f'Request alias not found: {alias}',
+                           hint='Add the alias to the operator-managed registry (SUPABASE_REQUESTS_FILE); never paste secrets into chat.') from None
     except Exception:
-        raise McpToolError('MCP_INVALID_ARGS','Local request reference unavailable or unsafe',
-                           hint='Ask the operator to configure a protected request registry; never paste secrets into chat.') from None
+        raise McpToolError('MCP_INVALID_ARGS','Local request registry unavailable or unsafe',
+                           hint='Check: SUPABASE_REQUESTS_FILE must be an absolute path to a regular file owned by the current user with owner-only permissions; no symlink, duplicate JSON keys or oversized content (max 64 KiB). Never paste secrets into chat.') from None
 
 
 def fields(value, allowed, required=()):
-    if not isinstance(value,dict) or set(value)-set(allowed) or not set(required)<=set(value):raise ValueError()
+    if not isinstance(value,dict):raise ValueError('expected a JSON object')
+    if set(value)-set(allowed):raise ValueError(f'unexpected field(s): {sorted(set(value)-set(allowed))}')
+    if set(required)-set(value):raise ValueError(f'missing required field(s): {sorted(set(required)-set(value))}')
 
 
 def text(value, limit=2048):
-    if not isinstance(value,str) or not value or len(value)>limit or any(ord(c)<32 for c in value):raise ValueError()
+    if not isinstance(value,str) or not value or len(value)>limit or any(ord(c)<32 for c in value):
+        raise ValueError(f'must be a non-empty string of at most {limit} characters without control characters')
 
 
 def boolean(value):
-    if type(value) is not bool:raise ValueError()
+    if type(value) is not bool:raise ValueError('must be a boolean')
 
 
 def url(value):
     text(value)
     parsed=urlsplit(value)
-    if parsed.scheme not in ('http','https') or not parsed.hostname or parsed.username or parsed.password or parsed.fragment:raise ValueError()
+    if parsed.scheme not in ('http','https') or not parsed.hostname or parsed.username or parsed.password or parsed.fragment:raise ValueError('must be an http(s) URL without embedded credentials or fragments')
 
 
 def validate_request(action, body):
@@ -117,9 +123,9 @@ def validate_request(action, body):
                     else:text(value)
         else:raise ValueError()
         return body
-    except (ValueError,TypeError,KeyError):
-        raise McpToolError('MCP_INVALID_ARGS','Unsupported or invalid referenced request fields',
-                          hint='Use the documented operation schema; unknown fields and ambiguous clear operations are rejected.') from None
+    except (ValueError,TypeError,KeyError) as e:
+        raise McpToolError('MCP_INVALID_ARGS',f'Invalid {action} request: {str(e) or e.__class__.__name__}',
+                           hint='Use the documented operation schema; unknown fields and ambiguous clear operations are rejected.') from None
 
 
 def preview_request(body):

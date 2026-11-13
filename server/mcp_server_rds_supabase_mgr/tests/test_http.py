@@ -11,6 +11,7 @@ from unittest.mock import patch
 from mcp_server_supabase.client.rest import RestClient
 from mcp_server_supabase.service.operations import Operations
 from huaweicloud_mcp_core.errors import McpToolError
+from mcp_server_supabase.failures import RecoveryError
 
 class Handler(BaseHTTPRequestHandler):
     calls = []
@@ -109,7 +110,7 @@ class HttpTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(sum(c[0]=='POST' for c in Handler.calls),1)
     async def test_unknown_execution_is_durable(self):
         from unittest.mock import AsyncMock
-        self.client.request=AsyncMock(side_effect=[(200,{'id':'app','status':'normal'}),McpToolError('MCP_SDK_ERROR','timeout')])
+        self.client.request=AsyncMock(side_effect=[(200,{'id':'app','status':'normal'}),RecoveryError('MCP_SDK_ERROR','timeout','transport_or_response','Verify connectivity.')])
         preview=await self.service.mutate('app','ssl',{'enable_ssl':False})
         with patch.dict(os.environ,{'SUPABASE_ENABLE_WRITES':'true','HUAWEICLOUD_MCP_READ_ONLY':'false'}):
             with self.assertRaises(McpToolError):
@@ -222,7 +223,7 @@ class HttpTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_unknown_write_error_includes_plan_for_reconciliation(self):
         from unittest.mock import AsyncMock
-        self.client.request=AsyncMock(side_effect=[(200,{'id':'app','status':'normal'}),McpToolError('MCP_SDK_ERROR','private-response')])
+        self.client.request=AsyncMock(side_effect=[(200,{'id':'app','status':'normal'}),RecoveryError('MCP_SDK_ERROR','private-response','transport_or_response','Verify connectivity.')])
         preview=await self.service.mutate('app','ssl',{'enable_ssl':False})
         with patch.dict(os.environ,{'SUPABASE_ENABLE_WRITES':'true','HUAWEICLOUD_MCP_READ_ONLY':'false'}):
             with self.assertRaises(McpToolError) as caught:

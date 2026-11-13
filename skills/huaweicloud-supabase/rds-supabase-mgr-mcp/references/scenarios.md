@@ -41,13 +41,48 @@ SKILL.md 是主文档；本文件是各场景的详细步骤、字段来源与�
 
 ### 创建请求体（写入本地请求文件的完整字段）
 
-**公共必填**：name（4-64）、basic_config{region, vpc_id, subnet_id}（可选 time_zone）、version、mode=Single、flavor_ref、availability_zone、password、storage_component（不用存储时写 `{enabled:false}`，不能整个省略）、manage_type。
+以**实测通过的后端真实载荷**为基准（路线 A，密码已替换为占位）：
+
+```json
+{"name":"rds-supabase-5a55","basic_config":{"region":"cn-east-3","vpc_id":"<VPC ID>","subnet_id":"<子网 ID>","time_zone":"UTC+08:00"},"storage_component":{"enabled":false},"version":"1.0.0","mode":"Single","flavor_ref":"rds.supabase.n1.large.2","availability_zone":"cn-east-3a","password":"<本地生成的密码>","manage_type":"newly_instance","managed_instance":{"datastore":{"type":"PostgreSQL","version":"17.11.260901"},"ha":{"mode":"Single","replication_mode":"async"},"charge_info":{"charge_mode":"postPaid"},"flavor_ref":"rds.pg.n1.medium.2","volume":{"type":"ESSD","size":40},"availability_zone":"cn-east-3a","security_group_id":"<数据库安全组 ID>","password":"<本地生成的密码>","port":5432,"enterprise_project_id":"0","configuration_id":"<可选：参数模板 ID>"},"security_group_id":"<应用安全组 ID>"}
+```
+
+**密码规则（应用密码与数据库密码同规则）**：8-32 位，至少包含大写字母、小写字母、数字、特殊字符（`~!@#$%^*-_+=?,`）中的**三种**；本地生成时只从这些字符里取。
+
+**公共必填**：name（4-64）、basic_config{region, vpc_id, subnet_id, 可选 time_zone 如 "UTC+08:00"}、version（**应用版本，固定 "1.0.0"，不是 PG 引擎版本**）、mode=Single、flavor_ref（应用规格，形如 rds.supabase.n1.large.2）、availability_zone、password（按上述密码规则）、storage_component（不用存储时写 `{enabled:false}`，不能整个省略）、manage_type。
 **公共可选**：data_vip、security_group_id（应用安全组；可选但漏传事后无法补——没有换组工具，建议自建专用组）。
 
-- **路线 A（newly_instance）**追加 managed_instance：datastore{type=PostgreSQL, version}、charge_info{charge_mode=postPaid}、flavor_ref（数据库规格，KooCLI ListFlavors 查）、volume{type: 按环境查询结果选择的盘型（ListStorageTypes 查）， size: 正整数}、availability_zone（与应用一致，服务端强制）、security_group_id（数据库安全组，必填）、password（数据库密码，本地生成）、enterprise_project_id（默认 0）。可选 configuration_id、port（**不传，保持默认 5432**）。
-- **路线 B（existed_instance）**追加 existing_instance：instance_id（工具查）、database_name（数据库用户名，用户提供）、database_pwd（用户写本地文件）。
+- **路线 A（newly_instance）**追加 managed_instance：datastore{type=PostgreSQL, version=引擎版本（KooCLI 查，如 17.11.260901）}、**ha{mode:"Single", replication_mode:"async"}（实测载荷带的固定值，照抄）**、charge_info{charge_mode=postPaid}、flavor_ref（数据库规格，形如 rds.pg.n1.medium.2，KooCLI ListFlavors 查，**别照抄应用规格**）、volume{type: 按环境查询结果选择的盘型（ListStorageTypes 查，如 ESSD）, size: 正整数（如 40）}、availability_zone（与应用一致，服务端强制）、security_group_id（数据库安全组，必填）、password（按密码规则，可与应用密码同值——实测载荷即同值）、port（**固定 5432：显式传或省略**）、enterprise_project_id（"0"）。可选 configuration_id（参数模板；默认不传，实测载荷带的模板 ID 是控制台默认模板，跨环境不可复制）。
+- **路线 B（existed_instance）**追加 existing_instance：instance_id（工具查）、database_name（数据库用户名，用户提供）、database_pwd（用户写本地文件；存量密码不受创建密码规则约束）。
 
-不支持：主备模式、包周期、tags、未知字段——如实告知，不静默丢弃用户要求。
+不支持：主备部署（ha.mode 只接受 Single）、包周期、tags、未知字段——如实告知，不静默丢弃用户要求。
+
+### 预览前逐项核对清单
+
+预览前把请求体按这张表**逐项过一遍**（秘密字段只核"已配置"，不回显值），有出入先改再预览；结论给用户看一眼。实测翻车最多的三处：version 填成 PG 版本、漏 ha、密码不合规。
+
+| # | 字段 | 规则 | 参考值 |
+|---|---|---|---|
+| 1 | name | 4-64 字符 | rds-supabase-5a55 |
+| 2 | basic_config | region/vpc_id/subnet_id 与环境一致；time_zone 可选 | cn-east-3 / … / UTC+08:00 |
+| 3 | version | **应用版本，固定值** | "1.0.0"（不是 17.11.x！） |
+| 4 | mode | Single | Single |
+| 5 | flavor_ref | 应用规格 | rds.supabase.n1.large.2 |
+| 6 | availability_zone | 可用区 | cn-east-3a |
+| 7 | password | 8-32 位三类字符，本地生成 | （已配置） |
+| 8 | storage_component | 不用存储 | {enabled:false} |
+| 9 | manage_type | 路线 A | newly_instance |
+| 10 | security_group_id（顶层） | 应用安全组 | （自建专用组 ID） |
+| 11 | datastore | PostgreSQL + 引擎版本 | 17.11.260901 |
+| 12 | ha | 固定值 | {mode:"Single", replication_mode:"async"} |
+| 13 | charge_info.charge_mode | postPaid | postPaid |
+| 14 | managed flavor_ref | **数据库规格（≠应用规格）** | rds.pg.n1.medium.2 |
+| 15 | volume | 环境支持的盘型 + 容量 | ESSD / 40 |
+| 16 | managed availability_zone | = 顶层值 | cn-east-3a |
+| 17 | managed security_group_id | 数据库安全组 | （组 ID） |
+| 18 | managed password | 规则同应用密码，可同值 | （已配置） |
+| 19 | port | 5432 或省略 | 5432 |
+| 20 | enterprise_project_id | "0" | "0" |
 
 ### 提交与等待
 
@@ -57,12 +92,13 @@ SKILL.md 是主文档；本文件是各场景的详细步骤、字段来源与�
 
 | 失败 | 工具行为 | 处置 |
 |---|---|---|
-| 请求文件不安全/别名缺失 | MCP_INVALID_ARGS | 指导操作员修权限（0600）与路径；禁止用 Shell 代填秘密 |
-| 结构校验不过（Ha/包周期/tags/正则不符） | MCP_INVALID_ARGS | 逐项修正；不删用户要求后静默重试 |
+| 请求文件不安全/别名缺失 | MCP_INVALID_ARGS（报错区分"别名不存在"与"注册表不可用"） | 按报错修：补别名，或修权限（0600）/路径；禁止用 Shell 代填秘密 |
+| 结构校验不过 | MCP_INVALID_ARGS（**点名具体字段**，如 ha.mode、volume.size、password） | 按点名字段修正；不删用户要求后静默重试 |
 | 预览超 10 分钟/参数变 | MCP_GUARDRAIL_BLOCKED | 重新预览确认 |
 | 同意图有未完成执行 | MCP_GUARDRAIL_BLOCKED | 查记录核对，不新建计划绕过 |
 | 响应含 order_id | MCP_SDK_ERROR，记录置 unknown | 不支付、不重放，人工核对订单 |
 | 提交中断 | submission_unknown + plan_id | `inspect_supabase_plan` → 查任务/资源；禁止重放 |
+| 后端明确拒绝（4xx） | MCP_INVALID_ARGS / MCP_PERMISSION_DENIED / MCP_NOT_FOUND 等，报错**附后端 error_code/error_msg**；计划标 **failed** | 如实转述后端报错；修正参数后**重新预览再提交**（failed 不阻塞重试，与结果不明不同） |
 | 写开关没开 / 只读拦截开着 | MCP_READ_ONLY | 操作员同时核对两个变量：SUPABASE_ENABLE_WRITES=true 且 HUAWEICLOUD_MCP_READ_ONLY=false，改完重启 |
 | 任务 failed/状态识别不了 | next_action 指向人工 | 停止当前链路，交操作方 |
 | 资源回查状态非 normal | 后续写操作被护栏挡 | 继续按节奏观察，不强行绑 EIP |

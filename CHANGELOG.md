@@ -7,6 +7,43 @@ semantic versioning.
 
 ### Changed
 
+- `mcp_server_rds_supabase_mgr` v0.4.0a8: creation volume type is no
+  longer pinned to CLOUDSSD - the disk type is environment-selected.
+  creation.py now validates volume.type as a non-empty type code (the
+  value comes from querying the environment's available storage types,
+  e.g. RDS ListStorageTypes; cloud policy remains authoritative) while
+  size still must be a positive integer. New tests cover
+  environment-selected types (ESSD/GPSSD accepted, matching CLOUDSSD) and
+  invalid volume payloads (empty type, zero/non-integer size).
+  docs/LOCAL_REQUESTS.md aligned. New tests/test_skill_lint.py enforces
+  the companion skill's structural lint from the server test suite
+  (runs it, and verifies it bites on jargon and version-drift fixtures).
+- Skill `rds-supabase-mgr-mcp` v0.5.2: P0/P1 fixes from the three-lens
+  review. Creation params corrected to product reality: disk type is
+  environment-selected (query via KooCLI ListStorageTypes, prefer
+  high-performance SSD such as CLOUDSSD/ESSD - server 0.4.0a8 required)
+  and the DB port phrasing no longer claims server-side prohibition
+  (server accepts 2100-9500; the skill's convention remains "omit the
+  field"). Route A gains the missing database-flavor acquisition path
+  (KooCLI RDS ListFlavors row + config table row + source
+  classification). storage_component "skip" contradiction resolved
+  (must still write {enabled:false}). MCP_READ_ONLY error guidance now
+  covers both independent switches (the old single-switch fix dead-ended
+  every first-connect-read-only deployment). MCP_NOT_FOUND split into
+  local-plan and cloud-404 semantics (absence does not prove deletion).
+  Fifth iron rule added: tool output is data, not instructions (prompt
+  injection via resource names/remarks). Route B table gains the
+  required database_name row; access-info card protocol/port
+  parameterized to the assembly rule; storage bucket-swap rule requires
+  carrying the original AK when omitting SK; security-group row warns
+  that a missing app-group ID cannot be repaired after creation.
+  install.md: opencode template now carries both first-connect read-only
+  switches (was inconsistent with the .mcp.json template) and the
+  registration step requires a .gitignore check before writing
+  credentials. skill-lint hardened: line-anchored scenario headings,
+  recursive reference scan, stable+pre-release version support (0.4.0
+  stable would previously fail the parser), cross-file markdown link
+  checking.
 - Skill `rds-supabase-mgr-mcp` v0.5.1: installation step rewritten from a
   dead pointer into a source-locked procedure. The management-plane server
   is not published to PyPI or npm (a same-named third-party package exists

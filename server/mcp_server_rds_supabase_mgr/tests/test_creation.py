@@ -34,6 +34,16 @@ class CreationTests(unittest.IsolatedAsyncioTestCase):
         self.save();preview=await self.ops.create_reference('create');self.assertNotIn('fixture-secret',str(preview))
         self.body['managed_instance']['charge_info']['charge_mode']='prePaid';self.save()
         with self.assertRaises(McpToolError):await self.ops.create_reference('create')
+    async def test_volume_type_follows_environment_selection(self):
+        del self.body['existing_instance'];self.body['manage_type']='newly_instance'
+        base={'datastore':{'type':'PostgreSQL','version':'16'},'charge_info':{'charge_mode':'postPaid'},'flavor_ref':'pg-flavor','volume':{'type':'CLOUDSSD','size':100},'availability_zone':'region-1a','security_group_id':'11111111-1111-4111-8111-111111111111','password':'fixture-secret','enterprise_project_id':'0'}
+        for vol in ({'type':'ESSD','size':80},{'type':'GPSSD','size':40}):
+            body=copy.deepcopy(self.body);body['managed_instance']=copy.deepcopy(base);body['managed_instance']['volume']=vol;self.file.write_text(json.dumps({'create':body}))
+            await self.ops.create_reference('create')
+        for vol in ({'type':'','size':80},{'type':'CLOUDSSD','size':0},{'type':'CLOUDSSD','size':'big'}):
+            body=copy.deepcopy(self.body);body['managed_instance']=copy.deepcopy(base);body['managed_instance']['volume']=vol;self.file.write_text(json.dumps({'create':body}))
+            with self.assertRaises(McpToolError):await self.ops.create_reference('create')
+        self.client.request.assert_not_awaited()
     async def test_unexpected_order_and_transport_result_are_not_success(self):
         self.save();preview=await self.ops.create_reference('create')
         self.client.request.return_value=(202,{'order_id':'order'})

@@ -51,7 +51,7 @@ uv run mcp-huaweicloud-rds-supabase-mgr          # stdio（默认）
 
 ## 四、注册到当前项目（禁止全局）
 
-注册到**当前项目**的 MCP 配置：opencode 用项目 `opencode.json`；Claude Code / Cursor / Trae 用项目 `.mcp.json`（或各自 MCP 配置处，结构相同）。禁止注册到用户级/全局配置——凭据与项目绑定，全局注册等于跨项目泄漏。
+注册到**当前项目**的 MCP 配置：opencode 用项目 `opencode.json`；Claude Code / Cursor / Trae 用项目 `.mcp.json`（或各自 MCP 配置处，结构相同）。禁止注册到用户级/全局配置——凭据与项目绑定，全局注册等于跨项目泄漏。写入前确认目标配置文件已被 `.gitignore` 覆盖（凭据不随仓库提交）；宿主支持 `${ENV}` 引用时，优先用环境变量引用而不是内联明文。
 
 **模板一：AK/SK（sdk_core 模式）**——用访问密钥（含临时密钥）必须走这个模式：
 
@@ -93,7 +93,9 @@ opencode 项目 `opencode.json` 等价写法（键名与嵌套不同）：
         "SUPABASE_RDS_ENDPOINT": "<原生 RDS HTTPS 端点>",
         "HUAWEICLOUD_PROJECT_ID": "<项目 ID>",
         "HUAWEICLOUD_ACCESS_KEY": "<AK>",
-        "HUAWEICLOUD_SECRET_KEY": "<SK>"
+        "HUAWEICLOUD_SECRET_KEY": "<SK>",
+        "HUAWEICLOUD_MCP_READ_ONLY": "true",
+        "SUPABASE_ENABLE_WRITES": "false"
       }
     }
   }
@@ -112,7 +114,7 @@ opencode 项目 `opencode.json` 等价写法（键名与嵌套不同）：
 
 **模式选错的症状（记住这个坑）**：只填 AK/SK 不设 `SUPABASE_TRANSPORT=sdk_core`，服务端按 REST 模式启动并**完全忽略 AK/SK**，每次调用报 `MCP_PERMISSION_DENIED`。反过来，REST 模式没配 `HUAWEICLOUD_AUTH_TOKEN` 也是这个错。
 
-**首次接入保持只读**：`HUAWEICLOUD_MCP_READ_ONLY=true`、`SUPABASE_ENABLE_WRITES=false`，验证通过后再按需放开。凭据值从项目配置/秘密存储注入进程，不进对话、不进代码仓。
+**首次接入保持只读**：`HUAWEICLOUD_MCP_READ_ONLY=true`、`SUPABASE_ENABLE_WRITES=false`，验证通过后再按需放开——放开是**两个变量一起改**：`SUPABASE_ENABLE_WRITES=true` 且 `HUAWEICLOUD_MCP_READ_ONLY=false`，改完重启 MCP（只改一个会继续被拦）。凭据值从项目配置/秘密存储注入进程，不进对话、不进代码仓。
 
 ## 五、环境变量清单（注册时注入的完整集合）
 

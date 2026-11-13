@@ -34,18 +34,18 @@ SKILL.md 是主文档；本文件是各场景的详细步骤、字段来源与�
 | 来源 | 字段 |
 |---|---|
 | MCP 工具可查 | 应用规格（`list_supabase_flavors`，需先有 AZ）；路线 B 的数据库实例（`list_supabase_manageable_instances`）；安全组（可新建） |
-| KooCLI 可查 | 可用区、PG 引擎版本、VPC/子网（含 IP 余量）、空闲 EIP |
+| KooCLI 可查 | 可用区、PG 引擎版本、数据库规格（RDS ListFlavors）、环境支持的磁盘类型（RDS ListStorageTypes）、VPC/子网（含 IP 余量）、空闲 EIP |
 | 必须用户提供 | 应用名称、区域（环境里已有则免）、回调地址类 URL |
 | 本地请求文件（秘密） | 应用密码（本地生成）、路线 B 的 database_pwd、路线 A 的数据库密码、存储 AK/SK、OBS 桶名 |
 | 外部资源 | EIP（用户已有或 KooCLI 新购） |
 
 ### 创建请求体（写入本地请求文件的完整字段）
 
-**公共必填**：name（4-64）、basic_config{region, vpc_id, subnet_id}（可选 time_zone）、version、mode=Single、flavor_ref、availability_zone、password、storage_component、manage_type。
-**公共可选**：data_vip、security_group_id（应用安全组）。
+**公共必填**：name（4-64）、basic_config{region, vpc_id, subnet_id}（可选 time_zone）、version、mode=Single、flavor_ref、availability_zone、password、storage_component（不用存储时写 `{enabled:false}`，不能整个省略）、manage_type。
+**公共可选**：data_vip、security_group_id（应用安全组；可选但漏传事后无法补——没有换组工具，建议自建专用组）。
 
-- **路线 A（newly_instance）**追加 managed_instance：datastore{type=PostgreSQL, version}、charge_info{charge_mode=postPaid}、flavor_ref（数据库规格）、volume{type=CLOUDSSD, size}、availability_zone（与应用一致，服务端强制）、security_group_id（数据库安全组）、password（数据库密码，本地生成）、enterprise_project_id（默认 0）。可选 configuration_id、port（**不传，保持默认 5432**）。
-- **路线 B（existed_instance）**追加 existing_instance：instance_id（工具查）、database_name（数据库用户名）、database_pwd（用户写本地文件）。
+- **路线 A（newly_instance）**追加 managed_instance：datastore{type=PostgreSQL, version}、charge_info{charge_mode=postPaid}、flavor_ref（数据库规格，KooCLI ListFlavors 查）、volume{type: 按环境查询结果选择的盘型（ListStorageTypes 查）， size: 正整数}、availability_zone（与应用一致，服务端强制）、security_group_id（数据库安全组，必填）、password（数据库密码，本地生成）、enterprise_project_id（默认 0）。可选 configuration_id、port（**不传，保持默认 5432**）。
+- **路线 B（existed_instance）**追加 existing_instance：instance_id（工具查）、database_name（数据库用户名，用户提供）、database_pwd（用户写本地文件）。
 
 不支持：主备模式、包周期、tags、未知字段——如实告知，不静默丢弃用户要求。
 
@@ -63,7 +63,7 @@ SKILL.md 是主文档；本文件是各场景的详细步骤、字段来源与�
 | 同意图有未完成执行 | MCP_GUARDRAIL_BLOCKED | 查记录核对，不新建计划绕过 |
 | 响应含 order_id | MCP_SDK_ERROR，记录置 unknown | 不支付、不重放，人工核对订单 |
 | 提交中断 | submission_unknown + plan_id | `inspect_supabase_plan` → 查任务/资源；禁止重放 |
-| 写开关没开 | MCP_READ_ONLY | 操作员开启后重启 MCP |
+| 写开关没开 / 只读拦截开着 | MCP_READ_ONLY | 操作员同时核对两个变量：SUPABASE_ENABLE_WRITES=true 且 HUAWEICLOUD_MCP_READ_ONLY=false，改完重启 |
 | 任务 failed/状态识别不了 | next_action 指向人工 | 停止当前链路，交操作方 |
 | 资源回查状态非 normal | 后续写操作被护栏挡 | 继续按节奏观察，不强行绑 EIP |
 | 应用完成但数据库失败（路线 A） | 两个任务独立返回 | 分别核对；部分成功**不自动删资源** |

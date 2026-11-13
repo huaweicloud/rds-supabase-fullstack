@@ -28,7 +28,7 @@ Storage：首次启用必须SK。已启用组件更新可省略SK保持原值；
 
 创建：`create_supabase_application(request_ref, confirm=false, plan_id=null)`，DANGEROUS。引用对象必填name（4–64）、basic_config（region/vpc_id/subnet_id，可选time_zone）、version、mode=Single、flavor_ref、availability_zone（单AZ）、password、storage_component、显式manage_type。
 - existed_instance：existing_instance包含instance_id、database_name（数据库用户名）、database_pwd；managed_instance省略或null。
-- newly_instance：managed_instance包含datastore（type=PostgreSQL/version）、charge_info（仅charge_mode=postPaid）、flavor_ref、volume（type=CLOUDSSD/正整数size）、availability_zone（与应用一致）、security_group_id、password、enterprise_project_id。可选configuration_id、port（2100–9500）、data_vip。existing_instance省略或null。
+- newly_instance：managed_instance包含datastore（type=PostgreSQL/version）、charge_info（仅charge_mode=postPaid）、flavor_ref、volume（type=非空盘型代码，按环境查询结果选择；size=正整数）、availability_zone（与应用一致）、security_group_id、password、enterprise_project_id。可选configuration_id、port（2100–9500）、data_vip。existing_instance省略或null。
 - 顶层可选security_group_id和data_vip；不支持Ha、包周期、未确认tags结构或未知字段。local检查只保证已知结构；后端密码策略、PG最低版本、容量/可售范围及配额仍权威，不编造限制。创建时Storage启用必须全凭据。
 - 返回202+job_id+application_id与可选instance_id/instance_job_id；分别观察资源任务。意外订单进入unknown，不能自动支付或重试。未接入X-Client-Token，幂等保护仅限当前本地账本；不能跨机器重复提交。
 

@@ -5,7 +5,7 @@ description: RDS Supabase 应用全生命周期管理技能：从零创建一个
 
 # RDS Supabase 应用全生命周期管理
 
-版本 0.5.6；配套服务端 mcp_server_supabase ≥ 0.4.0a11（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
+版本 0.5.7；配套服务端 mcp_server_supabase ≥ 0.4.0a11（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
 
 贯穿所有场景的四条铁律：
 1. **写操作两段式**：先预览（confirm=false），把参数、影响、费用展示给用户；用户确认后才提交（confirm=true + 预览返回的 plan_id）。预览 10 分钟有效，参数变了重新预览。
@@ -32,31 +32,35 @@ description: RDS Supabase 应用全生命周期管理技能：从零创建一个
 
 环境变量名必须是：`HUAWEICLOUD_ACCESS_KEY`、`HUAWEICLOUD_SECRET_KEY`（不是 SECRET_ACCESS_KEY 之类的变体）；带 SecurityToken 的是临时密钥，标记下来（影响存储对接）。凭据走哪种传输模式在第二步安装时定——模式选错，所有调用都会失败。
 
-**第二步：安装管理面 MCP（来源只有本仓 GitHub）**
+**第二步：动态安装管理面 MCP（Agent 当场执行，会话内使能，免重启）**
 
-服务端**没有发布到 PyPI/npm**——`mcp-huaweicloud-rds-supabase-mgr` 是安装后的入口脚本名，不是包名；PyPI 上存在同名第三方包，装上就是错误的服务器。唯一正确来源是本仓 GitHub：
+环境信息齐了就**自动安装，不需要用户动手，也不需要退出会话**：Agent 直接以 uvx 从本仓 GitHub 拉起（不克隆仓库），凭据写入**当前项目**的 MCP 配置，宿主在会话内使能，装完当场验证、当场可用。
+
+来源铁律：服务端**没有发布到 PyPI/npm**——`mcp-huaweicloud-rds-supabase-mgr` 是安装后的入口脚本名，不是包名；PyPI 上存在同名第三方包，装上就是错误的服务器。唯一正确来源是本仓 GitHub：
 
 ```
 https://github.com/huaweicloud/rds-supabase-fullstack
 └── server/mcp_server_rds_supabase_mgr/    ← 管理面服务端源码 + README（安装方式的权威定义）
 ```
 
-动手前先读该目录的 README.md，按它给出的方式安装使能（结论已固化在[安装手册](references/install.md)，含宿主注册模板和网络逃生通道）：
+安装动作（Agent 按宿主执行；凭据值从项目内受保护文件/秘密存储读入配置文件，**不进对话、不回显、不经命令行参数**；完整模板见[安装手册](references/install.md)第四节）：
 
-| 方式 | 适用 | 做法 |
+| 宿主 | 动态安装动作（Agent 执行） | 会话内使能（不退出会话） |
 |---|---|---|
-| uvx 直接从 GitHub 运行（推荐） | 有外网 | `uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr" mcp-huaweicloud-rds-supabase-mgr`；生产建议 URL 加 `@<commit>` 锁版本 |
-| 克隆本仓本地运行 | 内网/离线 | `git clone` 本仓 → `cd server/mcp_server_rds_supabase_mgr` → `uv sync` → `uv run mcp-huaweicloud-rds-supabase-mgr` |
+| opencode | 向项目 `opencode.json` 写入 `mcp.servers.rds-supabase-mgr` 条目（uvx 命令 + environment） | 保存即**自动连接**；未连上就在 `/mcps` 面板选中连接 |
+| Claude Code | 向项目根 `.mcp.json` 写入 `mcpServers` 条目（uvx 命令 + env） | 会话内弹出项目服务器**批准提示**（安全机制，一次），用户批准即连上；`/mcp` 面板核对 |
+| Cursor / Trae / 其他 | 写入该宿主的项目级 MCP 配置（结构同 `.mcp.json`） | 按宿主自身的刷新机制使能；宿主确实只认重启时，如实告知用户执行一次宿主 reload——配置已就位，属一次性动作，不算安装失败 |
 
 凭据模式**二选一**（选错=每次调用都报 MCP_PERMISSION_DENIED）：
 - **AK/SK（含临时密钥）**：必须设 `SUPABASE_TRANSPORT=sdk_core`。只填 AK/SK 不设 sdk_core，服务端按 REST 模式启动并完全忽略 AK/SK
 - **服务 Token**：默认 REST 模式，注入 `HUAWEICLOUD_AUTH_TOKEN`
 - 两种模式共同必填：`SUPABASE_RDS_ENDPOINT` + `HUAWEICLOUD_PROJECT_ID`
 
-注册到**当前项目**的 MCP 配置（opencode 项目 opencode.json；Claude Code / Cursor / Trae 项目 .mcp.json，模板见安装手册），禁止注册到用户级/全局配置。首次接入保持只读（`HUAWEICLOUD_MCP_READ_ONLY=true`、`SUPABASE_ENABLE_WRITES=false`），验证通过再按需放开。git 拉取不通时的 ZIP 逃生通道见安装手册——**任何情况下都不去 PyPI/npm/第三方源找包**。
+红线：写入后核对配置文件在项目根之内、已列入项目 `.gitignore`、未触碰任何用户级/全局位置；首次接入保持只读（`HUAWEICLOUD_MCP_READ_ONLY=true`、`SUPABASE_ENABLE_WRITES=false`），验证通过再按需放开。uvx 拉取不通走 ZIP 逃生通道（安装手册第六节）——**任何情况下都不去 PyPI/npm/第三方源找包**。
 
 **第三步：验证装好了没**
-调 `get_supabase_capabilities`：能返回说明进程活着；**核对返回里的 mode 字段**和预期传输一致（不一致说明配置错了）。再调 `list_supabase_applications`（limit=1）验证真实可用。
+先确认工具已在本会话可见——**列表里调不到这个服务器的工具，是会话没使能**：回第二步按宿主使能（opencode `/mcps` 连接、Claude Code 批准提示或 `/mcp` 面板），不是重装。
+然后调 `get_supabase_capabilities`：能返回说明进程活着；**核对返回里的 mode 字段**和预期传输一致（不一致说明配置错了）。再调 `list_supabase_applications`（limit=1）验证真实可用。
 
 装上但状态异常时，依次检查：环境变量名是否被污染、传输模式是否配错、凭据是否过期——修一样验一次，最多三轮，仍不行就输出缺口报告，不硬试。
 

@@ -7,6 +7,24 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-mgr-mcp` v0.5.7: the management-plane MCP install
+  step is now an agent-executed dynamic install that enables the server
+  in the current session with no restart. After the environment check
+  passes, the agent writes the project-level MCP config itself (uvx
+  straight from this GitHub repository, no clone) and enables it
+  in-session per host, verified against each host's official docs:
+  opencode connects newly configured servers automatically (with the
+  /mcps panel as the in-session fallback) and Claude Code shows its
+  project-server approval prompt in-session (one approval connects it,
+  /mcp for status). Hosts without hot-reload are handled honestly: the
+  config is complete and the user performs one host reload. The install
+  manual's opencode template was also corrected to the current V2
+  structure (mcp.servers.* instead of servers directly under mcp) with
+  the {env:NAME} reference noted, and a session-enablement subsection
+  adds the per-host commands plus a troubleshooting order that
+  distinguishes "not enabled in session" (fix enablement, do not
+  reinstall) from config/credential errors. Verification step now
+  starts from tool visibility in the current session.
 - Skill `rds-supabase-mcp` v2.6.2: accuracy and packaging fixes plus a
   human-facing README. The tool table now matches the server (0.4.0):
   get_database_stats (pg_stat_database + bgwriter via RPC) and get_logs

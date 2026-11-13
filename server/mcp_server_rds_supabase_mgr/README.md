@@ -83,7 +83,7 @@ RDS 管理接口操作 Supabase 应用。SQL 与数据操作属独立数据面�
 | `plan_supabase_creation` | 创建规划（意图驱动） | READ | 按路线/存储/公网/SSL/登录意图输出阶段化准备方案；planning_only，非执行 |
 | `list_supabase_flavors` | Supabase 规格候选 | READ | creation_ready=false，非报价 |
 | `list_supabase_manageable_instances` | 可托管 PG 查询 | READ | 同上 |
-| `create_supabase_application` | Single 创建提交（需确认） | DANGEROUS | 经本地 request_ref；仅 Single；密码 8-32 位三类字符；字段级报错与后端错误透传 |
+| `create_supabase_application` | Single 创建提交（需确认） | DANGEROUS | 经本地 request_ref；Single/Ha；按需/包周期（1-9月/1-3年，返回订单需控制台支付）；密码 8-32 位三类字符；字段级报错与后端错误透传 |
 | `delete_supabase_application` | 删除应用保留 PG（需确认） | DANGEROUS | 无级联删 PG |
 | `change_supabase_ssl` | SSL 开关（需确认） | WRITE | 开启需证书 ID，关闭传 null |
 | `plan_supabase_ssl` | SSL 切换规划 | READ | 证书步骤与缺口，无提交 |

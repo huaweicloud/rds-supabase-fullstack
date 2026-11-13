@@ -20,8 +20,8 @@ def validate_creation(body):
         required=('name','basic_config','version','mode','flavor_ref','availability_zone','password','storage_component','manage_type')
         fields(body,required+('managed_instance','existing_instance','data_vip','security_group_id'),required)
         if not isinstance(body['name'],str) or not 4<=len(body['name'])<=64 or any(ord(c)<32 for c in body['name']):raise ValueError('name must be 4-64 characters')
-        if body['mode']!='Single':raise ValueError('mode must be Single (HA deployment is not supported)')
-        if not isinstance(body['version'],str) or not re.fullmatch(r'[1-9]\d*\.(0|[1-9]\d*)\.(0|[1-9]\d*)',body['version']):raise ValueError('version must be X.Y.Z - the application version, currently "1.0.0", not the PG engine version')
+        if body['mode'] not in ('Single','Ha'):raise ValueError('mode must be Single or Ha (chosen with the user per scenario)')
+        if not isinstance(body['version'],str) or not re.fullmatch(r'[1-9]\d*\.(0|[1-9]\d*)\.(0|[1-9]\d*)',body['version']):raise ValueError('version must be X.Y.Z - the Supabase application version, use the highest available (not the PG engine version)')
         if not isinstance(body['flavor_ref'],str) or not re.fullmatch(r'rds\.supabase(\.[a-z0-9]+){3,4}',body['flavor_ref']):raise ValueError('flavor_ref must be an application flavor like rds.supabase.n1.large.2')
         az=segment(body['availability_zone']);password_rule(body['password'],'password')
         basic=body['basic_config'];fields(basic,('region','vpc_id','subnet_id','time_zone'),('region','vpc_id','subnet_id'))
@@ -34,7 +34,9 @@ def validate_creation(body):
         if body['manage_type']=='existed_instance':
             if body.get('managed_instance') is not None:raise ValueError('manage_type existed_instance must not carry managed_instance')
             existing=body['existing_instance'];fields(existing,('instance_id','database_name','database_pwd'),('instance_id','database_name','database_pwd'))
-            segment(existing['instance_id']);text(existing['database_name']);text(existing['database_pwd'])
+            segment(existing['instance_id'])
+            if existing['database_name']!='root':raise ValueError('database_name must be "root" - the connection user for a managed PG instance is fixed and cannot be changed')
+            text(existing['database_pwd'])
         elif body['manage_type']=='newly_instance':
             if body.get('existing_instance') is not None:raise ValueError('manage_type newly_instance must not carry existing_instance')
             managed=body['managed_instance']
@@ -45,10 +47,17 @@ def validate_creation(body):
             text(managed['datastore']['version'],64)
             if 'ha' in managed:
                 ha=managed['ha'];fields(ha,('mode','replication_mode'),('mode','replication_mode'))
-                if ha['mode']!='Single':raise ValueError('ha.mode must be Single (HA deployment is not supported)')
+                if ha['mode'] not in ('Single','Ha'):raise ValueError('ha.mode must be Single or Ha (match the top-level mode)')
                 if ha['replication_mode'] not in ('async','sync'):raise ValueError("ha.replication_mode must be 'async' or 'sync'")
-            fields(managed['charge_info'],('charge_mode',),('charge_mode',))
-            if managed['charge_info']['charge_mode']!='postPaid':raise ValueError('charge_info.charge_mode must be postPaid (prepaid is not supported)')
+            charge=managed['charge_info'];fields(charge,('charge_mode','period_type','period_num','is_auto_renew','is_auto_pay'),('charge_mode',))
+            if charge['charge_mode'] not in ('postPaid','prePaid'):raise ValueError("charge_info.charge_mode must be 'postPaid' or 'prePaid'")
+            if charge['charge_mode']=='postPaid':
+                if set(charge)!={'charge_mode'}:raise ValueError('postPaid charge_info carries only charge_mode (period fields are prepaid-only)')
+            else:
+                if charge.get('period_type') not in (2,3):raise ValueError('charge_info.period_type must be 2 (month) or 3 (year) for prepaid')
+                if type(charge.get('period_num')) is not int or not 1<=charge['period_num']<=(9 if charge['period_type']==2 else 3):raise ValueError('charge_info.period_num must be 1-9 months or 1-3 years for prepaid')
+                for key in ('is_auto_renew','is_auto_pay'):
+                    if key in charge and type(charge[key]) is not bool:raise ValueError(f'charge_info.{key} must be a boolean')
             fields(managed['volume'],('type','size'),('type','size'))
             text(managed['volume']['type'],32)
             if type(managed['volume']['size']) is not int or managed['volume']['size']<=0:raise ValueError('volume.size must be a positive integer (GB)')

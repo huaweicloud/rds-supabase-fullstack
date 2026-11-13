@@ -24,7 +24,7 @@ class CreationTests(unittest.IsolatedAsyncioTestCase):
         self.env=patch.dict(os.environ,{'SUPABASE_REQUESTS_FILE':str(self.file),'SUPABASE_ENABLE_WRITES':'true','HUAWEICLOUD_MCP_READ_ONLY':'false'});self.env.start();self.addCleanup(self.env.stop)
         self.client=AsyncMock();self.client.endpoint='https://example.invalid';self.client.project='project';self.client.token='fixture'
         self.ops=Operations(self.client,PlanStore(Path(self.tmp.name)/'ledger.db'))
-        self.body={'name':'test-app','basic_config':{'region':'region-1','vpc_id':'vpc-id','subnet_id':'subnet-id'},'version':'1.0.0','mode':'Single','flavor_ref':'rds.supabase.a.b.c','availability_zone':'region-1a','password':'Fixture-Secret1','storage_component':{'enabled':False},'manage_type':'existed_instance','existing_instance':{'instance_id':'pg-id','database_name':'supabase','database_pwd':'fixture-secret'}}
+        self.body={'name':'test-app','basic_config':{'region':'region-1','vpc_id':'vpc-id','subnet_id':'subnet-id'},'version':'1.0.0','mode':'Single','flavor_ref':'rds.supabase.a.b.c','availability_zone':'region-1a','password':'Fixture-Secret1','storage_component':{'enabled':False},'manage_type':'existed_instance','existing_instance':{'instance_id':'pg-id','database_name':'root','database_pwd':'fixture-secret'}}
     def save(self):self.file.write_text(json.dumps({'create':self.body}))
     async def test_create_existing_is_secret_free_and_returns_all_ids(self):
         self.save();preview=await self.ops.create_reference('create')
@@ -48,10 +48,10 @@ class CreationTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(sent['managed_instance']['volume'],{'type':'ESSD','size':40})
         self.assertEqual(sent['managed_instance']['port'],5432)
     async def test_field_errors_name_the_offending_field(self):
-        cases=[('ha','mode','Ha','ha.mode'),
+        cases=[('ha','mode','quic','ha.mode'),
                ('ha','replication_mode','quic','ha.replication_mode'),
                ('port',None,2000,'port'),
-               ('charge_info','charge_mode','prePaid','postPaid')]
+               ('charge_info','charge_mode','invoice','charge_mode')]
         for section,key,value,needle in cases:
             body=copy.deepcopy(REAL_NEW_PG)
             if key is None:body['managed_instance'][section]=value
@@ -77,18 +77,56 @@ class CreationTests(unittest.IsolatedAsyncioTestCase):
         body=copy.deepcopy(REAL_NEW_PG);body['password']='Abc12345'  # three classes, minimal length
         self.file.write_text(json.dumps({'create':body}))
         await self.ops.create_reference('create')
-    async def test_no_ha_deployment_or_implicit_branch_or_unknown_fields(self):
-        for key,value in [('mode','Ha'),('manage_type','guess'),('extra','secret')]:
+    async def test_no_implicit_branch_or_unknown_fields(self):
+        for key,value in [('manage_type','guess'),('extra','secret')]:
             body=copy.deepcopy(self.body);body[key]=value;self.file.write_text(json.dumps({'create':body}))
             with self.assertRaises(McpToolError):await self.ops.create_reference('create')
         self.client.request.assert_not_awaited()
-    async def test_new_pg_validates_branch_and_postpaid_only(self):
+    async def test_ha_mode_and_prepaid_are_selectable(self):
+        body=copy.deepcopy(REAL_NEW_PG);body['mode']='Ha'
+        body['managed_instance']['ha']={'mode':'Ha','replication_mode':'sync'}
+        body['managed_instance']['charge_info']={'charge_mode':'prePaid','period_type':2,'period_num':3,'is_auto_renew':False}
+        self.file.write_text(json.dumps({'create':body}))
+        preview=await self.ops.create_reference('create');self.assertNotIn('Fixture-Secret1',str(preview))
+        for bad,needle in (({'charge_mode':'prePaid','period_type':2,'period_num':10},'period_num'),
+                           ({'charge_mode':'prePaid','period_type':3,'period_num':4},'period_num'),
+                           ({'charge_mode':'prePaid'},'period_type'),
+                           ({'charge_mode':'postPaid','period_num':3},'postPaid charge_info'),
+                           ({'charge_mode':'prePaid','period_type':2,'period_num':3,'is_auto_renew':'yes'},'is_auto_renew')):
+            broken=copy.deepcopy(REAL_NEW_PG);broken['managed_instance']['charge_info']=bad
+            self.file.write_text(json.dumps({'create':broken}))
+            with self.assertRaises(McpToolError) as ctx:await self.ops.create_reference('create')
+            self.assertIn(needle,message(ctx.exception))
+    async def test_managed_database_name_is_fixed_root(self):
+        body=copy.deepcopy(self.body);body['existing_instance']['database_name']='admin'
+        self.file.write_text(json.dumps({'create':body}))
+        with self.assertRaises(McpToolError) as ctx:await self.ops.create_reference('create')
+        self.assertIn('root',message(ctx.exception))
+    async def test_new_pg_validates_branch_and_billing(self):
         del self.body['existing_instance'];self.body['manage_type']='newly_instance'
         self.body['managed_instance']={'datastore':{'type':'PostgreSQL','version':'16'},'charge_info':{'charge_mode':'postPaid'},'flavor_ref':'pg-flavor','volume':{'type':'CLOUDSSD','size':100},'availability_zone':'region-1a','security_group_id':'11111111-1111-4111-8111-111111111111','password':'Fixture-Secret1','enterprise_project_id':'0'}
         self.save();preview=await self.ops.create_reference('create');self.assertNotIn('Fixture-Secret1',str(preview))
-        self.body['managed_instance']['charge_info']['charge_mode']='prePaid';self.save()
+        self.body['managed_instance']['charge_info']={'charge_mode':'prePaid'}
+        self.save()
         with self.assertRaises(McpToolError) as ctx:await self.ops.create_reference('create')
-        self.assertIn('postPaid',message(ctx.exception))
+        self.assertIn('period_type',message(ctx.exception))
+        self.body['managed_instance']['charge_info']={'charge_mode':'prePaid','period_type':2,'period_num':6}
+        self.save()
+        await self.ops.create_reference('create')
+    async def test_prepaid_order_flow_and_unexpected_shapes(self):
+        self.file.write_text(json.dumps({'create':REAL_NEW_PG}))
+        preview=await self.ops.create_reference('create')
+        self.client.request.return_value=(202,{})
+        with self.assertRaises(McpToolError):await self.ops.create_reference('create',True,preview['plan_id'])
+        self.assertEqual(self.ops.plans.inspect(preview['plan_id'])['state'],'unknown')
+        prepaid=copy.deepcopy(REAL_NEW_PG);prepaid['managed_instance']['charge_info']={'charge_mode':'prePaid','period_type':3,'period_num':1}
+        self.file.write_text(json.dumps({'create':prepaid}))
+        order_preview=await self.ops.create_reference('create')
+        self.client.request.return_value=(202,{'order_id':'order-1'})
+        result=await self.ops.create_reference('create',True,order_preview['plan_id'])
+        self.assertEqual(result['status'],'order_created');self.assertEqual(result['order_id'],'order-1')
+        self.assertIn('never pays',str(result))
+        self.assertEqual(self.ops.plans.inspect(order_preview['plan_id'])['state'],'accepted')
     async def test_volume_type_follows_environment_selection(self):
         del self.body['existing_instance'];self.body['manage_type']='newly_instance'
         base={'datastore':{'type':'PostgreSQL','version':'16'},'charge_info':{'charge_mode':'postPaid'},'flavor_ref':'pg-flavor','volume':{'type':'CLOUDSSD','size':100},'availability_zone':'region-1a','security_group_id':'11111111-1111-4111-8111-111111111111','password':'Fixture-Secret1','enterprise_project_id':'0'}
@@ -121,11 +159,6 @@ class CreationTests(unittest.IsolatedAsyncioTestCase):
         retry=await self.ops.create_reference('create')
         with self.assertRaises(McpToolError) as ctx:await self.ops.create_reference('create',True,retry['plan_id'])
         self.assertIn('unresolved execution',message(ctx.exception))
-    async def test_unexpected_order_and_transport_result_are_not_success(self):
-        self.save();preview=await self.ops.create_reference('create')
-        self.client.request.return_value=(202,{'order_id':'order'})
-        with self.assertRaises(McpToolError):await self.ops.create_reference('create',True,preview['plan_id'])
-        self.assertEqual(self.ops.plans.inspect(preview['plan_id'])['state'],'unknown')
     def test_http_failure_carries_backend_detail(self):
         error=http_failure(400,{'error_code':'DBS.280002','error_msg':'flavor not available'})
         text=message(error)

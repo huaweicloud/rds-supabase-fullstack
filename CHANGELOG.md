@@ -7,6 +7,43 @@ semantic versioning.
 
 ### Changed
 
+- `mcp_server_rds_supabase_mgr` v0.4.0a11: creation options opened to the
+  full product surface, verified against the API Explorer
+  CreateSupabaseApplication contract. Deployment mode now accepts Single
+  and Ha (the ha object follows: mode Single/Ha, replication async/sync);
+  billing accepts postPaid and prepaid - charge_info reuses the common
+  RDS ChargeInfo definition (prePaid requires period_type 2=month/3=year
+  with period_num 1-9 months or 1-3 years, optional is_auto_renew/
+  is_auto_pay booleans; postPaid carries charge_mode only). Prepaid
+  submissions return an order instead of a job: the create flow now
+  answers status=order_created with the order_id, marks the plan
+  accepted (blocking duplicate orders), and states clearly that payment
+  happens in the console and this MCP never pays. The route-B
+  database_name is enforced as the fixed value "root". The top-level
+  version is documented as "the highest available application version"
+  (x.y.z) rather than a fixed value. list_supabase_flavors accepts
+  mode=Ha. The intent planner's pre-creation steps and capabilities
+  declarations updated accordingly (mode and billing are user choices;
+  security groups must be newly created dedicated groups with rules
+  configured at creation time). New tests: Ha+prepaid validation with
+  field attribution, prepaid order flow, fixed-root enforcement,
+  unexpected-shape handling.
+- Skill `rds-supabase-mgr-mcp` v0.5.6: creation configuration aligned
+  to the same product surface, plus a language pass. New rules:
+  application version = the highest available (currently 1.0.0, no
+  query API - check the console when unsure); deployment mode and
+  billing are explicit user choices (Single/Ha, postPaid/prepaid with
+  the period rules and the order-payment flow explained); the
+  application security group must be a newly created dedicated group
+  built automatically by the agent with both ingress (8443) and egress
+  (5432) rules configured at creation time - the rules table moved from
+  step 4 into step 2, and step 4 now covers only EIP binding and
+  connectivity verification; the enterprise project defaults to the
+  default project (ID "0"); route B database_name is fixed to root;
+  the application password is documented as the default user
+  supabase's password (also the Dashboard admin login). Wording
+  de-jargonized throughout ("reference payload"/"copy verbatim" phrasing
+  replaced with plain statements). Server floor raised to 0.4.0a11.
 - `mcp_server_rds_supabase_mgr` v0.4.0a10: creation contract aligned to a
   real backend-accepted route-A payload, plus end-to-end error
   transparency. Contract: managed_instance now accepts the `ha` object

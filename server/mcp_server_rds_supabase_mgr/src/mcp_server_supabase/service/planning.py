@@ -4,7 +4,7 @@ from mcp_server_supabase.service.contracts import ssl_body
 from mcp_server_supabase.client.base import OfflineClient, SupabaseClient
 
 SCENARIOS = {
-    "create": "Single creation via local reference available: existing PG or postPaid new PG; intent-driven phase planning via plan_supabase_creation; backend policy/live acceptance pending",
+    "create": "Creation via local reference available: existing PG (database_name fixed to root) or new PG (Single or Ha mode; postPaid or prepaid 1-9 months / 1-3 years - prepaid returns a console order); intent-driven phase planning via plan_supabase_creation; backend policy/live acceptance pending",
     "delete": "Application-only execution available; PG cascade remains unavailable",
     "access": "SSL/EIP/application-password adapters available; certificate discovery and live validation pending",
     "security_group": "Native VPC group query/create and rule add/delete adapters available; shared-resource inventory and live validation pending",
@@ -18,7 +18,7 @@ class PlanningService:
         self.client = client if client is not None else OfflineClient()
 
     def capabilities(self) -> dict[str, object]:
-        return {"mode": "configured_" + os.getenv("SUPABASE_TRANSPORT", "rest"), "generated_supabase_sdk": False, "input_policy": "reject_unknown_fields", "local_plan_cancellation": "prepared_only", "cloud_execution": "configured_subset", "implemented_operations": ["application queries", "key metadata", "auth query", "job query", "bounded job observation", "accepted Auth plan reconciliation", "SSL", "EIP", "application-only deletion", "key reset", "registration flags", "local request references", "application password", "Auth providers and confirmation template", "OBS full-credential update", "VPC group query/create", "VPC rule add/delete", "creation candidate queries", "Single creation", "protected local key delivery"], "scenarios": SCENARIOS.copy()}
+        return {"mode": "configured_" + os.getenv("SUPABASE_TRANSPORT", "rest"), "generated_supabase_sdk": False, "input_policy": "reject_unknown_fields", "local_plan_cancellation": "prepared_only", "cloud_execution": "configured_subset", "implemented_operations": ["application queries", "key metadata", "auth query", "job query", "bounded job observation", "accepted Auth plan reconciliation", "SSL", "EIP", "application-only deletion", "key reset", "registration flags", "local request references", "application password", "Auth providers and confirmation template", "OBS full-credential update", "VPC group query/create", "VPC rule add/delete", "creation candidate queries", "Single and Ha creation (postPaid or prepaid order)", "protected local key delivery"], "scenarios": SCENARIOS.copy()}
 
     async def creation(self, manage_type=None, needs_storage=None, needs_public_access=None,
                        needs_ssl=None, needs_email_login=None, needs_github_login=None) -> dict[str, object]:
@@ -38,7 +38,7 @@ class PlanningService:
         if needs_github_login is None:
             decision.append("GitHub login requirement: decides the OAuth App setup after creation")
 
-        pre = ["collect application name (4-64 chars) and region/project from the environment",
+        pre = ["collect application name (4-64 chars) and region/project from the environment; use the highest available application version (x.y.z, currently 1.0.0 - no query API yet)",
                "select the Supabase flavor via list_supabase_flavors (requires az_code)",
                "generate the application password locally into the protected request file - never in chat",
                "select the VPC/subnet via KooCLI (pick a subnet with free IPs)"]
@@ -46,16 +46,18 @@ class PlanningService:
             pre.append("decide the OBS bucket: reuse an existing private bucket (KooCLI hcloud obs ls; a public bucket needs explicit risk acknowledgment) or create a dedicated private multi-AZ bucket (KooCLI hcloud obs mb); write bucket name plus persistent AK/SK into storage_component - the creation path requires full credentials, SK omission is not available")
         elif needs_storage is False:
             pre.append("write storage_component as {enabled:false} - the field is mandatory even when storage is not used")
-        pre.append("prepare both security groups before submit: a dedicated application group (optional at creation but cannot be attached later) and, on route A, the database group (required); rules are added after creation")
+        pre.append("the application security group must be newly created and dedicated - never reuse an existing group (shared groups risk collateral damage); create it via create_supabase_security_group and configure both directions immediately: 8443 ingress from the user CIDR plus 5432 egress (KooCLI). On route A create a dedicated database group too (5432 ingress from the chosen subnet). Both IDs go into the creation request - they cannot be attached later")
         if manage_type == "newly_instance":
             pre += ["choose the AZ via KooCLI RDS ListAvailableZones",
                     "choose the PG engine version via KooCLI RDS ListDatastores",
                     "choose the database flavor via KooCLI RDS ListFlavors (depends on version and AZ - not the same list as the application flavor)",
                     "choose the disk type from the environment's available storage types via KooCLI RDS ListStorageTypes (prefer a high-performance SSD) and the size",
-                    "Single mode and postPaid billing only - HA and prepaid are rejected; omit port to keep the backend default"]
+                    "choose deployment mode with the user: Single (trial/internal) or Ha (high availability; the ha object mode follows, replication async or sync)",
+                    "choose billing with the user: postPaid, or prepaid (1-9 months / 1-3 years; prepaid returns an order the user must pay in the console - this MCP never pays)",
+                    "pass port 5432 or omit it (backend default)"]
         elif manage_type == "existed_instance":
             pre += ["select a manageable PG via list_supabase_manageable_instances (status normal, no in-flight action)",
-                  "collect database_name (the connection username) from the user",
+                  "database_name is fixed to root - never ask the user or change it",
                   "the user writes the root password into the protected request file - never in chat"]
 
         create = ["preview create_supabase_application (confirm=false) with the request-file reference",

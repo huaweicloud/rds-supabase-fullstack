@@ -81,7 +81,7 @@ class Operations:
         path=ROOT+'/supabases';digest=self.intent_digest('POST',path,body)
         notices={'completion_verified':False,'warnings':[
             'Review application and PG credentials, network, ownership, quota and ongoing charges before confirming.',
-            'Only Single mode and postPaid new-PG creation are supported. No automatic payment or cleanup.',
+            'Single or Ha mode; postPaid or prepaid (1-9 months / 1-3 years). Prepaid returns an order the user must pay in the console - no automatic payment or cleanup.',
             'Structural validation only: backend password, version, capacity and sale policies remain authoritative.'],
             'follow_up':'Observe application job and any PG job separately, query both resources and validate login. Partial success never authorizes automatic resource deletion.'}
         if not confirm:
@@ -102,13 +102,24 @@ class Operations:
         except BaseException:
             self.plans.finish(plan_id,'unknown');raise unknown from None
         try:
-            if data.get('order_id'):raise ValueError()
-            result=accepted_job(status,data)
-            result['application_id']=segment(data.get('application_id'))
-            for key in ('instance_id','instance_job_id'):
-                if data.get(key):result[key]=segment(data[key])
-            self.plans.finish(plan_id,'accepted',result['job_id'])
-            return {**result,**notices,'plan_id':plan_id}
+            if data.get('job_id'):
+                result=accepted_job(status,data)
+                result['application_id']=segment(data.get('application_id'))
+                for key in ('instance_id','instance_job_id'):
+                    if data.get(key):result[key]=segment(data[key])
+                if data.get('order_id'):result['order_id']=segment(data['order_id'])
+                self.plans.finish(plan_id,'accepted',result['job_id'])
+                return {**result,**notices,'plan_id':plan_id}
+            if data.get('order_id'):
+                # Prepaid flow: the backend answers with an order, not a job. The
+                # order was created (accepted); payment is the user's console step.
+                result={'status':'order_created','order_id':segment(data['order_id']),'job_id':None}
+                self.plans.finish(plan_id,'accepted',None)
+                return {**result,**notices,'warnings':notices['warnings']+[
+                    'A prepaid order was created; this MCP never pays it.',
+                    'The user pays and tracks the order in the console; resource creation starts after payment - re-verify resources once a job appears.'],
+                    'plan_id':plan_id}
+            raise ValueError()
         except BaseException:
             self.plans.finish(plan_id,'unknown');raise unknown from None
 
@@ -120,8 +131,8 @@ class Operations:
     async def creation_candidates(self, kind, az_code=None, mode=None):
         if kind=='flavors':
             az_code=segment(az_code)
-            if mode != 'Single':
-                raise McpToolError('MCP_INVALID_ARGS','Only Single mode is supported by the supplied SDK contract')
+            if mode not in ('Single','Ha'):
+                raise McpToolError('MCP_INVALID_ARGS','mode must be Single or Ha')
             path=ROOT+'/supabase/flavors';query={'az_code':az_code,'mode':mode}
         elif kind=='manageable':
             path=ROOT+'/manageable-instances';query={'application_type':'supabase'}

@@ -15,6 +15,20 @@ def segment(value):
     return value
 
 
+def error_detail(raw):
+    """Parse a backend error body (bytes/str) into a bounded detail dict, or None."""
+    try:
+        parsed = json.loads(raw) if raw else {}
+    except ValueError:
+        return None
+    if not isinstance(parsed, dict):
+        return None
+    source = parsed.get("error") if isinstance(parsed.get("error"), dict) else parsed
+    detail = {k: str(source[k])[:300] for k in ("error_code", "error_msg", "code", "message", "request_id")
+              if isinstance(source.get(k), (str, int))}
+    return detail or None
+
+
 class RestClient:
     def __init__(self, endpoint=None, project=None, token=None, allow_loopback=False):
         self.endpoint = endpoint or os.getenv("SUPABASE_RDS_ENDPOINT", "")
@@ -49,15 +63,7 @@ class RestClient:
             if not 200 <= response.status < 300:
                 # Surface the backend error body instead of dropping it: the agent
                 # needs error_code/error_msg to repair the request.
-                detail=None
-                try:
-                    parsed=json.loads(raw) if raw else {}
-                except ValueError:
-                    parsed={}
-                if isinstance(parsed,dict):
-                    source=parsed.get('error') if isinstance(parsed.get('error'),dict) else parsed
-                    detail={k:str(source[k])[:300] for k in ('error_code','error_msg','code','message') if isinstance(source.get(k),(str,int))} or None
-                raise http_failure(response.status,detail)
+                raise http_failure(response.status, error_detail(raw))
             value = json.loads(raw) if raw else {}
             if not isinstance(value, dict):
                 raise ValueError("response shape")

@@ -27,6 +27,7 @@ def http_failure(status, detail=None):
                    'Check service availability and the API contract; reconcile any submitted write before retrying.'))
     message=f'API returned HTTP {status}'
     if detail:
-        parts=[f'{k}={detail[k]}' for k in ('error_code','code','error_msg','message') if k in detail]
+        parts=[f'{k}={str(detail[k])[:300]}' for k in ('error_code','code','error_msg','message','request_id')
+               if detail.get(k) is not None]
         if parts:message+=f' (backend: {", ".join(parts)})'
     return RecoveryError(code, message, category, action)

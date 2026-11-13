@@ -5,7 +5,7 @@ description: RDS Supabase 应用全生命周期管理技能：从零创建一个
 
 # RDS Supabase 应用全生命周期管理
 
-版本 0.5.8；配套服务端 mcp_server_supabase ≥ 0.4.0a11（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
+版本 0.5.9；配套服务端 mcp_server_supabase ≥ 0.4.0a12（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
 
 贯穿所有场景的四条铁律：
 1. **写操作两段式**：先预览（confirm=false），把参数、影响、费用展示给用户；用户确认后才提交（confirm=true + 预览返回的 plan_id）。预览 10 分钟有效，参数变了重新预览。

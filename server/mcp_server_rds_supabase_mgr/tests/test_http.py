@@ -25,7 +25,9 @@ class Handler(BaseHTTPRequestHandler):
         type(self).calls.append((self.command,self.path,body,self.headers.get('X-Auth-Token')))
         code = self.code if self.command == 'GET' else 202
         value = (self.keys_payload if '/api-keys' in self.path else self.payload) if self.command == 'GET' else {'job_id':'job-1'}
-        self.send_response(code); self.end_headers(); self.wfile.write(json.dumps(value).encode())
+        self.send_response(code)
+        self.send_header('X-Request-Id','req-77')
+        self.end_headers(); self.wfile.write(json.dumps(value).encode())
     do_GET = respond
     do_POST = respond
     do_PUT = respond

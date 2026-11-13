@@ -12,7 +12,7 @@ from huaweicloudsdkcore.sdk_response import SdkResponse
 from huaweicloudsdkcore.exceptions.exceptions import ServiceResponseException
 from huaweicloud_mcp_core.errors import McpToolError
 from mcp_server_supabase.failures import http_failure, RecoveryError
-from mcp_server_supabase.client.rest import segment
+from mcp_server_supabase.client.rest import segment, error_detail
 
 
 class QuietSdkClient(Client):
@@ -67,7 +67,10 @@ class SdkCoreClient:
             response=sdk.do_http_request(method,route,
                 query_params=list((query or {}).items()),header_params=request_headers,
                 body=body,response_type=WireResponse)
-            if not 200 <= response.status_code < 300:raise http_failure(response.status_code)
+            if not 200 <= response.status_code < 300:
+                # Surface the backend error body instead of dropping it: the agent
+                # needs error_code/error_msg to repair the request.
+                raise http_failure(response.status_code, error_detail(response.raw_content))
             raw=response.raw_content or b'{}'
             if len(raw)>1048576:raise ValueError('response size')
             data=json.loads(raw)
@@ -76,7 +79,12 @@ class SdkCoreClient:
         except McpToolError:
             raise
         except ServiceResponseException as exc:
-            raise http_failure(exc.status_code) from None
+            # SDK-raised service errors carry error_code/error_msg/request_id;
+            # pass them through for diagnosis instead of a bare status code.
+            detail={k: str(v)[:300] for k, v in (('error_code',exc.error_code),
+                                                 ('error_msg',exc.error_msg),
+                                                 ('request_id',exc.request_id)) if v}
+            raise http_failure(exc.status_code, detail) from None
         except Exception:
             raise RecoveryError('MCP_SDK_ERROR','SDK request result unavailable','transport_or_response',
                                 'Verify SDK configuration and response contract; reconcile submitted writes before retrying.') from None

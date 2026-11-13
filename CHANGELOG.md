@@ -7,6 +7,25 @@ semantic versioning.
 
 ### Changed
 
+- `mcp_server_rds_supabase_mgr` v0.4.0a12: backend error codes and messages
+  are now passed through on both transports, fixing a real-test blind spot.
+  In sdk_core mode the Huawei Cloud SDK raises ServiceResponseException for
+  every non-2xx response (its response hook parses the body and raises
+  before our status check), and the client handler was discarding the
+  exception's error_code/error_msg and raising a bare status failure -
+  AK/SK users saw only "API returned HTTP 400" with no way to diagnose.
+  The handler now builds the failure detail from the exception's
+  error_code, error_msg and request_id (the SDK reads request_id from the
+  X-Request-Id response header); the status-check fallback path also parses
+  the raw error body via a shared error_detail helper extracted from the
+  REST client (flat and nested error objects, bounded to 300 characters
+  per field). http_failure now formats request_id into the backend detail
+  line as well. This applies to all 29 tools - both transports funnel
+  through the same http_failure, and the service layer's definite-vs-
+  unknown routing (0.4.0a10) re-raises definite rejections with the full
+  message. Tests: sdk_core error-body passthrough with category routing,
+  nested error object, ServiceResponseException passthrough (174 passed).
+- Skill `rds-supabase-mgr-mcp` v0.5.9: server floor raised to 0.4.0a12.
 - Skill `rds-supabase-mgr-mcp` v0.5.8: the dynamic-install host matrix now
   covers CodeArts (Madao) and OfficeAce explicitly, verified against the
   CodeArts Agent user guide. CodeArts: the MCP config is mcp_settings.json

@@ -7,6 +7,19 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-mgr-mcp` v0.5.3: EIP binding now mandates an
+  auth-URL sync step. After a successful bind, scenario 1 step 4.1
+  requires updating api_external_url to the assembled public access
+  address via update_supabase_auth_config (preview -> confirm -> job ->
+  show_supabase_auth_config verification) - email confirmation links and
+  OAuth callbacks point at this URL and stay broken if it is left
+  stale. Scenario 4's EIP row carries the same obligation for day-2
+  binds and flags that unbinding invalidates the old public URL
+  (confirm with the user whether to revert to the internal address or
+  wait for a rebind). The access-info card reminder becomes a
+  verification (api_external_url must no longer be localhost).
+  local-requests.md documents the field's dependency on the public
+  address; acceptance gains K21 covering the sync behavior.
 - `mcp_server_rds_supabase_mgr` v0.4.0a8: creation volume type is no
   longer pinned to CLOUDSSD - the disk type is environment-selected.
   creation.py now validates volume.type as a non-empty type code (the

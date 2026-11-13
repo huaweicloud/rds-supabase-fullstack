@@ -72,7 +72,7 @@ SKILL.md 是主文档；本文件是各场景的详细步骤、字段来源与�
 
 绑定 EIP：`change_supabase_eip`（is_bind=true 须 public_ip_id + IPv4 两样）。安全组规则三条（应用组 8443 入 + 5432 出；数据库组 5432 入自子网），MCP 工具能加入方向规则，出方向和 0.0.0.0/0 走 KooCLI（用户明确确认后）。
 
-绑定后验证：`show_supabase_application` 的 public_ip 非空 → curl 探测访问地址（任何状态码=网络可达）→ 不通回头查规则和 EIP。
+绑定后验证：`show_supabase_application` 的 public_ip 非空 → **同步改 Auth 的 `api_external_url`** 为拼装的公网访问地址（`update_supabase_auth_config` 预览→确认→查任务→回查；邮箱确认链接和 OAuth 回调都指向它，不改则登录链路断）→ curl 探测访问地址（任何状态码=网络可达）→ 不通回头查规则和 EIP。
 
 ## 场景二：使用已有应用
 

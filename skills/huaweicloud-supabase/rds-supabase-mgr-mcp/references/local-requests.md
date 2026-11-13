@@ -27,6 +27,8 @@
 | email_oauth_provider | 见下 | 部分 |
 | email_template_config | 见下 | 否 |
 
+**api_external_url 跟着公网地址走**：EIP 绑定成功后必须同步更新为拼装的公网访问地址（场景一 4.1 的强制步骤）；解绑后旧值失效，与用户确认改回内网地址还是等重新绑定。
+
 **github_oauth_provider**：enable_github（布尔）、oauth_client_id、oauth_client_secret（**秘密**）、redirect_uri（URL，与 GitHub App 内配置一致）。**关闭时只传 `{"enable_github": false}`**，带其他字段会被拒绝。
 
 **email_oauth_provider**：enable_email_sign_up、enable_email_auto_confirm（布尔）、smtp_config 对象（非空）。smtp_config 子字段：smtp_host、smtp_port（整数 1-65535）、smtp_user、smtp_pwd（**秘密**，QQ/163 等为授权码）、smtp_admin_email、smtp_sender_name、smtp_max_frequency（非负整数）。**关闭时只传 `{"enable_email_sign_up": false}`**。

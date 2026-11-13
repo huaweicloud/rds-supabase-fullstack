@@ -5,7 +5,7 @@ description: RDS Supabase 应用全生命周期管理技能：从零创建一个
 
 # RDS Supabase 应用全生命周期管理
 
-版本 0.5.2；配套服务端 mcp_server_supabase ≥ 0.4.0a8（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
+版本 0.5.3；配套服务端 mcp_server_supabase ≥ 0.4.0a8（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
 
 贯穿所有场景的四条铁律：
 1. **写操作两段式**：先预览（confirm=false），把参数、影响、费用展示给用户；用户确认后才提交（confirm=true + 预览返回的 plan_id）。预览 10 分钟有效，参数变了重新预览。
@@ -131,6 +131,7 @@ https://github.com/huaweicloud/rds-supabase-fullstack
 1. 查现有空闲 EIP 列给用户选（KooCLI，见速查表）
 2. 用户想用新的 → 用 KooCLI 创建：区域/线路/带宽/计费/名称**逐项和用户确认后**再执行
 3. `change_supabase_eip(application_id, is_bind=true, public_ip_id, public_ip_address)` 预览 → 确认 → 提交 → 等任务 → 回查 `show_supabase_application` 的 public_ip 不再是空
+4. **绑定成功后必须同步改 Auth 的 `api_external_url`**：公网地址变了，邮箱确认链接和 OAuth 回调都指向这个 URL，不改则登录链路是断的。把拼装出的公网访问地址写入请求文件别名（如 `auth-url`，只含这一个字段）→ `update_supabase_auth_config` 预览 → 确认 → 查任务 → `show_supabase_auth_config` 回查不再是 localhost
 
 **4.2 配置安全组**
 不加规则等于白建——应用登录和数据库连接都靠它：
@@ -211,7 +212,7 @@ https://github.com/huaweicloud/rds-supabase-fullstack
 | 改应用密码 | `change_supabase_application_password` | 新密码写本地请求文件；只改应用密码，不动数据库密码 |
 | 重置 API Key | `reset_supabase_api_key` | 重置是异步的：老 Key 逐渐失效、新 Key 是一条新记录；**新值要用场景五重新交付**；提前警告用户下游会断 |
 | 开/关 SSL | `change_supabase_ssl` | 开需要证书 ID（没有采购能力，让用户提供）；关必须不带证书。切换会闪断，建议低峰；生效后提醒改回调地址协议 |
-| 绑/解绑 EIP | `change_supabase_eip` | 绑定要 ID+IPv4 两样；解绑两样都不带。解绑不释放 EIP、不停计费 |
+| 绑/解绑 EIP | `change_supabase_eip` | 绑定要 ID+IPv4 两样；解绑两样都不带。解绑不释放 EIP、不停计费。**绑定成功后必须同步改 api_external_url（场景一 4.1）；解绑后旧公网地址失效，和用户确认改回内网地址还是等重新绑定** |
 | 注册/匿名开关 | `update_supabase_auth_flags` | 只改传了的开关 |
 | 改 Auth 配置 | `update_supabase_auth_config` | 同场景三；字段省略=不变，没有"传空值清空"这回事 |
 | 安全组规则收窄 | `delete_supabase_security_group_rule` | 先核对该组没被别的资源共用 |
@@ -239,7 +240,7 @@ https://github.com/huaweicloud/rds-supabase-fullstack
 访问地址（内网）：<同规则换内网 IP，例 http://192.168.12.34:8443>
 API Key：四类（secret/publishable/service_role/anon）元数据表
 Key 值：已按别名交付到本地受保护文件（路径由操作员预置），向操作员索取，不在对话展示
-后续提醒：Auth 的 site_url/api_external_url 若还是 localhost，按场景三修改
+后续提醒：api_external_url 应已随 EIP 绑定同步为公网地址（场景一 4.1），核对不再是 localhost；site_url 若仍是 localhost 且用户已有域名，按场景三修改
 验证状态：资源已核验 / 网络已探测 / 登录功能未验证（如实标注）
 ```
 

@@ -233,18 +233,24 @@ def register(server):
 
     @server.tool()
     @guard(risk=ToolRisk.READ)
-    async def list_supabase_engine_versions() -> dict:
+    async def list_db_instance_engine_versions() -> dict:
         """Query PostgreSQL engine versions available for managed instances, for the create-with-new-instance scenario. Use the highest version unless the user needs an older one."""
         return await catalog.list_engine_versions()
 
     @server.tool()
     @guard(risk=ToolRisk.READ)
-    async def list_supabase_instance_flavors(version_name: str | None = None) -> dict:
+    async def list_db_instance_flavors_with_azs(version_name: str | None = None) -> dict:
         """Query PostgreSQL instance flavors for the create-with-new-instance scenario; each flavor carries its AZ sale status, doubling as the AZ availability source. Filter by major version (e.g. 17) or omit for all."""
         return await catalog.list_flavors(version_name)
 
     @server.tool()
     @guard(risk=ToolRisk.READ)
-    async def list_supabase_instance_storage_types(version_name: str, ha_mode: str) -> dict:
+    async def list_db_instance_storage_types(version_name: str, ha_mode: str) -> dict:
         """Query storage types available for a managed PostgreSQL instance in the create-with-new-instance scenario, filtered by engine version and deployment mode (single/ha)."""
         return await catalog.list_storage_types(version_name, ha_mode)
+
+    @server.tool()
+    @guard(risk=ToolRisk.READ)
+    async def discover_supabase_link_create_options(mode: str) -> dict:
+        """Discover and pre-fill the managed-instance creation options for the create-with-new-instance scenario: engine versions, instance flavors with per-AZ sale status, storage types, VPC/subnet/security-group inventory, and a recommended value for every managed_instance field. Single/Ha mode shapes the storage and AZ guidance. Not for the attach-existing-instance scenario (use list_supabase_manageable_instances)."""
+        return await catalog.discover_link_create_options(mode)

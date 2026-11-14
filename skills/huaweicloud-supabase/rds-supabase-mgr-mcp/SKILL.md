@@ -1,11 +1,11 @@
 ---
 name: rds-supabase-mgr-mcp
-description: RDS Supabase 应用全生命周期管理技能：从零创建一个能访问的应用（创建、公网开通 EIP 与安全组配置、接入信息交付）、使用已有应用、按需增强（存储对接、邮箱登录、GitHub 登录）、日常变更（改密码、重置 Key、SSL、EIP）、查询接入信息、删除收尾。管理面 MCP 35 个工具 + KooCLI 协同。Use when：管理 RDS Supabase 应用的创建、配置、网络开通、认证对接、变更与删除。不用于 SQL 与数据操作。
+description: RDS Supabase 应用全生命周期管理技能：从零创建一个能访问的应用（创建、公网开通 EIP 与安全组配置、接入信息交付）、使用已有应用、按需增强（存储对接、邮箱登录、GitHub 登录）、日常变更（改密码、重置 Key、SSL、EIP）、查询接入信息、删除收尾。管理面 MCP 36 个工具 + KooCLI 协同。Use when：管理 RDS Supabase 应用的创建、配置、网络开通、认证对接、变更与删除。不用于 SQL 与数据操作。
 ---
 
 # RDS Supabase 应用全生命周期管理
 
-版本 0.9.1；配套服务端 mcp_server_supabase ≥ 0.4.0a30（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
+版本 0.9.2；配套服务端 mcp_server_supabase ≥ 0.4.0a31（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
 
 贯穿所有场景的四条铁律：
 1. **写操作两段式**：先预览（confirm=false），把参数、影响、费用展示给用户；用户确认后才提交（confirm=true + 预览返回的 plan_id）。预览 10 分钟有效，参数变了重新预览。
@@ -303,9 +303,9 @@ Key 值**永远不会出现在对话里**——这是红线，用户要也是本
 | 用途 | 命令 |
 |---|---|
 | 查可用区 | `hcloud RDS ListAvailableZones --cli-region=<region>` |
-| 查 PG 数据库版本 | **MCP 工具 `list_supabase_engine_versions`**（内部走 KooCLI，直接用）；KooCLI 兜底：`hcloud RDS ListDatastores --cli-region=<region> --database_name=PostgreSQL` |
-| 查数据库规格（RDS PG） | **MCP 工具 `list_supabase_instance_flavors`**（按大版本过滤，行内含各 AZ 售卖状态；KooCLI 兜底：`hcloud RDS ListFlavors`） |
-| 查环境支持的磁盘类型 | **MCP 工具 `list_supabase_instance_storage_types`**（按版本+部署模式过滤；KooCLI 兜底：`hcloud RDS ListStorageTypes`） |
+| 查 PG 数据库版本 | **MCP 工具 `list_db_instance_engine_versions`**（内部走 KooCLI，直接用）；KooCLI 兜底：`hcloud RDS ListDatastores --cli-region=<region> --database_name=PostgreSQL` |
+| 查数据库规格（RDS PG） | **MCP 工具 `list_db_instance_flavors_with_azs`**（按大版本过滤，行内含各 AZ 售卖状态；KooCLI 兜底：`hcloud RDS ListFlavors`） |
+| 查环境支持的磁盘类型 | **MCP 工具 `list_db_instance_storage_types`**（按版本+部署模式过滤；KooCLI 兜底：`hcloud RDS ListStorageTypes`） |
 | 查 VPC / 子网 | `hcloud VPC ListVpcs` / `hcloud VPC ListSubnets --cli-region=<region>` |
 | 查 EIP（找空闲的） | `hcloud EIP ListPublicips --cli-region=<region>` |
 | 创建 EIP | `hcloud EIP CreatePublicip --cli-json-file=<配置文件>`（逐项确认后执行）。**json 里必须带标签**：`"tags": [{"key": "USAGE_FOR", "value": "Supabase应用公网访问，自动创建的"}]`——标记这条 EIP 是流程自动创建、供 Supabase 应用公网访问用的 |

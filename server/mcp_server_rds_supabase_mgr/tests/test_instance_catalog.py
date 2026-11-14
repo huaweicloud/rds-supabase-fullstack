@@ -115,6 +115,136 @@ class InstanceCatalogTests(unittest.IsolatedAsyncioTestCase):
         result=await self.catalog.list_flavors()
         self.assertEqual(result['data'],[{'spec_code':'rds.pg.s1.xlarge','nested':{'size':100}}])
 
+    def _push_sources(self,versions=('15','17'),flavors=None,storage=None,vpcs=None,subnets=None,groups=None):
+        """Push the six probe results in the implementation's call order:
+        Datastores, Flavors, StorageTypes, Vpcs, Subnets, SecurityGroups."""
+        if flavors is None:
+            flavors=[{'spec_code':'rds.pg.n1.medium.2','az_status':{'cn-east-3a':'normal','cn-east-3b':'sellout'}},
+                     {'spec_code':'rds.pg.n1.large.2','az_status':{'cn-east-3b':'normal'}},
+                     {'spec_code':'rds.pg.n1.xlarge.2','az_status':{'cn-east-3a':'sellout','cn-east-3b':'sellout'}}]
+        if storage is None:
+            storage=[{'name':'SSD','az_status':{'cn-east-3a':'normal'}},{'name':'ESSD','az_status':{'cn-east-3a':'normal'}}]
+        if vpcs is None:vpcs=[{'id':'vpc-1','name':'net-a'}]
+        if subnets is None:subnets=[{'id':'subnet-1','name':'sub-a','vpc_id':'vpc-1'}]
+        if groups is None:
+            groups=[{'id':'sg-1','name':'db-dedicated','tags':[{'key':'AUTO_CREATE','value':'true'},{'key':'USE_FOR','value':'Supabase'}]},
+                    {'id':'sg-2','name':'shared'}]
+        self.koocli.push({'dataStores':[{'id':'ds-'+v,'name':v} for v in versions]})
+        self.koocli.push({'flavors':flavors})
+        self.koocli.push({'storage_type':storage})
+        self.koocli.push(vpcs if isinstance(vpcs,Exception) else {'vpcs':vpcs})
+        self.koocli.push(subnets if isinstance(subnets,Exception) else {'subnets':subnets})
+        self.koocli.push(groups if isinstance(groups,Exception) else {'security_groups':groups})
+
+    async def test_discover_link_options_single_happy_path(self):
+        self._push_sources()
+        result=await self.catalog.discover_link_create_options('Single')
+        self.assertEqual([c[1] for c in self.koocli.calls],
+                         ['ListDatastores','ListFlavors','ListStorageTypes','ListVpcs/v3','ListSubnets','ListSecurityGroups/v3'])
+        self.assertEqual(self.koocli.calls[2],('RDS','ListStorageTypes',
+                                               {'database_name':'PostgreSQL','version_name':'17','ha_mode':'single'}))
+        self.assertEqual(self.koocli.calls[3],('VPC','ListVpcs/v3',{'limit':100}))
+        self.assertEqual(self.koocli.calls[4],('VPC','ListSubnets',{'limit':100}))
+        self.assertEqual(self.koocli.calls[5],('VPC','ListSecurityGroups/v3',{'limit':100}))
+        self.assertEqual(result['mode'],'Single')
+        options=result['managed_instance_field_options']
+        self.assertEqual(options['datastore.type'],{'fixed':'PostgreSQL'})
+        self.assertEqual(options['datastore.version']['values'],['15','17'])
+        self.assertEqual(options['datastore.version']['recommended'],'17')
+        self.assertEqual(options['flavor_ref']['values'],['rds.pg.n1.medium.2','rds.pg.n1.large.2'])
+        self.assertEqual(options['flavor_ref']['recommended'],'rds.pg.n1.medium.2')
+        self.assertEqual(options['volume.type']['values'],['SSD','ESSD'])
+        self.assertEqual(options['volume.type']['recommended'],'ESSD')
+        self.assertEqual(options['volume.size'],{'minimum':40,'maximum':40000,'recommended':40,'note':'GB'})
+        self.assertEqual(options['charge_info']['values'],
+                         [{'charge_mode':'postPaid'},
+                          {'charge_mode':'prePaid','period_type':'month','period_num':1},
+                          {'charge_mode':'prePaid','period_type':'year','period_num':1}])
+        self.assertEqual(options['charge_info']['recommended'],{'charge_mode':'postPaid'})
+        self.assertEqual(options['ha.mode'],{'fixed':'Single'})
+        self.assertEqual(options['ha.replication_mode'],{'values':['async','sync'],'recommended':'async'})
+        self.assertEqual(options['availability_zone']['values'],['cn-east-3a','cn-east-3b'])
+        self.assertEqual(options['port'],{'recommended':5432,'note':'默认端口，可省略'})
+        self.assertEqual(options['enterprise_project_id'],{'recommended':'0','note':'默认项目；多企业项目时让用户确认'})
+        self.assertEqual(options['password'],{'note':'8-32 位三类字符，用户经本地请求文件提供，工具不生成'})
+        self.assertEqual(options['configuration_id'],{'note':'参数模板，可选，默认不传'})
+        self.assertEqual(options['security_group_id']['values'],
+                         [{'id':'sg-1','name':'db-dedicated','flow_created':True},{'id':'sg-2','name':'shared','flow_created':False}])
+        self.assertIsNone(options['security_group_id']['recommended'])
+        self.assertEqual(result['network']['vpcs'],[{'id':'vpc-1','name':'net-a'}])
+        self.assertEqual(result['network']['subnets'],[{'id':'subnet-1','name':'sub-a','vpc_id':'vpc-1'}])
+        self.assertEqual(set(result['discovery_status']),{'engine_versions','flavors','storage_types','vpcs','subnets','security_groups'})
+        self.assertTrue(all(value=='ok' for value in result['discovery_status'].values()))
+        self.assertEqual(result['top_level_reminder'],
+                         ['availability_zone 必须与顶层一致（服务端强制校验）',
+                          '数据库密码与应用密码同规则，可同值',
+                          '本工具只服务新建实例场景；托管已有实例用 list_supabase_manageable_instances'])
+
+    async def test_discover_link_options_ha_mode_shapes_storage_query(self):
+        self._push_sources()
+        result=await self.catalog.discover_link_create_options('Ha')
+        self.assertEqual(self.koocli.calls[2][2],{'database_name':'PostgreSQL','version_name':'17','ha_mode':'ha'})
+        self.assertEqual(result['mode'],'Ha')
+        options=result['managed_instance_field_options']
+        self.assertEqual(options['ha.mode'],{'fixed':'Ha'})
+        self.assertIn('两个不同 AZ',options['availability_zone']['note'])
+        self.assertTrue(all(value=='ok' for value in result['discovery_status'].values()))
+
+    async def test_discover_link_options_survives_total_sellout(self):
+        self._push_sources(flavors=[{'spec_code':'rds.pg.n1.medium.2','az_status':{'cn-east-3a':'sellout'}}])
+        result=await self.catalog.discover_link_create_options('Single')
+        options=result['managed_instance_field_options']
+        self.assertEqual(options['flavor_ref']['values'],[])
+        self.assertIsNone(options['flavor_ref']['recommended'])
+        self.assertEqual(options['availability_zone']['values'],[])
+        self.assertTrue(all(value=='ok' for value in result['discovery_status'].values()))
+
+    async def test_discover_link_options_isolates_vpc_failure(self):
+        self._push_sources(vpcs=McpToolError('MCP_CLI_ERROR','vpc inventory unavailable'))
+        result=await self.catalog.discover_link_create_options('Single')
+        self.assertEqual(result['discovery_status']['vpcs'],'error: vpc inventory unavailable')
+        self.assertEqual(result['network']['vpcs'],[])
+        self.assertEqual(result['discovery_status']['subnets'],'ok')
+        self.assertEqual(result['discovery_status']['security_groups'],'ok')
+        self.assertIn('vpcs 查询失败',result['network']['note'])
+        self.assertEqual(result['managed_instance_field_options']['flavor_ref']['recommended'],'rds.pg.n1.medium.2')
+        self.assertEqual(result['network']['subnets'],[{'id':'subnet-1','name':'sub-a','vpc_id':'vpc-1'}])
+
+    async def test_discover_link_options_rejects_invalid_mode_before_any_call(self):
+        for bad in ('single','ha','',None,'Cluster'):
+            with self.assertRaises(McpToolError) as ctx:
+                await self.catalog.discover_link_create_options(bad)
+            self.assertEqual(ctx.exception.code,'MCP_INVALID_ARGS')
+        self.assertEqual(self.koocli.calls,[])
+
+    async def test_discover_link_options_sorts_shuffled_versions_and_uses_max(self):
+        self._push_sources(versions=('15','18','13'))
+        result=await self.catalog.discover_link_create_options('Single')
+        options=result['managed_instance_field_options']
+        self.assertEqual(options['datastore.version']['values'],['13','15','18'])
+        self.assertEqual(options['datastore.version']['recommended'],'18')
+        self.assertEqual(self.koocli.calls[2][2]['version_name'],'18')
+
+    def test_catalog_tools_register_under_new_names(self):
+        from mcp_server_supabase.tools import operations
+
+        class RecordingServer:
+            def __init__(self):self.names=[]
+            def tool(self):
+                def decorate(func):
+                    self.names.append(func.__name__)
+                    return func
+                return decorate
+
+        server=RecordingServer()
+        operations.register(server)
+        for name in ('list_db_instance_engine_versions','list_db_instance_flavors_with_azs',
+                     'list_db_instance_storage_types','discover_supabase_link_create_options'):
+            self.assertIn(name,server.names)
+        for old in ('list_supabase_engine_versions','list_supabase_instance_flavors',
+                    'list_supabase_instance_storage_types'):
+            self.assertNotIn(old,server.names)
+
 
 if __name__=='__main__':
     unittest.main()

@@ -62,6 +62,13 @@ def parse_payload(text):
         return {}
     start = text.find('{')
     if start < 0:
+        # KooCLI reports unsupported operations as exit code 0 with a
+        # [USE_ERROR] line on stdout - surface that text instead of a
+        # generic "no JSON" message.
+        if '[USE_ERROR]' in text:
+            first = text.splitlines()[0][:200]
+            raise McpToolError('MCP_CLI_ERROR', first,
+                               hint='Verify the operation name with `hcloud <Service> --help`; some operations have no /v3 variant.')
         raise McpToolError('MCP_CLI_ERROR', 'KooCLI returned no JSON payload')
     for candidate in (text[start:], text[start:text.rfind('}') + 1]):
         try:

@@ -151,3 +151,15 @@ class ParseTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class UseErrorTests(unittest.IsolatedAsyncioTestCase):
+    async def test_exit_zero_use_error_surfaces_real_text(self):
+        # KooCLI reports unsupported operations as exit code 0 with a [USE_ERROR]
+        # line on stdout; the real text must surface instead of "no JSON payload".
+        proc = FakeProcess(stdout=b'[USE_ERROR]Operation ListSubnets/v3 is not supported.\n\nYou may want to select one of the following operations:')
+        with patch('asyncio.create_subprocess_exec', AsyncMock(return_value=proc)):
+            with self.assertRaises(McpToolError) as ctx:
+                await client().call('VPC', 'ListSubnets/v3')
+        self.assertEqual(ctx.exception.code, 'MCP_CLI_ERROR')
+        self.assertIn('ListSubnets/v3 is not supported', ctx.exception.message)

@@ -77,6 +77,13 @@ class Network:
         return await self._change('DELETE','security-group-rules/'+rule_id,'DeleteSecurityGroupRule/v3',
                                   None,params,confirm,plan_id,None,group_id,rule_id)
 
+    async def delete_group(self,group_id,confirm=False,plan_id=None):
+        identifier(group_id)
+        params={'security_group_id':group_id}
+        return await self._change('DELETE','security-groups/'+group_id,'DeleteSecurityGroup/v3',
+                                  None,params,confirm,plan_id,None,group_id,None,
+                                  ['Deleting removes every rule in the group at once; the backend rejects groups still referenced by instances or NICs - verify nothing uses it first.'])
+
     async def _read_group(self,group_id):
         identifier(group_id)
         data=await self.koocli.call('VPC','ShowSecurityGroup/v3',{'security_group_id':group_id})
@@ -87,13 +94,14 @@ class Network:
             raise McpToolError('MCP_SDK_ERROR','Security group identity not verified')
         return group
 
-    async def _change(self,method,suffix,operation,body,params,confirm,plan_id,result_key,group_id=None,rule_id=None):
+    async def _change(self,method,suffix,operation,body,params,confirm,plan_id,result_key,group_id=None,rule_id=None,extra_warnings=None):
         path=ROOT+suffix
         # Bind the selected parent even for DELETE whose command only carries the rule ID.
         digest=self.intent_digest(method,path,{'request':body,'group_id':group_id})
-        notices={'warnings':['Shared security-group changes affect every associated resource; verify the association inventory before confirming.',
-                             'Creating a group does not attach it to an application or open port 8443.'],
-                 'completion_verified':False}
+        warnings=['Shared security-group changes affect every associated resource; verify the association inventory before confirming.',
+                  'Creating a group does not attach it to an application or open port 8443.']
+        if extra_warnings:warnings.extend(extra_warnings)
+        notices={'warnings':warnings,'completion_verified':False}
         if not confirm:
             return {'status':'confirmation_required','execution':'not_executed','changes':body,'group_id':group_id,
                     'resource_path':path,**notices,**self.plans.issue(digest)}
@@ -115,7 +123,7 @@ class Network:
         self.plans.claim(plan_id,digest)
         try:
             data=await self.koocli.call('VPC',operation,params)
-            resource_id=rule_id
+            resource_id=rule_id or group_id
             if method=='DELETE':
                 pass
             else:

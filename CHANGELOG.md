@@ -5,6 +5,22 @@ semantic versioning.
 
 ## [Unreleased]
 
+### Added
+
+- `mcp_server_rds_supabase_mgr` v0.4.0a17: new tool
+  `delete_supabase_security_group` (DANGEROUS) - removes an entire
+  security group during teardown through the KooCLI channel, closing the
+  gap where whole-group deletion required raw KooCLI or the console.
+  Same safety envelope as the other write tools: preview/confirm
+  two-step flow with the one-use plan ledger, group identity
+  re-verification before submission, protected-group guardrail,
+  read-only and write-enable gates. The preview carries a dedicated
+  warning that deletion removes every rule in the group at once and
+  that the backend rejects groups still referenced by instances or
+  NICs - the agent must verify nothing uses the group first. Skill
+  `rds-supabase-mgr-mcp` v0.7.1 updates the tool count (29 -> 30) and
+  wires the tool into the teardown scenario's residual-cleanup channel.
+
 ### Changed
 
 - `mcp_server_rds_supabase_mgr` v0.4.0a15 security-group tool descriptions

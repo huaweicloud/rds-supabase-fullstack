@@ -33,3 +33,9 @@ def register(server):
     async def delete_supabase_security_group_rule(group_id:str,rule_id:str,confirm:bool=False,plan_id:str|None=None)->dict:
         """Remove one rule when tightening access (e.g. revoking a stale CIDR). Ownership-checked; deleting may interrupt live traffic."""
         return await service.delete_rule(group_id,rule_id,confirm,plan_id)
+
+    @server.tool()
+    @guard(risk=ToolRisk.DANGEROUS)
+    async def delete_supabase_security_group(group_id:str,confirm:bool=False,plan_id:str|None=None)->dict:
+        """Remove an entire security group during teardown, once nothing references it. The backend rejects groups still in use; confirm before applying."""
+        return await service.delete_group(group_id,confirm,plan_id)

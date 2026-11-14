@@ -137,6 +137,33 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(McpToolError):await self.ops.create_group('app-group',confirm=True,plan_id=preview['plan_id'])
         self.assertEqual(self.ops.plans.inspect(preview['plan_id'])['state'],'unknown')
 
+    async def test_delete_group_flow(self):
+        preview=await self.ops.delete_group(GROUP)
+        self.assertEqual(preview['status'],'confirmation_required')
+        self.assertTrue(any('removes every rule' in w for w in preview['warnings']))
+        self.assertEqual(self.koocli.calls,[])
+        # identity mismatch blocks the write
+        self.koocli.push({'security_group':{'id':'other'}})
+        with self.assertRaises(McpToolError):await self.ops.delete_group(GROUP,True,preview['plan_id'])
+        self.assertEqual(self.ops.plans.inspect(preview['plan_id'])['state'],'prepared')
+        # success path: read then delete
+        self.koocli.push({'security_group':{'id':GROUP,'security_group_rules':[]}})
+        self.koocli.push({})
+        result=await self.ops.delete_group(GROUP,True,preview['plan_id'])
+        self.assertEqual(result['status'],'applied');self.assertEqual(result['resource_id'],GROUP)
+        self.assertEqual(self.koocli.last(),('VPC','DeleteSecurityGroup/v3',{'security_group_id':GROUP}))
+        self.assertEqual(self.ops.plans.inspect(preview['plan_id'])['state'],'accepted')
+        # replay is refused
+        self.koocli.push({'security_group':{'id':GROUP,'security_group_rules':[]}})
+        with self.assertRaises(McpToolError):await self.ops.delete_group(GROUP,True,preview['plan_id'])
+
+    async def test_delete_group_write_failure_keeps_unknown(self):
+        preview=await self.ops.delete_group(GROUP)
+        self.koocli.push({'security_group':{'id':GROUP,'security_group_rules':[]}})
+        self.koocli.push(McpToolError('MCP_CLI_ERROR','in use'))
+        with self.assertRaises(McpToolError):await self.ops.delete_group(GROUP,True,preview['plan_id'])
+        self.assertEqual(self.ops.plans.inspect(preview['plan_id'])['state'],'unknown')
+
     async def test_group_identity_failure_blocks_rule_write(self):
         preview=await self.ops.add_rule(GROUP,'192.0.2.0/24',8443)
         self.koocli.push({'security_group':{'id':'other'}})

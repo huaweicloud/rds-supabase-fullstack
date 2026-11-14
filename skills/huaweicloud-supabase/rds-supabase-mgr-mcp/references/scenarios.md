@@ -38,13 +38,13 @@ SKILL.md 是主文档；本文件是各场景的详细步骤、字段来源与�
 | 要从公网访问吗？ | 要 → 创建后走 EIP + 安全组 + api_external_url 同步；不要 → 明确告知用户只能内网访问 |
 | 要 https 吗？ | 要 → 买 CCM 证书、创建后切 SSL；不要 → 走 http |
 
-**执行纪律**：逐个问、拿到明确答复才往下走；答全后喂给 `plan_supabase_creation(manage_type, needs_storage, needs_public_access, needs_ssl, ...)`。用户一笔带过需求时（"帮我建个应用"），四问一个都不能少——没问就默认等于替用户做了业务决定，走偏的根源就在这。部署模式是否支持 Ha 也别猜：`list_supabase_flavors(az_code, mode='Ha')` 成功 → Single/Ha 都可选；400 → 该环境仅 Single，如实告知。
+**执行纪律**：逐个问、拿到明确答复才往下走；答全后喂给 `plan_supabase_creation(manage_type, needs_storage, needs_public_access, needs_ssl, ...)`。用户一笔带过需求时（"帮我建个应用"），四问一个都不能少——没问就默认等于替用户做了业务决定，走偏的根源就在这。部署模式是否支持 Ha 也别猜：`list_supabase_flavors_with_azs(az_code, mode='Ha')` 成功 → Single/Ha 都可选；400 → 该环境仅 Single，如实告知。
 
 ### 配置字段来源分类（谁提供什么）
 
 | 来源 | 字段 |
 |---|---|
-| MCP 工具可查 | 应用规格（`list_supabase_flavors`，需先有 AZ）；路线 B 的数据库实例（`list_supabase_manageable_instances`）；安全组（可新建） |
+| MCP 工具可查 | 应用规格与各规格支持的 AZ 列表（`list_supabase_flavors_with_azs`，需先有 AZ；返回的 AZ 信息兼作可用区选择依据）；路线 B 的数据库实例（`list_supabase_manageable_instances`）；安全组（可新建） |
 | KooCLI 可查 | 可用区、PG 引擎版本、数据库规格（RDS ListFlavors）、环境支持的磁盘类型（RDS ListStorageTypes）、VPC/子网（含 IP 余量）、空闲 EIP |
 | 必须用户提供 | 应用名称、区域（环境里已有则免）、回调地址类 URL |
 | 本地请求文件（秘密） | 应用密码（本地生成）、路线 B 的 database_pwd、路线 A 的数据库密码、存储 AK/SK、OBS 桶名 |

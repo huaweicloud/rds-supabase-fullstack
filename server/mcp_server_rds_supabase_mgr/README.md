@@ -81,8 +81,8 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
   - **OBS 存储对接**：有图片、视频、大文件存储需求时使用
   - **EIP 绑定**：需要公网访问时使用
   - **SSL 对接**：高安全要求场景；需先购买 CCM 证书
-- 应用规格列表查询：默认查单机模式可用规格；主备 Ha 版规格是否可用，
-  以局点实时查询为准
+- 应用规格列表查询：返回各规格支持的可用区列表，兼作可用区查询与选择；
+  默认查单机模式可用规格，主备 Ha 版以局点实时查询为准
 - 可托管 PostgreSQL 实例查询——关联已有实例场景
 - 数据库实例规格查询——同时新建实例场景（经 KooCLI）
 - 周边依赖自动发现：VPC、子网、可用区、安全组、OBS 桶等依赖资源的列表与详情配置
@@ -154,7 +154,7 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
 | `update_supabase_auth_config` | 配置 GitHub、SMTP 登录方式与回调地址、邮件模板 | WRITE |
 | `update_supabase_storage` | 对接或变更 OBS 存储桶 | WRITE |
 | `plan_supabase_creation` | 创建前的场景规划：输出分阶段的资源准备清单与操作流程 | READ |
-| `list_supabase_flavors` | 查询应用可用性能规格，供创建选型 | READ |
+| `list_supabase_flavors_with_azs` | 查询应用可用性能规格及各规格支持的可用区列表，供创建选型与可用区选择 | READ |
 | `list_supabase_manageable_instances` | 查询可关联的已有 PostgreSQL 实例 | READ |
 | `create_supabase_application` | 创建 Supabase 应用，支持新建实例或关联已有实例；两种场景返回不同任务组合 | DANGEROUS |
 | `delete_supabase_application` | 删除应用；经用户选择可同时删除托管数据库实例，两笔删除各自返回任务编号 | DANGEROUS |

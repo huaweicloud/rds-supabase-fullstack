@@ -180,8 +180,8 @@ def register(server):
 
     @server.tool()
     @guard(risk=ToolRisk.READ)
-    async def list_supabase_flavors(az_code: str, mode: str) -> dict:
-        """Query Supabase flavor candidates in an explicit AZ and Single mode; no defaults or price claims."""
+    async def list_supabase_flavors_with_azs(az_code: str, mode: str) -> dict:
+        """Query Supabase application flavors in an explicit AZ and Single/Ha mode, each flavor carrying the AZ list it supports - use this both for flavor sizing and as the availability-zone list for AZ selection. No defaults or price claims."""
         return await service.creation_candidates('flavors',az_code,mode)
 
     @server.tool()

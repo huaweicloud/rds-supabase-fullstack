@@ -44,10 +44,30 @@ def resolve_endpoint(explicit=None):
     return ""
 
 
+def resolve_project(explicit=None):
+    """Explicit value wins; otherwise the GaussDB-style IAM discovery resolves it.
+
+    Lazy: called at construction for the explicit/env fast path only; the IAM
+    discovery path runs on first use via ensure_project when the fast path
+    yields nothing, keeping client construction side-effect free.
+    """
+    if explicit:
+        return explicit
+    return os.getenv("HUAWEICLOUD_PROJECT_ID", "").strip()
+
+
+def ensure_project(project):
+    """Return a usable project id, discovering via IAM when unset."""
+    if project:
+        return project
+    from mcp_server_supabase.client.project import resolve_project_id
+    return resolve_project_id()
+
+
 class RestClient:
     def __init__(self, endpoint=None, project=None, token=None, allow_loopback=False):
         self.endpoint = resolve_endpoint(endpoint)
-        self.project = project or os.getenv("HUAWEICLOUD_PROJECT_ID", "")
+        self.project = resolve_project(project)
         self.token = token
         self.allow_loopback = allow_loopback
 
@@ -55,6 +75,9 @@ class RestClient:
         return await asyncio.to_thread(self._request, method, path, body, query, headers)
 
     def _request(self, method, path, body, query, headers):
+        if not self.project:
+            # First use: discover via IAM when neither env var carried a project.
+            self.project = ensure_project(self.project)
         url = urlsplit(self.endpoint)
         local = self.allow_loopback and url.hostname in ("127.0.0.1", "localhost")
         if (url.scheme != "https" and not (local and url.scheme == "http")) or not url.hostname or url.username or url.password or url.query or url.fragment or url.path not in ("", "/"):

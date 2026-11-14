@@ -12,7 +12,7 @@ from huaweicloudsdkcore.sdk_response import SdkResponse
 from huaweicloudsdkcore.exceptions.exceptions import ServiceResponseException
 from huaweicloud_mcp_core.errors import McpToolError
 from mcp_server_supabase.failures import http_failure, RecoveryError
-from mcp_server_supabase.client.rest import segment, error_detail, resolve_endpoint
+from mcp_server_supabase.client.rest import segment, error_detail, resolve_endpoint, resolve_project
 
 
 class QuietSdkClient(Client):
@@ -34,7 +34,7 @@ class WireResponse(SdkResponse):
 class SdkCoreClient:
     def __init__(self, endpoint=None, project=None, ak=None, sk=None, security_token=None, allow_loopback=False):
         self.endpoint=resolve_endpoint(endpoint)
-        self.project=project or os.getenv('HUAWEICLOUD_PROJECT_ID','')
+        self.project=resolve_project(project)
         self._ak=ak if ak is not None else os.getenv('HUAWEICLOUD_ACCESS_KEY','')
         self._sk=sk if sk is not None else os.getenv('HUAWEICLOUD_SECRET_KEY','')
         self._security_token=security_token if security_token is not None else os.getenv('HUAWEICLOUD_SECURITY_TOKEN','')

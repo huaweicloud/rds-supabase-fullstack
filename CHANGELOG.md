@@ -7,6 +7,18 @@ semantic versioning.
 
 ### Changed
 
+- `mcp_server_rds_supabase_mgr` v0.4.0a25: renamed
+  `list_supabase_flavors` to `list_supabase_flavors_with_azs` - the name
+  now says what the response carries: each flavor's supported
+  availability-zone list. Per the analysis of Huawei Cloud's own
+  GaussDB MCP (whose discover_create_options derives AZ availability
+  from flavor az_status) and live RDS verification (no standalone
+  ListAvailableZones API exists for RDS), this tool is the
+  availability-zone query and selection source for RDS Supabase
+  creation. Docstring and skill guidance state the dual use; planning
+  prompts, SKILL.md, scenarios.md, TOOL_CONTRACTS, SIX_SCENARIO_MATRIX,
+  and READMEs (zh/en) follow the rename. No behavior change.
+
 - `mcp_server_rds_supabase_mgr` v0.4.0a24: endpoint resolution now follows
   the GaussDB MCP convention. `SUPABASE_RDS_ENDPOINT` becomes an explicit
   override rather than a hard requirement: when absent, the standard

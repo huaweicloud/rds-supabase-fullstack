@@ -98,9 +98,9 @@ lifecycle, control plane).
   - **EIP binding**: for public-network access
   - **SSL integration**: for high-security requirements; a CCM
     certificate must be purchased first
-- Application flavor list query: defaults to Single-mode flavors; whether
-  Ha (primary/standby) flavors are available depends on real-time,
-  region-specific queries
+- Application flavor list query: returns the AZ list each flavor
+  supports, doubling as the availability-zone selection source; defaults
+  to Single-mode flavors, with Ha availability per real-time region query
 - Manageable PostgreSQL instance query — create-with-existing-instance
   scenario
 - Database instance flavor query — create-with-new-instance scenario
@@ -190,7 +190,7 @@ alias.
 | `update_supabase_auth_config` | Configure GitHub and SMTP login, callback URLs and mail templates | WRITE |
 | `update_supabase_storage` | Integrate or change the OBS storage bucket | WRITE |
 | `plan_supabase_creation` | Pre-creation planning: staged resource preparation checklist and operation flow | READ |
-| `list_supabase_flavors` | Query application performance flavors for creation sizing | READ |
+| `list_supabase_flavors_with_azs` | Query application flavors with the AZ list each flavor supports, for sizing and AZ selection | READ |
 | `list_supabase_manageable_instances` | Query existing PostgreSQL instances available for attachment | READ |
 | `create_supabase_application` | Create a Supabase application with a new or existing instance; each scenario returns its own job combination | DANGEROUS |
 | `delete_supabase_application` | Delete the application; on the user's choice also delete the managed database instance, two deletions with separate job ids | DANGEROUS |

@@ -6,7 +6,7 @@
 
 | 用户目标 | 前置条件 | 操作步骤 | MCP工具／接口 | 确认内容 | 成功标准 | 异常恢复 | 当前状态 | 待确认项 |
 |---|---|---|---|---|---|---|---|---|
-| 创建：默认选配 | 用户成本/可用性要求；局点AZ | 明确Single→查候选→说明取舍 | plan_supabase_creation、list_supabase_flavors；GET ai-application/supabase/flavors | 具体候选与费用来源，不猜价格 | 需求逐项有对应配置；Ha明确不支持 | 无候选不编造 | 规划+候选查询已实现；真云未验 | 完整规格组合、报价与配额 |
+| 创建：默认选配 | 用户成本/可用性要求；局点AZ | 明确Single→查候选→说明取舍 | plan_supabase_creation、list_supabase_flavors_with_azs；GET ai-application/supabase/flavors | 具体候选与费用来源，不猜价格 | 需求逐项有对应配置；Ha明确不支持 | 无候选不编造 | 规划+候选查询已实现；真云未验 | 完整规格组合、报价与配额 |
 | 创建：托管已有PG | PG可托管且有授权；秘密本地提供 | 查候选→核对网络/版本→准备请求 | list_supabase_manageable_instances、create_supabase_application；GET候选/POST创建 | PG身份及影响 | 应用+PG关联+业务可用 | 不删除原PG、不盲重试 | 候选查询+Single本地引用提交已实现；真云未验 | 后端PG版本/密码策略与实际完成验证；结构已按SDK更新 |
 | 创建：新建PG | 网络、配额、计费授权 | 查资源→明确应用和PG配置→预览 | plan_supabase_creation；create_supabase_application；POST ai-application/supabases | 应用/PG规格、费用、归属 | 双资源及关联就绪、登录验证 | 区分新旧资源，部分成功不自动清理 | Single按需新PG提交已实现；真云未验 | 后端容量/版本边界实测；包周期与tags未开放 |
 | 删除：仅应用 | normal应用、明确目标 | 预览→确认→删→任务→列表回查PG | delete_supabase_application；DELETE应用 | 不可逆、业务中断、PG保留计费 | 应用消失且PG独立回查保留 | 400不能单独证明删除完成 | 已实现；旧版用户真云验证应用消失 | PG独立存续证据、新版回归 |

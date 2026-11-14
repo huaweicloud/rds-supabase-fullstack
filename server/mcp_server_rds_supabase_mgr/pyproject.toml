@@ -1,6 +1,6 @@
 [project]
 name = "mcp_server_supabase"
-version = "0.4.0a24"
+version = "0.4.0a25"
 license = "MIT"
 readme = "README.md"
 description = "Supabase management API adapters and scenario tools"
@@ -10,6 +10,7 @@ dependencies = [
   "mcp>=2.0",
   "huaweicloudsdkcore>=3.1.220,<4",
   "huaweicloudsdkbss>=3.1.218,<4",
+  "huaweicloudsdkiam>=3.1.220,<4",
 ]
 [project.scripts]
 mcp_server_supabase = "mcp_server_supabase.main:main"

@@ -72,4 +72,4 @@ VPC工具：list_supabase_security_groups(limit=10,marker=null)、show_supabase_
 
 新增create_supabase_application(request_ref,confirm=false,plan_id=null)与deliver_supabase_api_key(application_id,key_id,delivery_ref,confirm=false,plan_id=null)，均为DANGEROUS，安全输入/输出和结构见LOCAL_REQUESTS.md。
 
-创建候选：list_supabase_flavors(az_code,mode)和list_supabase_manageable_instances()为READ；返回creation_ready=false，不能当创建提交/费用报价或完整分页库存。
+创建候选：list_supabase_flavors_with_azs(az_code,mode)和list_supabase_manageable_instances()为READ；返回creation_ready=false，不能当创建提交/费用报价或完整分页库存。

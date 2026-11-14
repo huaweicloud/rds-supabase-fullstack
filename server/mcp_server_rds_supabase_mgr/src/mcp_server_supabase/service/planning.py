@@ -39,7 +39,7 @@ class PlanningService:
             decision.append("GitHub login requirement: decides the OAuth App setup after creation")
 
         pre = ["collect application name (4-64 chars) and region/project from the environment; use the highest available application version (x.y.z, currently 1.0.0 - no query API yet)",
-               "select the Supabase flavor via list_supabase_flavors (requires az_code)",
+               "select the Supabase flavor via list_supabase_flavors_with_azs (requires az_code; each flavor also carries its supported AZ list, which doubles as the AZ selection source)",
                "generate the application password locally into the protected request file - never in chat",
                "select the VPC/subnet via KooCLI (pick a subnet with free IPs)"]
         if needs_storage is True:
@@ -49,7 +49,7 @@ class PlanningService:
         pre.append("the application security group must be newly created and dedicated - never reuse an existing group (shared groups risk collateral damage); create it via create_supabase_security_group with a purpose description (mark auto-created groups: the application group as Supabase应用（自动创建）, the route-A database group as 数据库接入（自动创建）; the server auto-tags every group AUTO_CREATE=true and USE_FOR=Supabase, and whole-group deletion only accepts tagged groups) and configure both directions immediately: 8443 ingress from the user CIDR plus 5432 egress (add_supabase_security_group_rule with direction=egress). On route A create a dedicated database group too (5432 ingress from the chosen subnet). Both IDs go into the creation request - they cannot be attached later")
         if manage_type == "newly_instance":
             pre += ["choose the AZ via KooCLI RDS ListAvailableZones - one AZ for Single, two distinct AZs (primary and standby) for Ha; the top-level availability_zone carries the primary",
-                    "probe deployment-mode support with list_supabase_flavors(az_code, mode='Ha'): a successful answer means Single and Ha are both available; a 400 rejection means this environment supports Single only - report the result honestly",
+                    "probe deployment-mode support with list_supabase_flavors_with_azs(az_code, mode='Ha'): a successful answer means Single and Ha are both available; a 400 rejection means this environment supports Single only - report the result honestly",
                     "choose the PG engine version via KooCLI RDS ListDatastores",
                     "choose the database flavor via KooCLI RDS ListFlavors (depends on version and AZ - not the same list as the application flavor)",
                     "choose the disk type from the environment's available storage types via KooCLI RDS ListStorageTypes (prefer a high-performance SSD) and the size",

@@ -52,7 +52,9 @@ class Network:
         if description is not None:
             if not isinstance(description,str) or len(description)>255 or '<' in description or '>' in description:
                 raise McpToolError('MCP_INVALID_ARGS','Use a description of at most 255 characters without angle brackets')
-        body={'security_group':{'name':name}}
+        body={'security_group':{'name':name,
+                                'tags':[{'key':'AUTO_CREATE','value':'true'},
+                                        {'key':'USE_FOR','value':'Supabase'}]}}
         if description is not None:body['security_group']['description']=description
         return await self._change('POST','security-groups','CreateSecurityGroup/v3',body,body,confirm,plan_id,'security_group')
 
@@ -82,7 +84,27 @@ class Network:
         params={'security_group_id':group_id}
         return await self._change('DELETE','security-groups/'+group_id,'DeleteSecurityGroup/v3',
                                   None,params,confirm,plan_id,None,group_id,None,
-                                  ['Deleting removes every rule in the group at once; the backend rejects groups still referenced by instances or NICs - verify nothing uses it first.'])
+                                  ['Deleting removes every rule in the group at once; the backend rejects groups still referenced by instances or NICs - verify nothing uses it first.',
+                                   'Only groups created by this flow (AUTO_CREATE=true, USE_FOR=Supabase tags) can be deleted here; the tag check blocks every other group.'],
+                                  require_managed_tags=True)
+
+    def _tag_pairs(self,group):
+        tags=group.get('tags')
+        if isinstance(tags,dict):
+            return {str(k):str(v) for k,v in tags.items()}
+        pairs={}
+        if isinstance(tags,list):
+            for item in tags:
+                if isinstance(item,dict) and 'key' in item:
+                    pairs[str(item['key'])]=str(item.get('value'))
+        return pairs
+
+    def _assert_flow_created(self,group):
+        pairs=self._tag_pairs(group)
+        if pairs.get('AUTO_CREATE')!='true' or pairs.get('USE_FOR')!='Supabase':
+            raise McpToolError('MCP_GUARDRAIL_BLOCKED','Security group is not marked as auto-created for Supabase',
+                               hint='This tool only deletes groups created by this flow (AUTO_CREATE=true, USE_FOR=Supabase tags). '
+                                    'Delete other groups from the console after manual review.')
 
     async def _read_group(self,group_id):
         identifier(group_id)
@@ -94,7 +116,7 @@ class Network:
             raise McpToolError('MCP_SDK_ERROR','Security group identity not verified')
         return group
 
-    async def _change(self,method,suffix,operation,body,params,confirm,plan_id,result_key,group_id=None,rule_id=None,extra_warnings=None):
+    async def _change(self,method,suffix,operation,body,params,confirm,plan_id,result_key,group_id=None,rule_id=None,extra_warnings=None,require_managed_tags=False):
         path=ROOT+suffix
         # Bind the selected parent even for DELETE whose command only carries the rule ID.
         digest=self.intent_digest(method,path,{'request':body,'group_id':group_id})
@@ -109,6 +131,8 @@ class Network:
             raise McpToolError('MCP_READ_ONLY','Writes are disabled')
         if group_id:
             group=await self._read_group(group_id)
+            if require_managed_tags:
+                self._assert_flow_created(group)
             assert_not_protected(group)
             rules=group.get('security_group_rules')
             if rule_id:

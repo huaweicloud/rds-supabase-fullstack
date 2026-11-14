@@ -4,7 +4,7 @@
 
 ## Version
 
-0.4.0a20 (development prerelease); Python `3.10+`; MCP Python SDK `2.x`;
+0.4.0a21 (development prerelease); Python `3.10+`; MCP Python SDK `2.x`;
 31 tools.
 
 ## Overview
@@ -200,10 +200,10 @@ alias.
 | `change_supabase_application_password` | Change the application password; the new password is supplied via the local request file, never through conversation | DANGEROUS |
 | `list_supabase_security_groups` | Browse security groups | READ |
 | `show_supabase_security_group` | Inspect a security group and all its rules | READ |
-| `create_supabase_security_group` | Create a dedicated security group for an application | WRITE |
+| `create_supabase_security_group` | Create a dedicated security group, auto-tagged with origin and purpose | WRITE |
 | `add_supabase_security_group_rule` | Add one inbound or outbound access rule, sized to the actual deployment ports | DANGEROUS |
 | `delete_supabase_security_group_rule` | Remove a specific access rule to narrow the exposed surface | DANGEROUS |
-| `delete_supabase_security_group` | Delete an entire security group with all its rules, only when nothing references it | DANGEROUS |
+| `delete_supabase_security_group` | Delete an entire security group with all its rules; only flow-created, unreferenced groups | DANGEROUS |
 | `show_operation_job_status` | Query the current status of a submitted operation task | READ |
 | `wait_operation_job_complete` | Poll an operation task to a terminal state within a bounded timeout | READ |
 
@@ -232,6 +232,9 @@ execute via the local KooCLI (`hcloud`), calling VPC v3 operations
 - **Error passthrough**: VPC backend error_code/error_msg/request_id pass
   through verbatim; an unaccepted privacy agreement, a missing binary, and
   timeouts each map to a dedicated error code with remediation guidance.
+- **Origin tagging**: every created group is auto-tagged AUTO_CREATE=true and
+  USE_FOR=Supabase; whole-group deletion verifies the tag pair and rejects
+  every group not created by this flow, preventing wrong deletion.
 
 ## Usage guide
 

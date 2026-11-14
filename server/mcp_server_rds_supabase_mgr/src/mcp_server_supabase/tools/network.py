@@ -19,7 +19,7 @@ def register(server):
     @server.tool()
     @guard(risk=ToolRisk.WRITE)
     async def create_supabase_security_group(name:str,description:str|None=None,confirm:bool=False,plan_id:str|None=None)->dict:
-        """Create a dedicated security group for an RDS Supabase application. Preview first, confirm to apply; describe the purpose so auto-created groups stay auditable."""
+        """Create a dedicated security group for an RDS Supabase application, auto-tagged AUTO_CREATE=true and USE_FOR=Supabase so the flow's groups stay identifiable. Preview first, confirm to apply; describe the purpose so groups stay auditable."""
         return await service.create_group(name,description,confirm,plan_id)
 
     @server.tool()
@@ -37,5 +37,5 @@ def register(server):
     @server.tool()
     @guard(risk=ToolRisk.DANGEROUS)
     async def delete_supabase_security_group(group_id:str,confirm:bool=False,plan_id:str|None=None)->dict:
-        """Remove an entire security group during teardown, once nothing references it. The backend rejects groups still in use; confirm before applying."""
+        """Remove an entire security group during teardown, once nothing references it. Only groups created by this flow (AUTO_CREATE=true, USE_FOR=Supabase tags) can be deleted; the tag check blocks every other group. The backend rejects groups still in use; confirm before applying."""
         return await service.delete_group(group_id,confirm,plan_id)

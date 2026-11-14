@@ -5,7 +5,7 @@ description: RDS Supabase 应用全生命周期管理技能：从零创建一个
 
 # RDS Supabase 应用全生命周期管理
 
-版本 0.8.1；配套服务端 mcp_server_supabase ≥ 0.4.0a20（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
+版本 0.8.2；配套服务端 mcp_server_supabase ≥ 0.4.0a21（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
 
 贯穿所有场景的四条铁律：
 1. **写操作两段式**：先预览（confirm=false），把参数、影响、费用展示给用户；用户确认后才提交（confirm=true + 预览返回的 plan_id）。预览 10 分钟有效，参数变了重新预览。
@@ -100,7 +100,7 @@ https://github.com/huaweicloud/rds-supabase-fullstack
 | 应用规格 | 列出候选给用户选，**默认勾选 2U4G 档**（mode 跟部署模式走）。**顺带用规格接口探测部署模式**：`list_supabase_flavors(az_code, mode='Ha')` 成功返回 → 该环境支持 Single 和 Ha，如实告诉用户可选；**报 400（后端拒绝）→ 该环境只有 Single**，告知用户并继续查 `mode='Single'` 的规格 | `list_supabase_flavors(az_code, mode)` |
 | 应用密码 | **本地随机生成**：8-32 位，至少含大写字母/小写字母/数字/特殊字符（`~!@#$%^*-_+=?,`）中的三种，只从这些字符里生成；直接写入请求文件，用户不用填，对话里也不出现。这是默认用户 supabase 的密码，也是 Dashboard 管理员的登录密码 | 本地命令 |
 | 存储 | 问一句"业务要传图片/视频/文件吗？"——要，按场景三第 1 节对接（结论回填创建请求）；不要，**storage_component 仍必须写进请求：`{enabled:false}`（三字段全空），不能整个省略** | — |
-| 安全组 | **应用安全组必须新建专用组**，Agent 自动创建（别复用已有组——共享组改规则会波及别的资源）：`create_supabase_security_group` 预览→确认，**创建时必须带 description 标记用途**：应用组填 `自动创建的，用于Supabase应用`；路线 A 的数据库组同样新建专用组，description 填 `自动创建的，用于托管实例接入`——控制台里一眼能分清哪些组是流程自动建的、归哪个用途，后续审计清理有依据。建好就把**出入两个方向的规则**配上（规则表见本步末尾）。**两个组 ID 都要进创建请求，事后没法补** | MCP（经 KooCLI 通道） |
+| 安全组 | **应用安全组必须新建专用组**，Agent 自动创建（别复用已有组——共享组改规则会波及别的资源）：`create_supabase_security_group` 预览→确认，**创建时必须带 description 标记用途**：应用组填 `Supabase应用（自动创建）`；路线 A 的数据库组同样新建专用组，description 填 `数据库接入（自动创建）`——控制台里一眼能分清哪些组是流程自动建的、归哪个用途，后续审计清理有依据。服务端创建时自动打 `AUTO_CREATE=true` 与 `USE_FOR=Supabase` 双标签；整组删除只放行带此双标签的组（防止误删非本流程创建、特别是使用中的安全组）。建好就把**出入两个方向的规则**配上（规则表见本步末尾）。**两个组 ID 都要进创建请求，事后没法补** | MCP（经 KooCLI 通道） |
 | 网络 | **自动选**：查 VPC 和子网，挑一个可用 IP 充足的子网，不烦用户 | KooCLI（见速查表） |
 
 **路线 A 额外要定的（新建数据库）：**

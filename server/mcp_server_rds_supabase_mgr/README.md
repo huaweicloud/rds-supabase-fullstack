@@ -4,7 +4,7 @@
 
 ## 版本
 
-0.4.0a20（开发预发行版）；Python `3.10+`；MCP Python SDK `2.x`；31 个工具。
+0.4.0a21（开发预发行版）；Python `3.10+`；MCP Python SDK `2.x`；31 个工具。
 
 ## 概述
 
@@ -165,10 +165,10 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
 | `change_supabase_application_password` | 修改应用密码；新密码经本地请求文件提供，不经过对话 | DANGEROUS |
 | `list_supabase_security_groups` | 浏览安全组列表 | READ |
 | `show_supabase_security_group` | 查看安全组详情与全部规则 | READ |
-| `create_supabase_security_group` | 为应用创建专用安全组 | WRITE |
+| `create_supabase_security_group` | 为应用创建专用安全组，自动标记来源与用途 | WRITE |
 | `add_supabase_security_group_rule` | 为安全组新增一条出入方向访问规则，按实际部署端口配置 | DANGEROUS |
 | `delete_supabase_security_group_rule` | 删除指定访问规则，收窄开放面 | DANGEROUS |
-| `delete_supabase_security_group` | 删除整个安全组及其全部规则，仅限无引用时 | DANGEROUS |
+| `delete_supabase_security_group` | 删除整个安全组及其全部规则；仅限本流程创建且无引用的安全组 | DANGEROUS |
 | `show_operation_job_status` | 查询下发操作任务的当前状态 | READ |
 | `wait_operation_job_complete` | 在超时范围内轮询操作任务至终态，等待任务完成 | READ |
 
@@ -190,6 +190,8 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
   `--cli-project-id`。
 - **错误透传**：VPC 后端 error_code/error_msg/request_id 原样透传；隐私协议未接受、
   二进制缺失、超时各有专用错误码与处置指引。
+- **来源标记**：建组自动打 `AUTO_CREATE=true` 与 `USE_FOR=Supabase` 双标签；整组删除
+  校验双标签匹配，非本流程创建的安全组一律拒绝，防止误删。
 
 ## 使用指南
 

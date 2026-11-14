@@ -6,6 +6,10 @@ from huaweicloud_mcp_core.errors import McpToolError
 
 GROUP='11111111-1111-4111-8111-111111111111'
 RULE='22222222-2222-4222-8222-222222222222'
+TAGS=[{'key':'AUTO_CREATE','value':'true'},{'key':'USE_FOR','value':'Supabase'}]
+
+def tagged_group(group_id=GROUP,tags=TAGS):
+    return {'security_group':{'id':group_id,'tags':list(tags or []),'security_group_rules':[]}}
 
 class FakeKoocli:
     def __init__(self):
@@ -57,16 +61,22 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
         self.koocli.push({'security_group':{'id':GROUP}})
         result=await self.ops.create_group('app-group',confirm=True,plan_id=preview['plan_id'])
         self.assertEqual(result['resource_id'],GROUP)
-        self.assertEqual(self.koocli.last(),('VPC','CreateSecurityGroup/v3',{'security_group':{'name':'app-group'}}))
+        service,operation,params=self.koocli.last()
+        self.assertEqual(operation,'CreateSecurityGroup/v3')
+        self.assertEqual(params['security_group']['name'],'app-group')
+        self.assertEqual(params['security_group']['tags'],TAGS)
 
     async def test_group_create_carries_purpose_description(self):
-        description='自动创建的，用于Supabase应用'
+        description='Supabase应用（自动创建）'
         preview=await self.ops.create_group('supabase-app-group',description)
         self.assertEqual(preview['changes']['security_group']['description'],description)
         self.koocli.push({'security_group':{'id':GROUP}})
         await self.ops.create_group('supabase-app-group',description,True,preview['plan_id'])
-        self.assertEqual(self.koocli.last(),('VPC','CreateSecurityGroup/v3',
-                                             {'security_group':{'name':'supabase-app-group','description':description}}))
+        service,operation,params=self.koocli.last()
+        self.assertEqual(params['security_group']['name'],'supabase-app-group')
+        self.assertEqual(params['security_group']['description'],description)
+        self.assertEqual(params['security_group']['tags'],TAGS)
+        self.assertEqual(preview['changes']['security_group']['tags'],TAGS)
         for bad in ('x'*256,'<script>'):
             with self.assertRaises(McpToolError):
                 await self.ops.create_group('g',bad)
@@ -146,20 +156,30 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
         self.koocli.push({'security_group':{'id':'other'}})
         with self.assertRaises(McpToolError):await self.ops.delete_group(GROUP,True,preview['plan_id'])
         self.assertEqual(self.ops.plans.inspect(preview['plan_id'])['state'],'prepared')
-        # success path: read then delete
-        self.koocli.push({'security_group':{'id':GROUP,'security_group_rules':[]}})
+        # untagged group is blocked: not created by this flow
+        self.koocli.push(tagged_group(tags=[]))
+        with self.assertRaises(McpToolError) as ctx:
+            await self.ops.delete_group(GROUP,True,preview['plan_id'])
+        self.assertEqual(ctx.exception.code,'MCP_GUARDRAIL_BLOCKED')
+        self.assertEqual(self.ops.plans.inspect(preview['plan_id'])['state'],'prepared')
+        # wrong tag value is blocked too
+        self.koocli.push(tagged_group(tags=[{'key':'AUTO_CREATE','value':'true'},{'key':'USE_FOR','value':'Other'}]))
+        with self.assertRaises(McpToolError):
+            await self.ops.delete_group(GROUP,True,preview['plan_id'])
+        # dict-shaped tags are accepted
+        self.koocli.push({'security_group':{'id':GROUP,'tags':{'AUTO_CREATE':'true','USE_FOR':'Supabase'},'security_group_rules':[]}})
         self.koocli.push({})
         result=await self.ops.delete_group(GROUP,True,preview['plan_id'])
         self.assertEqual(result['status'],'applied');self.assertEqual(result['resource_id'],GROUP)
         self.assertEqual(self.koocli.last(),('VPC','DeleteSecurityGroup/v3',{'security_group_id':GROUP}))
         self.assertEqual(self.ops.plans.inspect(preview['plan_id'])['state'],'accepted')
         # replay is refused
-        self.koocli.push({'security_group':{'id':GROUP,'security_group_rules':[]}})
+        self.koocli.push(tagged_group())
         with self.assertRaises(McpToolError):await self.ops.delete_group(GROUP,True,preview['plan_id'])
 
     async def test_delete_group_write_failure_keeps_unknown(self):
         preview=await self.ops.delete_group(GROUP)
-        self.koocli.push({'security_group':{'id':GROUP,'security_group_rules':[]}})
+        self.koocli.push(tagged_group())
         self.koocli.push(McpToolError('MCP_CLI_ERROR','in use'))
         with self.assertRaises(McpToolError):await self.ops.delete_group(GROUP,True,preview['plan_id'])
         self.assertEqual(self.ops.plans.inspect(preview['plan_id'])['state'],'unknown')

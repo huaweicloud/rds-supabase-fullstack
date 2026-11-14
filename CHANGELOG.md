@@ -7,6 +7,25 @@ semantic versioning.
 
 ### Changed
 
+- `mcp_server_rds_supabase_mgr` v0.4.0a21: security-group origin
+  tagging and a tag-gated whole-group deletion. `create_supabase_
+  security_group` now stamps every group with AUTO_CREATE=true and
+  USE_FOR=Supabase tags at creation (KooCLI CreateSecurityGroup/v3
+  inline tags; serialization verified live via dry-run, and the show
+  response returns the tags as a list of key/value pairs).
+  `delete_supabase_security_group` verifies the tag pair on the live
+  group before submission - groups without the matching tags (list or
+  dict shape) are rejected with MCP_GUARDRAIL_BLOCKED, so a group that
+  was not created by this flow - especially one in active use - can no
+  longer be deleted through the tool by mistake; such groups route to
+  the console after manual review. The deletion preview carries the
+  dedicated warning. Skill `rds-supabase-mgr-mcp` v0.8.2 documents the
+  auto-tagging and the tag gate, and the group description wording is
+  tightened to purpose-first per review: the application group as
+  `Supabase应用（自动创建）`, the route-A database group as
+  `数据库接入（自动创建）` (SKILL.md, scenarios.md, and planning.py
+  guidance updated in lockstep).
+
 - `mcp_server_rds_supabase_mgr` v0.4.0a20: tool-surface cleanup.
   Removed `inspect_supabase_plan`, `cancel_supabase_plan`, and
   `reconcile_supabase_auth_plan` - the local-ledger operation trio added

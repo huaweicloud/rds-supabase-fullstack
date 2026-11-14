@@ -101,8 +101,9 @@ lifecycle, control plane).
   scenario
 - Database instance flavor query — create-with-new-instance scenario
   (via KooCLI)
-- Surrounding dependency queries: VPC, subnet, availability zone,
-  security group, OBS bucket, and more (via KooCLI)
+- Automatic dependency discovery: lists and detail configuration of
+  surrounding resources — VPC, subnet, availability zone, security group,
+  OBS bucket, and more (using KooCLI capability exploration)
 - Creation submission: Single/Ha, pay-per-use or yearly/monthly,
   two-phase confirmation; yearly/monthly returns a console-payable order
 
@@ -127,20 +128,28 @@ lifecycle, control plane).
 - Delete application security groups
 - Add or remove inbound/outbound access rules
 
-**ApiKey**
+**Application access API keys**
 
-- Metadata query (whitelisted output, no plaintext)
-- Reset (with a strong downstream-invalidation warning)
-- Delivery to a protected local file (never echoed in chat)
+- API key list query, filterable by purpose: `publishable` (public
+  client-side), `secret` (server-side confidential), `anon` (anonymous
+  access), `service_role` (server-side administrator)
+- Reset a specific API key: counter key leakage and abuse
+- Retrieve an API key value: never displayed in conversation; written to
+  a protected local file to prevent privacy exposure
 
 **Business configuration**
 
 - Sign-up/anonymous toggles, Auth providers (GitHub/SMTP), URLs and mail
   templates, OBS storage
 
-**Jobs and execution record**
+**Task status tracking**
 
-- Job status query and bounded watching
+- Query the status of a submitted task
+- Poll task status to a terminal state within a bounded timeout, for
+  waiting on task completion
+
+**Local execution record**
+
 - Plan inspection/cancellation/reconciliation; unknown outcomes durably
   recorded, never replayed
 

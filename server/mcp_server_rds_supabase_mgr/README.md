@@ -83,7 +83,8 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
   以局点实时查询为准
 - 可托管 PostgreSQL 实例查询——关联已有实例场景
 - 数据库实例规格查询——同时新建实例场景（经 KooCLI）
-- 周边依赖查询：VPC、子网、可用区、安全组、OBS 桶等（经 KooCLI）
+- 周边依赖自动发现：VPC、子网、可用区、安全组、OBS 桶等依赖资源的列表与详情配置
+  （使用 KooCLI 功能探索）
 - 创建提交：Single/Ha、按需/包周期，两阶段确认；包周期返回订单，控制台支付
 
 **应用删除**
@@ -104,19 +105,24 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
 - 删除应用安全组
 - 新增或删除出/入方向的访问规则
 
-**ApiKey**
+**应用接入 API Key**
 
-- 元数据查询（白名单输出，不含明文）
-- 重置（强提示下游失效风险）
-- 交付至受保护本地文件（不在对话输出明文）
+- API Key 列表查询：按用途过滤——`publishable`（客户端公开发布）、`secret`（服务端保密）、
+  `anon`（匿名访问）、`service_role`（服务端管理员）
+- 重置指定 API Key：应对密钥泄露与滥用风险
+- 查询 API Key 密钥值：不在对话中直接展示，写入本地受保护文件，防止隐私泄露
 
 **业务配置**
 
 - 注册/匿名开关、Auth 提供方（GitHub/SMTP）、URL 与邮件模板、OBS 存储
 
-**任务与执行记录**
+**任务状态跟踪**
 
-- 任务状态查询与有界观察
+- 查询下发任务的状态
+- 在超时时间范围内轮询任务状态至终态，用于等待任务完成
+
+**本地执行记录**
+
 - 计划检查/取消/核对；结果未知持久记录，禁止重放
 
 **通用能力**

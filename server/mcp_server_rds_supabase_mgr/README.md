@@ -82,6 +82,7 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
 - 应用规格列表查询：返回各规格支持的可用区列表，兼作可用区查询与选择；
   默认查单机模式可用规格，主备 Ha 版以局点实时查询为准
 - 可托管 PostgreSQL 实例查询——关联已有实例场景
+- 托管实例目录查询：引擎版本、实例规格、磁盘类型——同时新建实例场景
 - 数据库实例规格查询——同时新建实例场景（经 KooCLI）
 - 周边依赖自动发现：VPC、子网、可用区、安全组、OBS 桶等依赖资源的列表与详情配置
   （使用 KooCLI 功能探索）
@@ -154,6 +155,9 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
 | `plan_supabase_creation` | 创建前的场景规划：输出分阶段的资源准备清单与操作流程 | READ | - |
 | `list_supabase_flavors_with_azs` | 查询应用可用性能规格及各规格支持的可用区列表，供创建选型与可用区选择 | READ | [ListSupabaseApplicationFlavors](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListSupabaseApplicationFlavors) |
 | `list_supabase_manageable_instances` | 查询可关联的已有 PostgreSQL 实例 | READ | [ListSupabaseManageableInstances](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListSupabaseManageableInstances) |
+| `list_supabase_engine_versions` | 查询托管实例可用的 PostgreSQL 引擎版本 | READ | [ListDatastores](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListDatastores) |
+| `list_supabase_instance_flavors` | 查询托管实例性能规格及各规格可用区售卖状态 | READ | [ListFlavors](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListFlavors) |
+| `list_supabase_instance_storage_types` | 查询托管实例磁盘类型，按引擎版本与部署模式过滤 | READ | [ListStorageTypes](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListStorageTypes) |
 | `create_supabase_application` | 创建 Supabase 应用，支持新建实例或关联已有实例；两种场景返回不同任务组合 | DANGEROUS | [CreateSupabaseApplication](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=CreateSupabaseApplication) |
 | `delete_supabase_application` | 删除应用；经用户选择可同时删除托管数据库实例，两笔删除各自返回任务编号 | DANGEROUS | [DeleteSupabaseApplication](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=DeleteSupabaseApplication) |
 | `delete_supabase_managed_instance` | 删除应用所托管的数据库实例，数据不可恢复；逐层校验托管关系与共享引用，杜绝误删 | DANGEROUS | [DeleteInstance](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=DeleteInstance) |

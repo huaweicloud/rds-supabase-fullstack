@@ -101,6 +101,8 @@ lifecycle, control plane).
   to Single-mode flavors, with Ha availability per real-time region query
 - Manageable PostgreSQL instance query — create-with-existing-instance
   scenario
+- Managed-instance catalog queries: engine versions, instance flavors,
+  storage types — create-with-new-instance scenario
 - Database instance flavor query — create-with-new-instance scenario
   (via KooCLI)
 - Automatic dependency discovery: lists and detail configuration of
@@ -190,6 +192,9 @@ alias.
 | `plan_supabase_creation` | Pre-creation planning: staged resource preparation checklist and operation flow | READ | - |
 | `list_supabase_flavors_with_azs` | Query application flavors with the AZ list each flavor supports, for sizing and AZ selection | READ | [ListSupabaseApplicationFlavors](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListSupabaseApplicationFlavors) |
 | `list_supabase_manageable_instances` | Query existing PostgreSQL instances available for attachment | READ | [ListSupabaseManageableInstances](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListSupabaseManageableInstances) |
+| `list_supabase_engine_versions` | Query PostgreSQL engine versions for managed instances | READ | [ListDatastores](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListDatastores) |
+| `list_supabase_instance_flavors` | Query managed-instance flavors with per-AZ sale status | READ | [ListFlavors](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListFlavors) |
+| `list_supabase_instance_storage_types` | Query managed-instance storage types by engine version and deployment mode | READ | [ListStorageTypes](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListStorageTypes) |
 | `create_supabase_application` | Create a Supabase application with a new or existing instance; each scenario returns its own job combination | DANGEROUS | [CreateSupabaseApplication](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=CreateSupabaseApplication) |
 | `delete_supabase_application` | Delete the application; on the user's choice also delete the managed database instance, two deletions with separate job ids | DANGEROUS | [DeleteSupabaseApplication](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=DeleteSupabaseApplication) |
 | `delete_supabase_managed_instance` | Delete the managed database instance - irreversible; verifies the managed binding and shared references layer by layer to prevent wrong deletion | DANGEROUS | [DeleteInstance](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=DeleteInstance) |

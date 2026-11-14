@@ -1,4 +1,5 @@
 from huaweicloud_mcp_core.security import ToolRisk, guard
+from mcp_server_supabase.service.instance_catalog import InstanceCatalog
 from mcp_server_supabase.service.operations import Operations
 
 
@@ -227,3 +228,23 @@ def register(server):
         Never read the delivered file using an Agent tool. Copying is a trusted client action, not a cloud API.
         """
         return await service.deliver_key(application_id,key_id,delivery_ref,confirm,plan_id)
+
+    catalog = InstanceCatalog()
+
+    @server.tool()
+    @guard(risk=ToolRisk.READ)
+    async def list_supabase_engine_versions() -> dict:
+        """Query PostgreSQL engine versions available for managed instances, for the create-with-new-instance scenario. Use the highest version unless the user needs an older one."""
+        return await catalog.list_engine_versions()
+
+    @server.tool()
+    @guard(risk=ToolRisk.READ)
+    async def list_supabase_instance_flavors(version_name: str | None = None) -> dict:
+        """Query PostgreSQL instance flavors for the create-with-new-instance scenario; each flavor carries its AZ sale status, doubling as the AZ availability source. Filter by major version (e.g. 17) or omit for all."""
+        return await catalog.list_flavors(version_name)
+
+    @server.tool()
+    @guard(risk=ToolRisk.READ)
+    async def list_supabase_instance_storage_types(version_name: str, ha_mode: str) -> dict:
+        """Query storage types available for a managed PostgreSQL instance in the create-with-new-instance scenario, filtered by engine version and deployment mode (single/ha)."""
+        return await catalog.list_storage_types(version_name, ha_mode)

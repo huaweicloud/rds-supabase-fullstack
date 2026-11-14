@@ -371,3 +371,169 @@ class AuthConfigTests(unittest.IsolatedAsyncioTestCase):
             with self.subTest(payload=payload):
                 with self.assertRaises(McpToolError):
                     await self.ops.read('auth', 'app-1')
+
+
+APP_ID = 'ad9079c304464c33a4f2fd516d4a3b16in32'
+INSTANCE_ID = 'ee36e15f94ed4432adb3ada163620d82in03'
+
+
+class ManagedInstanceDeleteTests(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        import os, tempfile
+        from pathlib import Path
+        from unittest.mock import patch
+        from mcp_server_supabase.service.plans import PlanStore
+        self.tmp = tempfile.TemporaryDirectory(); self.addCleanup(self.tmp.cleanup)
+        self.env = patch.dict(os.environ, {'SUPABASE_ENABLE_WRITES': 'true',
+                                           'HUAWEICLOUD_MCP_READ_ONLY': 'false'})
+        self.env.start(); self.addCleanup(self.env.stop)
+        self.client = AsyncMock()
+        self.client.endpoint = 'https://example.invalid'; self.client.project = 'project'; self.client.token = 'fixture'
+        self.ops = Operations(self.client, PlanStore(Path(self.tmp.name) / 'state.db'))
+
+    def detail(self, **overrides):
+        detail = dict(REAL_DETAIL)
+        detail['managed_instance'] = dict(REAL_DETAIL['managed_instance'])
+        detail.update(overrides)
+        return detail
+
+    def sweep(self, rows):
+        return {'total_count': len(rows), 'data': rows}
+
+    async def test_preview_is_local_only(self):
+        preview = await self.ops.delete_managed_instance(APP_ID, INSTANCE_ID)
+        self.assertEqual(preview['status'], 'confirmation_required')
+        self.assertEqual(preview['instance_id'], INSTANCE_ID)
+        self.assertTrue(any('irreversibly' in w for w in preview['warnings']))
+        self.client.request.assert_not_awaited()
+
+    async def test_confirm_deletes_verified_instance(self):
+        preview = await self.ops.delete_managed_instance(APP_ID, INSTANCE_ID)
+        self.client.request.side_effect = [
+            (200, self.detail()),
+            (200, self.sweep([{'id': APP_ID, 'managed_instance': {'id': INSTANCE_ID}}])),
+            (200, {'total_count': 1, 'instances': [{'id': INSTANCE_ID, 'name': 'rds-supabase-pg-01309873', 'status': 'ACTIVE'}]}),
+            (200, {'job_id': 'job-77'}),
+        ]
+        result = await self.ops.delete_managed_instance(APP_ID, INSTANCE_ID, True, preview['plan_id'])
+        self.assertEqual(result['status'], 'accepted')
+        self.assertEqual(result['job_id'], 'job-77')
+        self.assertEqual(result['instance_name'], 'rds-supabase-pg-01309873')
+        self.assertEqual(self.client.request.call_args_list[-1].args, ('DELETE', '/v3/{project}/instances/' + INSTANCE_ID))
+        self.assertEqual(self.ops.plans.inspect(preview['plan_id'])['state'], 'accepted')
+        self.assertEqual(self.ops.plans.inspect(preview['plan_id'])['job_id'], 'job-77')
+
+    async def test_binding_mismatch_blocks_before_delete(self):
+        preview = await self.ops.delete_managed_instance(APP_ID, INSTANCE_ID)
+        self.client.request.return_value = (200, self.detail(managed_instance={'id': 'other-instance'}))
+        with self.assertRaises(McpToolError) as ctx:
+            await self.ops.delete_managed_instance(APP_ID, INSTANCE_ID, True, preview['plan_id'])
+        self.assertEqual(ctx.exception.code, 'MCP_GUARDRAIL_BLOCKED')
+        self.assertEqual(self.client.request.await_count, 1)
+        self.assertEqual(self.ops.plans.inspect(preview['plan_id'])['state'], 'prepared')
+
+    async def test_missing_managed_instance_blocks(self):
+        preview = await self.ops.delete_managed_instance(APP_ID, INSTANCE_ID)
+        detail = self.detail(); detail.pop('managed_instance')
+        self.client.request.return_value = (200, detail)
+        with self.assertRaises(McpToolError) as ctx:
+            await self.ops.delete_managed_instance(APP_ID, INSTANCE_ID, True, preview['plan_id'])
+        self.assertEqual(ctx.exception.code, 'MCP_GUARDRAIL_BLOCKED')
+
+    async def test_unknown_application_fails_closed(self):
+        preview = await self.ops.delete_managed_instance(APP_ID, INSTANCE_ID)
+        self.client.request.return_value = (200, {'id': 'someone-else'})
+        with self.assertRaises(McpToolError) as ctx:
+            await self.ops.delete_managed_instance(APP_ID, INSTANCE_ID, True, preview['plan_id'])
+        self.assertEqual(ctx.exception.code, 'MCP_NOT_FOUND')
+        self.assertEqual(self.ops.plans.inspect(preview['plan_id'])['state'], 'prepared')
+
+    async def test_other_application_reference_blocks(self):
+        preview = await self.ops.delete_managed_instance(APP_ID, INSTANCE_ID)
+        self.client.request.side_effect = [
+            (200, self.detail()),
+            (200, self.sweep([{'id': APP_ID, 'managed_instance': {'id': INSTANCE_ID}},
+                              {'id': 'other-app', 'managed_instance': {'id': INSTANCE_ID}}])),
+        ]
+        with self.assertRaises(McpToolError) as ctx:
+            await self.ops.delete_managed_instance(APP_ID, INSTANCE_ID, True, preview['plan_id'])
+        self.assertEqual(ctx.exception.code, 'MCP_GUARDRAIL_BLOCKED')
+        self.assertEqual(self.client.request.await_count, 2)
+        self.assertEqual(self.ops.plans.inspect(preview['plan_id'])['state'], 'prepared')
+
+    async def test_instance_absent_from_inventory_blocks(self):
+        preview = await self.ops.delete_managed_instance(APP_ID, INSTANCE_ID)
+        self.client.request.side_effect = [
+            (200, self.detail()),
+            (200, self.sweep([{'id': APP_ID, 'managed_instance': {'id': INSTANCE_ID}}])),
+            (200, {'total_count': 0, 'instances': []}),
+        ]
+        with self.assertRaises(McpToolError) as ctx:
+            await self.ops.delete_managed_instance(APP_ID, INSTANCE_ID, True, preview['plan_id'])
+        self.assertEqual(ctx.exception.code, 'MCP_NOT_FOUND')
+
+    async def test_definite_rejection_marks_failed(self):
+        from mcp_server_supabase.failures import RecoveryError
+        preview = await self.ops.delete_managed_instance(APP_ID, INSTANCE_ID)
+        self.client.request.side_effect = [
+            (200, self.detail()),
+            (200, self.sweep([{'id': APP_ID, 'managed_instance': {'id': INSTANCE_ID}}])),
+            (200, {'total_count': 1, 'instances': [{'id': INSTANCE_ID}]}),
+            RecoveryError('MCP_INVALID_ARGS', 'bad', 'invalid_request', 'fix it'),
+        ]
+        with self.assertRaises(McpToolError):
+            await self.ops.delete_managed_instance(APP_ID, INSTANCE_ID, True, preview['plan_id'])
+        self.assertEqual(self.ops.plans.inspect(preview['plan_id'])['state'], 'failed')
+
+    async def test_transport_failure_marks_unknown(self):
+        from mcp_server_supabase.failures import RecoveryError
+        preview = await self.ops.delete_managed_instance(APP_ID, INSTANCE_ID)
+        self.client.request.side_effect = [
+            (200, self.detail()),
+            (200, self.sweep([{'id': APP_ID, 'managed_instance': {'id': INSTANCE_ID}}])),
+            (200, {'total_count': 1, 'instances': [{'id': INSTANCE_ID}]}),
+            RecoveryError('MCP_SDK_ERROR', 'boom', 'service_unavailable', 'retry later'),
+        ]
+        with self.assertRaises(McpToolError):
+            await self.ops.delete_managed_instance(APP_ID, INSTANCE_ID, True, preview['plan_id'])
+        self.assertEqual(self.ops.plans.inspect(preview['plan_id'])['state'], 'unknown')
+
+    async def test_response_without_job_marks_unknown(self):
+        preview = await self.ops.delete_managed_instance(APP_ID, INSTANCE_ID)
+        self.client.request.side_effect = [
+            (200, self.detail()),
+            (200, self.sweep([{'id': APP_ID, 'managed_instance': {'id': INSTANCE_ID}}])),
+            (200, {'total_count': 1, 'instances': [{'id': INSTANCE_ID}]}),
+            (200, {}),
+        ]
+        with self.assertRaises(McpToolError):
+            await self.ops.delete_managed_instance(APP_ID, INSTANCE_ID, True, preview['plan_id'])
+        self.assertEqual(self.ops.plans.inspect(preview['plan_id'])['state'], 'unknown')
+
+    async def test_replay_is_rejected(self):
+        preview = await self.ops.delete_managed_instance(APP_ID, INSTANCE_ID)
+        self.client.request.side_effect = [
+            (200, self.detail()),
+            (200, self.sweep([{'id': APP_ID, 'managed_instance': {'id': INSTANCE_ID}}])),
+            (200, {'total_count': 1, 'instances': [{'id': INSTANCE_ID}]}),
+            (200, {'job_id': 'job-77'}),
+        ]
+        await self.ops.delete_managed_instance(APP_ID, INSTANCE_ID, True, preview['plan_id'])
+        self.client.request.side_effect = [
+            (200, self.detail()),
+            (200, self.sweep([{'id': APP_ID, 'managed_instance': {'id': INSTANCE_ID}}])),
+            (200, {'total_count': 1, 'instances': [{'id': INSTANCE_ID}]}),
+        ]
+        with self.assertRaises(McpToolError) as ctx:
+            await self.ops.delete_managed_instance(APP_ID, INSTANCE_ID, True, preview['plan_id'])
+        self.assertEqual(ctx.exception.code, 'MCP_GUARDRAIL_BLOCKED')
+
+    async def test_readonly_gate_blocks_before_any_call(self):
+        import os
+        from unittest.mock import patch
+        preview = await self.ops.delete_managed_instance(APP_ID, INSTANCE_ID)
+        with patch.dict(os.environ, {'HUAWEICLOUD_MCP_READ_ONLY': 'true'}):
+            with self.assertRaises(McpToolError) as ctx:
+                await self.ops.delete_managed_instance(APP_ID, INSTANCE_ID, True, preview['plan_id'])
+        self.assertEqual(ctx.exception.code, 'MCP_READ_ONLY')
+        self.client.request.assert_not_awaited()

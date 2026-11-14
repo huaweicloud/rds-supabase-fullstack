@@ -1,11 +1,11 @@
 ---
 name: rds-supabase-mgr-mcp
-description: RDS Supabase 应用全生命周期管理技能：从零创建一个能访问的应用（创建、公网开通 EIP 与安全组配置、接入信息交付）、使用已有应用、按需增强（存储对接、邮箱登录、GitHub 登录）、日常变更（改密码、重置 Key、SSL、EIP）、查询接入信息、删除收尾。管理面 MCP 30 个工具 + KooCLI 协同。Use when：管理 RDS Supabase 应用的创建、配置、网络开通、认证对接、变更与删除。不用于 SQL 与数据操作。
+description: RDS Supabase 应用全生命周期管理技能：从零创建一个能访问的应用（创建、公网开通 EIP 与安全组配置、接入信息交付）、使用已有应用、按需增强（存储对接、邮箱登录、GitHub 登录）、日常变更（改密码、重置 Key、SSL、EIP）、查询接入信息、删除收尾。管理面 MCP 31 个工具 + KooCLI 协同。Use when：管理 RDS Supabase 应用的创建、配置、网络开通、认证对接、变更与删除。不用于 SQL 与数据操作。
 ---
 
 # RDS Supabase 应用全生命周期管理
 
-版本 0.7.1；配套服务端 mcp_server_supabase ≥ 0.4.0a17（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
+版本 0.7.2；配套服务端 mcp_server_supabase ≥ 0.4.0a18（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
 
 贯穿所有场景的四条铁律：
 1. **写操作两段式**：先预览（confirm=false），把参数、影响、费用展示给用户；用户确认后才提交（confirm=true + 预览返回的 plan_id）。预览 10 分钟有效，参数变了重新预览。
@@ -272,7 +272,7 @@ Key 值**永远不会出现在对话里**——这是红线，用户要也是本
 
 | 残留项 | 状态 | 怎么处理 |
 |---|---|---|
-| 数据库实例 | 保留，**继续计费** | 想彻底删：确认没有其他应用在用，控制台删除 |
+| 数据库实例 | 保留，**继续计费** | 想彻底删：`delete_supabase_managed_instance`（应用 ID + `managed_instance.id` 双标识，服务端校验托管绑定且无其他应用引用；数据不可恢复先确认导出；包周期走控制台退订） |
 | EIP | 保留，**继续计费** | 控制台/KooCLI 释放（停计费的唯一办法） |
 | 安全组和规则 | 保留 | 规则可经 `delete_supabase_security_group_rule` 清理；整组下线走 `delete_supabase_security_group`（删前核对组未被实例/NIC 引用，后端也会拒绝在用组） |
 | OBS 桶和数据 | 保留 | 不用了就清理（KooCLI） |

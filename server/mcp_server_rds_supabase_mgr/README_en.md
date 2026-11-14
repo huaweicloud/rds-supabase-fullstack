@@ -4,8 +4,8 @@
 
 ## Version
 
-0.4.0a17 (development prerelease); Python `3.10+`; MCP Python SDK `2.x`;
-30 tools.
+0.4.0a18 (development prerelease); Python `3.10+`; MCP Python SDK `2.x`;
+31 tools.
 
 ## Overview
 
@@ -146,6 +146,7 @@ lifecycle, control plane).
 | `list_supabase_manageable_instances` | Manageable PG instances | READ |
 | `create_supabase_application` | Creation submission (confirm, via request_ref) | DANGEROUS |
 | `delete_supabase_application` | Delete application, keep PG (confirm) | DANGEROUS |
+| `delete_supabase_managed_instance` | Delete the managed PG instance (confirm; binding-verified, unshared, pay-per-use only) | DANGEROUS |
 | `change_supabase_ssl` | SSL toggle (confirm) | WRITE |
 | `plan_supabase_ssl` | SSL switch planning | READ |
 | `change_supabase_eip` | EIP bind/unbind (confirm) | WRITE |

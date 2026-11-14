@@ -1,6 +1,7 @@
 """Implemented operations only; unsupported actions stay explicit."""
 import os
 import asyncio
+import re
 import time
 from mcp_server_supabase.service.jobs import job_result
 from mcp_server_supabase.failures import RecoveryError
@@ -73,6 +74,88 @@ class Operations:
     async def deliver_key(self,application_id,key_id,delivery_ref,confirm=False,plan_id=None):
         from mcp_server_supabase.service.key_delivery import deliver
         return await deliver(self,application_id,key_id,delivery_ref,confirm,plan_id)
+
+    async def delete_managed_instance(self, application_id, instance_id, confirm=False, plan_id=None):
+        # Native RDS instance deletion (DELETE /v3/{project}/instances/{id}). The live
+        # application detail is the only authoritative binding source: the named
+        # instance must be that application's managed_instance, and no other
+        # application may reference it.
+        application_id = segment(application_id); instance_id = segment(instance_id)
+        path = '/v3/{project}/instances/' + instance_id
+        digest = self.intent_digest('DELETE', path, {'application_id': application_id})
+        notices = {'warnings': ['Deleting the managed PostgreSQL instance destroys all its data irreversibly; export first if anything must survive.',
+                                'If the Supabase application still exists it loses its database - delete the application first when possible; the backend may reject a bound instance.',
+                                'Pay-per-use instances only: yearly/monthly instances are rejected here and must be unsubscribed in the console.'],
+                   'completion_verified': False,
+                   'follow_up': 'Track the returned job with show_supabase_job; a completed job still requires re-reading the instance inventory to confirm removal. This record remains non-replayable.'}
+        if not confirm:
+            return {'status': 'confirmation_required', 'execution': 'not_executed',
+                    'application_id': application_id, 'instance_id': instance_id,
+                    'action': 'delete_instance', 'resource_path': path, **notices, **self.plans.issue(digest)}
+        if os.getenv('SUPABASE_ENABLE_WRITES') != 'true' or os.getenv('HUAWEICLOUD_MCP_READ_ONLY', 'false').lower() == 'true':
+            raise McpToolError('MCP_READ_ONLY', 'Writes are disabled')
+        _, target = await self.client.request('GET', self.app(application_id))
+        if not isinstance(target, dict) or target.get('id') != application_id:
+            raise McpToolError('MCP_NOT_FOUND', 'Application not found; the managed-instance binding cannot be verified',
+                               hint='This tool only deletes instances whose binding to the named application is verifiable now. For an already-deleted application, verify residuals and delete the instance from the console.')
+        from huaweicloud_mcp_core.guardrails import assert_not_protected
+        assert_not_protected(target)
+        managed = target.get('managed_instance')
+        if not isinstance(managed, dict) or managed.get('id') != instance_id:
+            raise McpToolError('MCP_GUARDRAIL_BLOCKED', 'Instance is not managed by this application',
+                               hint='Read the application detail and pass its managed_instance.id exactly.')
+        assert_not_protected({'id': instance_id, 'name': managed.get('name')})
+        await self._assert_instance_unshared(instance_id, application_id)
+        _, listing = await self.client.request('GET', '/v3/{project}/instances', query={'id': instance_id})
+        rows = listing.get('instances') if isinstance(listing, dict) else None
+        if not isinstance(rows, list) or len(rows) != 1 or not isinstance(rows[0], dict) or rows[0].get('id') != instance_id:
+            raise McpToolError('MCP_NOT_FOUND', 'Instance not found or not unique in the inventory',
+                               hint='A missing instance does not prove deletion; inspect the console before any retry.')
+        self.plans.claim(plan_id, digest)
+        unknown = RecoveryError('MCP_SDK_ERROR', 'Instance deletion result unknown', 'submission_unknown',
+                                'Inspect the plan and the instance inventory; never blindly repeat the deletion.', plan_id)
+        try:
+            status, data = await self.client.request('DELETE', path)
+        except RecoveryError as error:
+            if error.recovery.get('category') in _DEFINITE_REJECTIONS:
+                self.plans.finish(plan_id, 'failed'); raise
+            self.plans.finish(plan_id, 'unknown'); raise unknown from None
+        except McpToolError:
+            self.plans.finish(plan_id, 'failed'); raise
+        except BaseException:
+            self.plans.finish(plan_id, 'unknown'); raise unknown from None
+        try:
+            job_id = data.get('job_id') if isinstance(data, dict) else None
+            if status != 200 or not isinstance(job_id, str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,128}', job_id):
+                raise ValueError()
+            self.plans.finish(plan_id, 'accepted', job_id)
+            return {'status': 'accepted', 'job_id': job_id, 'application_id': application_id,
+                    'instance_id': instance_id, 'instance_name': rows[0].get('name'),
+                    'plan_id': plan_id, **notices}
+        except BaseException:
+            self.plans.finish(plan_id, 'unknown'); raise unknown from None
+
+    async def _assert_instance_unshared(self, instance_id, application_id):
+        seen = 0
+        for page in range(5):
+            _, listing = await self.client.request('GET', ROOT + '/applications', query=application_query(100, page * 100))
+            rows = listing.get('data') if isinstance(listing, dict) else None
+            total = listing.get('total_count') if isinstance(listing, dict) else None
+            if not isinstance(rows, list) or not isinstance(total, int):
+                raise McpToolError('MCP_SDK_ERROR', 'Application inventory unreadable; instance sharing cannot be verified')
+            seen += len(rows)
+            for row in rows:
+                if not isinstance(row, dict) or row.get('id') == application_id:
+                    continue
+                managed = row.get('managed_instance')
+                if isinstance(managed, dict) and managed.get('id') == instance_id:
+                    raise McpToolError('MCP_GUARDRAIL_BLOCKED', 'Another application also references this instance',
+                                       hint='Resolve the sharing first; deleting now would interrupt the other application.')
+            if seen >= total or not rows:
+                break
+        else:
+            raise McpToolError('MCP_GUARDRAIL_BLOCKED', 'Too many applications to verify instance sharing',
+                               hint='Verify manually that no other application references the instance before retrying.')
 
     async def create_reference(self,request_ref,confirm=False,plan_id=None):
         from mcp_server_supabase.service.request_refs import load_request,preview_request

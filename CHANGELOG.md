@@ -7,6 +7,30 @@ semantic versioning.
 
 ### Added
 
+- `mcp_server_rds_supabase_mgr` v0.4.0a18: new tool
+  `delete_supabase_managed_instance` (DANGEROUS) - deletes the PostgreSQL
+  instance managed by one Supabase application through the native RDS
+  API `DELETE /v3/{project_id}/instances/{instance_id}` (the operation
+  wrapped by the UniSDK `RdsClient.delete_instance`; response carries an
+  async job_id tracked via show_supabase_job). Wrong-instance protection
+  is enforced by a four-layer check chain before submission: (1) the
+  caller must name both the application and the instance; (2) the live
+  application detail must exist and its `managed_instance.id` must equal
+  the provided instance ID (the only authoritative binding source); (3)
+  an application-inventory sweep (bounded, fail-closed at 500
+  applications) verifies no OTHER application references the same
+  instance; (4) the instance must be uniquely present in the RDS
+  inventory immediately before deletion. Protection guardrails apply to
+  both the application and the instance identity. Boundary stated in
+  the response: pay-per-use only (yearly/monthly must be unsubscribed
+  in the console); applications already deleted cannot be verified, so
+  that path stays with the console. Preview/confirm two-step flow, one-
+  use plan ledger, read-only/write gates, and definite-rejection vs
+  unknown outcome recording follow the house pattern.
+  Skill `rds-supabase-mgr-mcp` v0.7.2 routes the teardown residual
+  (database instance) through the new tool and bumps the tool count to
+  31; server README (zh/en) updated in kind.
+
 - `mcp_server_rds_supabase_mgr` v0.4.0a17: new tool
   `delete_supabase_security_group` (DANGEROUS) - removes an entire
   security group during teardown through the KooCLI channel, closing the

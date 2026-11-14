@@ -152,4 +152,4 @@ SKILL.md 是主文档；本文件是各场景的详细步骤、字段来源与�
 
 **删除后确认**：按用户节奏查任务 → `list_supabase_applications` 确认消失 → 数据库回到可托管列表（`list_supabase_manageable_instances` 可复核）→ 输出残留清单（见 SKILL.md 六项表）。
 
-**残留处置通道**：EIP 释放（控制台/KooCLI，停计费唯一路径）；数据库删除（确认无其他应用在用，控制台，注意反向关联）；安全组规则清理（`delete_supabase_security_group_rule`，先核对该组未被共用）；安全组整组下线（`delete_supabase_security_group`，删前核对组未被实例/NIC 引用——后端会拒绝在用组，删组连带删除组内全部规则）；本地 Key 文件与请求文件（用户/操作员自行清理）；项目 MCP 配置（整个项目下线时移除）。
+**残留处置通道**：EIP 释放（控制台/KooCLI，停计费唯一路径）；数据库删除——`delete_supabase_managed_instance`（须传入应用 ID + 其 `managed_instance.id` 双标识，服务端实测校验托管绑定、并确认无其他应用引用同一实例；数据不可恢复，先确认导出；包周期实例走控制台退订）；安全组规则清理（`delete_supabase_security_group_rule`，先核对该组未被共用）；安全组整组下线（`delete_supabase_security_group`，删前核对组未被实例/NIC 引用——后端会拒绝在用组，删组连带删除组内全部规则）；本地 Key 文件与请求文件（用户/操作员自行清理）；项目 MCP 配置（整个项目下线时移除）。

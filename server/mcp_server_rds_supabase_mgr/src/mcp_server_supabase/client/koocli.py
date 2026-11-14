@@ -41,13 +41,18 @@ def region_from_env():
 
 def flatten_params(params):
     flags = []
-    for key, value in (params or {}).items():
+
+    def walk(prefix, value):
         if isinstance(value, dict):
-            flags.extend(f'--{key}.{sub}={item}' for sub, item in value.items())
+            for sub, item in value.items():
+                walk(f'{prefix}.{sub}' if prefix else sub, item)
         elif isinstance(value, (list, tuple)):
-            flags.extend(f'--{key}.{index}={item}' for index, item in enumerate(value, start=1))
+            for index, item in enumerate(value, start=1):
+                walk(f'{prefix}.{index}', item)
         else:
-            flags.append(f'--{key}={value}')
+            flags.append(f'--{prefix}={value}')
+
+    walk('', params or {})
     return flags
 
 

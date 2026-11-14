@@ -131,6 +131,12 @@ def register(server):
 
     @server.tool()
     @guard(risk=ToolRisk.DANGEROUS)
+    async def delete_supabase_managed_instance(application_id: str, instance_id: str, confirm: bool = False, plan_id: str | None = None) -> dict:
+        """Remove the PostgreSQL instance managed by one RDS Supabase application during teardown. The instance must be that application's own managed_instance (verified live) and referenced by no other application; deletion is irreversible. Pay-per-use only - yearly/monthly instances must be unsubscribed in the console. Confirm before applying."""
+        return await service.delete_managed_instance(application_id, instance_id, confirm, plan_id)
+
+    @server.tool()
+    @guard(risk=ToolRisk.DANGEROUS)
     async def reset_supabase_api_key(application_id: str, key_id: str, confirm: bool = False, plan_id: str | None = None) -> dict:
         """Preview or reset a key. Existing clients can lose access; does not retrieve the new secret."""
         return await service.mutate(application_id, "reset_key", {"key_id":key_id}, confirm, plan_id)

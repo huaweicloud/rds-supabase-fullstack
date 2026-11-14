@@ -4,7 +4,7 @@
 
 ## 版本
 
-0.4.0a17（开发预发行版）；Python `3.10+`；MCP Python SDK `2.x`；30 个工具。
+0.4.0a18（开发预发行版）；Python `3.10+`；MCP Python SDK `2.x`；31 个工具。
 
 ## 概述
 
@@ -128,6 +128,7 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
 | `list_supabase_manageable_instances` | 可托管 PG 查询 | READ |
 | `create_supabase_application` | 创建提交（需确认，经 request_ref） | DANGEROUS |
 | `delete_supabase_application` | 删除应用保留 PG（需确认） | DANGEROUS |
+| `delete_supabase_managed_instance` | 删除应用托管的 PG 实例（需确认；校验托管绑定且无其他应用引用，仅按需计费） | DANGEROUS |
 | `change_supabase_ssl` | SSL 开关（需确认） | WRITE |
 | `plan_supabase_ssl` | SSL 切换规划 | READ |
 | `change_supabase_eip` | EIP 绑定/解绑（需确认） | WRITE |

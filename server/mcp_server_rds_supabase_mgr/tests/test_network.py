@@ -2,99 +2,159 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import AsyncMock,patch
 from huaweicloud_mcp_core.errors import McpToolError
 
 GROUP='11111111-1111-4111-8111-111111111111'
 RULE='22222222-2222-4222-8222-222222222222'
+
+class FakeKoocli:
+    def __init__(self):
+        self.region='cn-north-4'
+        self.token='fixture'
+        self.calls=[]
+        self.results=[]
+
+    def push(self,result):
+        self.results.append(result)
+
+    async def call(self,service,operation,params=None):
+        self.calls.append((service,operation,params))
+        result=self.results.pop(0)
+        if isinstance(result,Exception):raise result
+        return result
+
+    def last(self):
+        return self.calls[-1]
+
+
 class NetworkTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         from mcp_server_supabase.service.network import Network
         from mcp_server_supabase.service.plans import PlanStore
         self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
-        self.client=AsyncMock();self.client.endpoint='https://rds.example.invalid';self.client.project='project';self.client.token='fixture'
-        self.ops=Network(self.client,PlanStore(Path(self.tmp.name)/'state.db'))
-        self.env=patch.dict(os.environ,{'SUPABASE_ENABLE_WRITES':'true','HUAWEICLOUD_MCP_READ_ONLY':'false'});self.env.start();self.addCleanup(self.env.stop)
+        self.koocli=FakeKoocli()
+        self.ops=Network(self.koocli,PlanStore(Path(self.tmp.name)/'state.db'))
+        self.env=os.environ.copy()
+        os.environ['SUPABASE_ENABLE_WRITES']='true';os.environ['HUAWEICLOUD_MCP_READ_ONLY']='false'
+        self.addCleanup(lambda:os.environ.clear() or os.environ.update(self.env))
 
-    async def test_native_single_rule_body_and_no_replay(self):
-        preview=await self.ops.add_rule(GROUP,'192.0.2.0/24',8443)
-        self.assertEqual(self.client.request.await_count,0)
-        self.client.request.side_effect=[(200,{'security_group':{'id':GROUP,'security_group_rules':[]}}),
-                                         (201,{'security_group_rule':{'id':RULE,'security_group_id':GROUP}})]
-        result=await self.ops.add_rule(GROUP,'192.0.2.0/24',8443,True,preview['plan_id'])
-        self.assertEqual(result['resource_id'],RULE)
-        body=self.client.request.call_args.kwargs['body']
-        self.assertIn('security_group_rule',body);self.assertNotIn('security_group_rules',body)
-        self.assertEqual(body['security_group_rule']['priority'],1)
-        self.client.request.side_effect=None;self.client.request.return_value=(200,{'security_group':{'id':GROUP,'security_group_rules':[]}})
-        with self.assertRaises(McpToolError):await self.ops.add_rule(GROUP,'192.0.2.0/24',8443,True,preview['plan_id'])
+    async def test_list_and_show_use_v3_operations(self):
+        self.koocli.push({'security_groups':[]})
+        await self.ops.list_groups(10)
+        self.assertEqual(self.koocli.last(),('VPC','ListSecurityGroups/v3',{'limit':10}))
+        self.koocli.push({'security_group':{'id':GROUP}})
+        await self.ops.show_group(GROUP)
+        self.assertEqual(self.koocli.last(),('VPC','ShowSecurityGroup/v3',{'security_group_id':GROUP}))
+
+    async def test_show_unifies_separate_rules_shape(self):
+        self.koocli.push({'security_group':{'id':GROUP},'security_group_rules':[{'id':RULE,'security_group_id':GROUP}]})
+        result=await self.ops.show_group(GROUP)
+        self.assertEqual(result['data']['security_group_rules'][0]['id'],RULE)
 
     async def test_group_create_is_not_rule_creation(self):
         preview=await self.ops.create_group('app-group')
-        self.client.request.return_value=(201,{'security_group':{'id':GROUP}})
+        self.assertEqual(self.koocli.calls,[])
+        self.koocli.push({'security_group':{'id':GROUP}})
         result=await self.ops.create_group('app-group',confirm=True,plan_id=preview['plan_id'])
         self.assertEqual(result['resource_id'],GROUP)
-        self.assertEqual(self.client.request.call_args.kwargs['body'],{'security_group':{'name':'app-group'}})
+        self.assertEqual(self.koocli.last(),('VPC','CreateSecurityGroup/v3',{'security_group':{'name':'app-group'}}))
 
     async def test_group_create_carries_purpose_description(self):
-        # Auto-created groups carry a purpose description so operators can tell
-        # dedicated Supabase groups from manually created shared groups.
         description='自动创建的，用于Supabase应用'
         preview=await self.ops.create_group('supabase-app-group',description)
         self.assertEqual(preview['changes']['security_group']['description'],description)
-        self.client.request.return_value=(201,{'security_group':{'id':GROUP}})
+        self.koocli.push({'security_group':{'id':GROUP}})
         await self.ops.create_group('supabase-app-group',description,True,preview['plan_id'])
-        self.assertEqual(self.client.request.call_args.kwargs['body'],
-                         {'security_group':{'name':'supabase-app-group','description':description}})
-        # Oversized and angle-bracket descriptions are rejected locally.
+        self.assertEqual(self.koocli.last(),('VPC','CreateSecurityGroup/v3',
+                                             {'security_group':{'name':'supabase-app-group','description':description}}))
         for bad in ('x'*256,'<script>'):
             with self.assertRaises(McpToolError):
                 await self.ops.create_group('g',bad)
 
-    async def test_delete_checks_ownership(self):
-        preview=await self.ops.delete_rule(GROUP,RULE)
-        self.client.request.return_value=(200,{'security_group_rule':{'id':RULE,'security_group_id':'other'}})
-        with self.assertRaises(McpToolError):await self.ops.delete_rule(GROUP,RULE,True,preview['plan_id'])
-        self.assertTrue(all(c.args[0]=='GET' for c in self.client.request.call_args_list))
+    async def test_native_single_rule_body_and_no_replay(self):
+        preview=await self.ops.add_rule(GROUP,'192.0.2.0/24',8443)
+        self.assertEqual(preview['changes']['security_group_rule']['direction'],'ingress')
+        self.assertEqual(preview['changes']['security_group_rule']['priority'],1)
+        self.koocli.push({'security_group':{'id':GROUP,'security_group_rules':[]}})
+        self.koocli.push({'security_group_rule':{'id':RULE,'security_group_id':GROUP}})
+        result=await self.ops.add_rule(GROUP,'192.0.2.0/24',8443,confirm=True,plan_id=preview['plan_id'])
+        self.assertEqual(result['resource_id'],RULE)
+        service,operation,params=self.koocli.last()
+        self.assertEqual(operation,'CreateSecurityGroupRule/v3')
+        self.assertEqual(params['security_group_rule']['security_group_id'],GROUP)
+        self.assertEqual(params['security_group_rule']['multiport'],'8443')
+        self.koocli.push({'security_group':{'id':GROUP,'security_group_rules':[]}})
+        with self.assertRaises(McpToolError):await self.ops.add_rule(GROUP,'192.0.2.0/24',8443,confirm=True,plan_id=preview['plan_id'])
+        self.assertEqual(self.ops.plans.inspect(preview['plan_id'])['state'],'accepted')
 
-    async def test_delete_success_keeps_ledger(self):
+    async def test_egress_rule_direction_and_protocol(self):
+        preview=await self.ops.add_rule(GROUP,'192.0.2.0/24',5432,'egress','tcp')
+        self.assertEqual(preview['changes']['security_group_rule']['direction'],'egress')
+        self.koocli.push({'security_group':{'id':GROUP,'security_group_rules':[]}})
+        self.koocli.push({'security_group_rule':{'id':RULE,'security_group_id':GROUP}})
+        await self.ops.add_rule(GROUP,'192.0.2.0/24',5432,'egress','tcp',True,preview['plan_id'])
+        _,operation,params=self.koocli.last()
+        self.assertEqual(params['security_group_rule']['direction'],'egress')
+        self.assertEqual(params['security_group_rule']['protocol'],'tcp')
+        self.assertEqual(params['security_group_rule']['multiport'],'5432')
+
+    async def test_delete_checks_ownership_then_applies(self):
         preview=await self.ops.delete_rule(GROUP,RULE)
-        self.client.request.side_effect=[(200,{'security_group_rule':{'id':RULE,'security_group_id':GROUP}}),(200,{'security_group':{'id':GROUP}}),(204,{})]
+        self.koocli.push({'security_group':{'id':GROUP,'security_group_rules':[{'id':'other','security_group_id':GROUP}]}})
+        with self.assertRaises(McpToolError):await self.ops.delete_rule(GROUP,RULE,True,preview['plan_id'])
+        self.assertEqual(self.ops.plans.inspect(preview['plan_id'])['state'],'prepared')
+        self.koocli.push({'security_group':{'id':GROUP,'security_group_rules':[{'id':RULE,'security_group_id':GROUP}]}})
+        self.koocli.push({})
         result=await self.ops.delete_rule(GROUP,RULE,True,preview['plan_id'])
         self.assertEqual(result['status'],'applied');self.assertFalse(result['completion_verified'])
+        self.assertEqual(self.koocli.last(),('VPC','DeleteSecurityGroupRule/v3',{'security_group_rule_id':RULE}))
         self.assertEqual(self.ops.plans.inspect(preview['plan_id'])['state'],'accepted')
 
     async def test_invalid_or_world_source_and_readonly(self):
         for source in ('0.0.0.0/0','::/0','invalid'):
             with self.assertRaises(McpToolError):await self.ops.add_rule(GROUP,source,8443)
-        with patch.dict(os.environ,{'HUAWEICLOUD_MCP_READ_ONLY':'true'}):
+        for direction,protocol in (('in','tcp'),('egress','icmp')):
+            with self.assertRaises(McpToolError):await self.ops.add_rule(GROUP,'192.0.2.0/24',8443,direction,protocol)
+        with patch_readonly():
             with self.assertRaises(McpToolError):await self.ops.create_group('app-group',True,'fixture')
-        self.client.request.assert_not_awaited()
+        self.assertEqual(self.koocli.calls,[])
 
     async def test_duplicate_rule_prevents_write(self):
         preview=await self.ops.add_rule(GROUP,'192.0.2.0/24',8443)
-        self.client.request.return_value=(200,{'security_group':{'id':GROUP,'security_group_rules':[preview['changes']['security_group_rule']]}})
-        with self.assertRaises(McpToolError):await self.ops.add_rule(GROUP,'192.0.2.0/24',8443,True,preview['plan_id'])
+        self.koocli.push({'security_group':{'id':GROUP,'security_group_rules':[preview['changes']['security_group_rule']]}})
+        with self.assertRaises(McpToolError):await self.ops.add_rule(GROUP,'192.0.2.0/24',8443,confirm=True,plan_id=preview['plan_id'])
         self.assertEqual(self.ops.plans.inspect(preview['plan_id'])['state'],'prepared')
 
     async def test_malformed_mutation_response_keeps_unknown(self):
         preview=await self.ops.create_group('app-group')
-        self.client.request.return_value=(202,{})
+        self.koocli.push({})
         with self.assertRaises(McpToolError):await self.ops.create_group('app-group',confirm=True,plan_id=preview['plan_id'])
         self.assertEqual(self.ops.plans.inspect(preview['plan_id'])['state'],'unknown')
 
-    async def test_list_and_show_fixed_paths(self):
-        self.client.request.return_value=(200,{'security_groups':[]})
-        await self.ops.list_groups(10)
-        self.assertEqual(self.client.request.call_args.kwargs['query'],{'limit':10})
-        self.client.request.return_value=(200,{'security_group':{'id':GROUP}})
-        await self.ops.show_group(GROUP)
-        self.assertTrue(self.client.request.call_args.args[1].endswith(GROUP))
+    async def test_write_failure_keeps_unknown(self):
+        preview=await self.ops.create_group('app-group')
+        self.koocli.push(McpToolError('MCP_CLI_ERROR','boom'))
+        with self.assertRaises(McpToolError):await self.ops.create_group('app-group',confirm=True,plan_id=preview['plan_id'])
+        self.assertEqual(self.ops.plans.inspect(preview['plan_id'])['state'],'unknown')
 
-    async def test_uses_shared_rds_origin_without_vpc_override(self):
-        from mcp_server_supabase.service.network import Network
-        with patch.dict(os.environ,{'SUPABASE_VPC_ENDPOINT':'https://stale.example.invalid'}), \
-             patch('mcp_server_supabase.service.operations.configured_client',return_value=self.client):
-            ops=Network(plans=self.ops.plans)
-        self.assertIs(ops.client,self.client)
-        self.assertEqual(ops.client.endpoint,'https://rds.example.invalid')
+    async def test_group_identity_failure_blocks_rule_write(self):
+        preview=await self.ops.add_rule(GROUP,'192.0.2.0/24',8443)
+        self.koocli.push({'security_group':{'id':'other'}})
+        with self.assertRaises(McpToolError):await self.ops.add_rule(GROUP,'192.0.2.0/24',8443,confirm=True,plan_id=preview['plan_id'])
+        self.assertEqual(len(self.koocli.calls),1)
+        self.assertEqual(self.ops.plans.inspect(preview['plan_id'])['state'],'prepared')
+
+
+class patch_readonly:
+    def __enter__(self):
+        self.previous=os.environ.get('HUAWEICLOUD_MCP_READ_ONLY')
+        os.environ['HUAWEICLOUD_MCP_READ_ONLY']='true'
+        return self
+
+    def __exit__(self,*args):
+        if self.previous is None:os.environ.pop('HUAWEICLOUD_MCP_READ_ONLY',None)
+        else:os.environ['HUAWEICLOUD_MCP_READ_ONLY']=self.previous
+
+
+if __name__=='__main__':
+    unittest.main()

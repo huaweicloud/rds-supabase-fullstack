@@ -69,6 +69,7 @@ uv run mcp-huaweicloud-rds-supabase-mgr          # stdio（默认）
         "SUPABASE_TRANSPORT": "sdk_core",
         "SUPABASE_RDS_ENDPOINT": "<原生 RDS HTTPS 端点>",
         "HUAWEICLOUD_PROJECT_ID": "<项目 ID>",
+        "HUAWEICLOUD_REGION": "<区域，如 cn-east-3；安全组工具的 KooCLI 通道用>",
         "HUAWEICLOUD_ACCESS_KEY": "<AK>",
         "HUAWEICLOUD_SECRET_KEY": "<SK>",
         "HUAWEICLOUD_SECURITY_TOKEN": "<临时密钥才有，永久密钥删掉此行>",
@@ -113,6 +114,8 @@ opencode 项目 `opencode.json` 等价写法（V2 结构：服务器条目位于
   "HUAWEICLOUD_AUTH_TOKEN": "<外部预置的服务 Token>"
 }
 ```
+
+**Token 模式的安全组限制**：安全组五工具走 KooCLI 通道、只认 AK/SK（或本机 hcloud profile）。Token 模式下这五个工具会报凭据缺失——要用安全组工具，要么本机执行一次 `hcloud configure init` 配好 profile，要么改用模板一的 AK/SK 模式。
 
 **模式选错的症状（记住这个坑）**：只填 AK/SK 不设 `SUPABASE_TRANSPORT=sdk_core`，服务端按 REST 模式启动并**完全忽略 AK/SK**，每次调用报 `MCP_PERMISSION_DENIED`。反过来，REST 模式没配 `HUAWEICLOUD_AUTH_TOKEN` 也是这个错。
 

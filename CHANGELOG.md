@@ -5,6 +5,38 @@ semantic versioning.
 
 ## [Unreleased]
 
+### Changed
+
+- `mcp_server_rds_supabase_mgr` v0.4.0a15: the five security-group tools
+  (list/show/create group, add/delete rule) now execute through the KooCLI
+  (hcloud) channel instead of calling the VPC API on the RDS origin - live
+  testing proved the RDS origin does not serve the VPC API, so the old direct
+  path could never work. New `client/koocli.py` implements the invocation
+  contract from Huawei Cloud's own huaweicloud-devkit runner: binary located
+  via HCLOUD_BIN then fixed install dirs then PATH; region from
+  HUAWEICLOUD_REGION (new variable) or derived from the RDS endpoint
+  hostname; AK/SK injected per command only when both are present, otherwise
+  the hcloud profile is used; VPC v3 operation names (CreateSecurityGroup/v3
+  etc.) and nested `--security_group_rule.*` parameter serialization verified
+  against a real KooCLI 7.3.12 in cn-east-3 (list/show/dry-run create group/
+  dry-run create rule all passed live). Project resolution stays with KooCLI
+  (region default project; sub-project accounts configure cli-project-id in
+  the hcloud profile). Failure mapping mirrors the a12 error-passthrough
+  spirit: backend error_code/error_msg/request_id pass through on non-zero
+  exit, the first-run privacy agreement signature maps to a dedicated
+  MCP_CLI_BLOCKED error with the one-time accept hint, and missing binary or
+  timeout get MCP_CLI_MISSING / MCP_CLI_TIMEOUT. The plan ledger, confirm
+  preview flow, read-only gates, duplicate-rule and ownership guardrails are
+  unchanged; the intent digest now binds region and the KooCLI credential
+  fingerprint. `add_supabase_security_group_rule` gains direction
+  (ingress/egress) and protocol (tcp/udp) parameters - the 5432 egress rule
+  no longer requires the agent to run raw KooCLI (known gap C2 closed);
+  0.0.0.0/0 world rules remain intentionally rejected by the tool and still
+  require explicit user confirmation via KooCLI. Skill `rds-supabase-mgr-mcp`
+  v0.7.0 documents the new parameters, the KooCLI channel requirement
+  (install per INSTALL.md section 4), HUAWEICLOUD_REGION, and the Token-mode
+  limitation (security-group tools need AK/SK or a local hcloud profile).
+
 ### Removed
 
 - Legacy validation artifacts carrying the retired `hw-rds-supabase` /

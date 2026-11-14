@@ -5,7 +5,7 @@ description: RDS Supabase 应用全生命周期管理技能：从零创建一个
 
 # RDS Supabase 应用全生命周期管理
 
-版本 0.6.2；配套服务端 mcp_server_supabase ≥ 0.4.0a14（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
+版本 0.7.0；配套服务端 mcp_server_supabase ≥ 0.4.0a15（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
 
 贯穿所有场景的四条铁律：
 1. **写操作两段式**：先预览（confirm=false），把参数、影响、费用展示给用户；用户确认后才提交（confirm=true + 预览返回的 plan_id）。预览 10 分钟有效，参数变了重新预览。
@@ -100,7 +100,7 @@ https://github.com/huaweicloud/rds-supabase-fullstack
 | 应用规格 | 列出候选给用户选，**默认勾选 2U4G 档**（mode 跟部署模式走）。**顺带用规格接口探测部署模式**：`list_supabase_flavors(az_code, mode='Ha')` 成功返回 → 该环境支持 Single 和 Ha，如实告诉用户可选；**报 400（后端拒绝）→ 该环境只有 Single**，告知用户并继续查 `mode='Single'` 的规格 | `list_supabase_flavors(az_code, mode)` |
 | 应用密码 | **本地随机生成**：8-32 位，至少含大写字母/小写字母/数字/特殊字符（`~!@#$%^*-_+=?,`）中的三种，只从这些字符里生成；直接写入请求文件，用户不用填，对话里也不出现。这是默认用户 supabase 的密码，也是 Dashboard 管理员的登录密码 | 本地命令 |
 | 存储 | 问一句"业务要传图片/视频/文件吗？"——要，按场景三第 1 节对接（结论回填创建请求）；不要，**storage_component 仍必须写进请求：`{enabled:false}`（三字段全空），不能整个省略** | — |
-| 安全组 | **应用安全组必须新建专用组**，Agent 自动创建（别复用已有组——共享组改规则会波及别的资源）：`create_supabase_security_group` 预览→确认，**创建时必须带 description 标记用途**：应用组填 `自动创建的，用于Supabase应用`；路线 A 的数据库组同样新建专用组，description 填 `自动创建的，用于托管实例接入`——控制台里一眼能分清哪些组是流程自动建的、归哪个用途，后续审计清理有依据。建好就把**出入两个方向的规则**配上（规则表见本步末尾）。**两个组 ID 都要进创建请求，事后没法补** | MCP + KooCLI |
+| 安全组 | **应用安全组必须新建专用组**，Agent 自动创建（别复用已有组——共享组改规则会波及别的资源）：`create_supabase_security_group` 预览→确认，**创建时必须带 description 标记用途**：应用组填 `自动创建的，用于Supabase应用`；路线 A 的数据库组同样新建专用组，description 填 `自动创建的，用于托管实例接入`——控制台里一眼能分清哪些组是流程自动建的、归哪个用途，后续审计清理有依据。建好就把**出入两个方向的规则**配上（规则表见本步末尾）。**两个组 ID 都要进创建请求，事后没法补** | MCP（经 KooCLI 通道） |
 | 网络 | **自动选**：查 VPC 和子网，挑一个可用 IP 充足的子网，不烦用户 | KooCLI（见速查表） |
 
 **路线 A 额外要定的（新建数据库）：**
@@ -129,8 +129,8 @@ https://github.com/huaweicloud/rds-supabase-fullstack
 
 | 组 | 方向 | 规则 | 怎么加 |
 |---|---|---|---|
-| 应用组 | 入 | 8443（应用登录入口） | `add_supabase_security_group_rule(group_id, port=8443, source_cidr=用户来源网段)`；问用户从哪访问；要全网开放必须用户明确确认后走 KooCLI 加 0.0.0.0/0 |
-| 应用组 | 出 | 5432（连数据库） | KooCLI（MCP 暂不支持出方向，见速查表） |
+| 应用组 | 入 | 8443（应用登录入口） | `add_supabase_security_group_rule(group_id, port=8443, source_cidr=用户来源网段)`；问用户从哪访问；要全网开放必须用户明确确认后走 KooCLI 加 0.0.0.0/0（MCP 工具按设计不放行全网规则） |
+| 应用组 | 出 | 5432（连数据库） | `add_supabase_security_group_rule(group_id, port=5432, source_cidr=数据库所在子网网段, direction='egress')`（出方向时 source_cidr 指目标网段） |
 | 数据库组（路线 A） | 入 | 5432，来源=所选子网 | `add_supabase_security_group_rule(group_id, source_cidr=子网, port=5432)` |
 
 ### 第 3 步：提交创建，等它完成
@@ -311,9 +311,11 @@ Key 值**永远不会出现在对话里**——这是红线，用户要也是本
 | 创建 EIP | `hcloud EIP CreatePublicip --cli-json-file=<配置文件>`（逐项确认后执行）。**json 里必须带标签**：`"tags": [{"key": "USAGE_FOR", "value": "Supabase应用公网访问，自动创建的"}]`——标记这条 EIP 是流程自动创建、供 Supabase 应用公网访问用的 |
 | 列 OBS 桶 | `hcloud obs ls` |
 | 建 OBS 桶 | `hcloud obs mb obs://<桶名> -location=<region> -acl=private`（多 AZ 加 -multiAZ） |
-| 加出方向/全网入方向安全组规则 | `hcloud VPC` 安全组规则命令（direction=egress 或 0.0.0.0/0，先 --help 核实） |
+| 加全网入方向安全组规则（0.0.0.0/0） | `hcloud VPC` 安全组规则命令（先 --help 核实；仅用户明确确认后执行——MCP 工具按设计不放行全网规则，出方向规则已由 MCP 工具支持） |
 
-**环境变量**：凭据两模式（AK/SK：`HUAWEICLOUD_ACCESS_KEY/SECRET_KEY/SECURITY_TOKEN` + `SUPABASE_TRANSPORT=sdk_core`；Token：`HUAWEICLOUD_AUTH_TOKEN`）、`HUAWEICLOUD_PROJECT_ID`、`SUPABASE_RDS_ENDPOINT`、`SUPABASE_REQUESTS_FILE`（请求文件路径）、`SUPABASE_STATE_FILE`（本地记录库路径）、`SUPABASE_ENABLE_WRITES`（写开关）、`HUAWEICLOUD_MCP_READ_ONLY`（只读拦截）。完整清单见[安装手册](references/install.md)。
+**环境变量**：凭据两模式（AK/SK：`HUAWEICLOUD_ACCESS_KEY/SECRET_KEY/SECURITY_TOKEN` + `SUPABASE_TRANSPORT=sdk_core`；Token：`HUAWEICLOUD_AUTH_TOKEN`）、`HUAWEICLOUD_PROJECT_ID`、`HUAWEICLOUD_REGION`（安全组工具的 KooCLI 通道用；缺省时从 `SUPABASE_RDS_ENDPOINT` 域名推导）、`SUPABASE_RDS_ENDPOINT`、`SUPABASE_REQUESTS_FILE`（请求文件路径）、`SUPABASE_STATE_FILE`（本地记录库路径）、`SUPABASE_ENABLE_WRITES`（写开关）、`HUAWEICLOUD_MCP_READ_ONLY`（只读拦截）。完整清单见[安装手册](references/install.md)。
+
+**安全组五工具（list/show/create/加规则/删规则）走 KooCLI 通道**（`hcloud`，安装见 INSTALL.md 第四节；RDS 源站不代理 VPC API）。凭据要求：AK/SK 模式直接复用环境变量；Token 模式下须在本机配置 hcloud profile（`hcloud configure init`）或改用 AK/SK，否则安全组工具报凭据缺失。KooCLI 按区域默认项目解析 project_id，子项目账号须在 hcloud profile 里配 `--cli-project-id`。
 
 **术语表**：
 - **plan_id**：预览凭证。预览时生成的编号，提交时带上，10 分钟有效，用过作废

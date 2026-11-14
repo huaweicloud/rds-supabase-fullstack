@@ -78,8 +78,9 @@ lifecycle, control plane).
   configuration (flavor, nodes), security configuration (SSL), network
   configuration (public/private IPs, port), storage configuration (OBS
   bucket integration)
-- Capability list: what this service manages, what it does not, and what
-  stays with the user
+- Capability list: declares this service's management scope and
+  responsibility boundary — which operations it performs, and which
+  remain with the user via the console
 
 **Application creation**
 

@@ -73,74 +73,69 @@ lifecycle, control plane).
 
 **Application query**
 
-- List Supabase applications with pagination, filtering, and sorting
-- Inspect Supabase application detail: basic configuration (name/mode/
-  status/port), flavor configuration (flavor/volume/nodes), security
-  configuration (SSL), and network configuration (public/private IPs, DNAT)
-- List the management capabilities and boundaries of this MCP (offline
-  declaration; no cloud probing)
+- Application list: pagination, filtering, sorting
+- Application detail: basic configuration (name, mode, status, port),
+  flavor configuration (flavor, volume, nodes), security configuration
+  (SSL), network configuration (public/private IPs, DNAT)
+- Management capability scope and boundary declaration (offline; no cloud
+  probing)
 
 **Application creation**
 
-- Pre-creation scenario planning and preparation checklist: staged
-  resource preparation and operation flow by creation intent (database
-  route / storage / public access / SSL)
-- Query Supabase application performance flavors
-- Query PostgreSQL instances manageable by a Supabase application (for
-  the create-with-existing-instance scenario)
-- Query instance performance flavors (for the create-with-new-instance
-  scenario; via KooCLI RDS flavor queries)
-- Query the surrounding dependencies for application creation: VPC,
-  subnet and other network configuration, availability zones, security
-  groups, OBS buckets, and more (via KooCLI; this MCP ships no
-  input-discovery tools)
-- Single/Ha creation submission (existing PG or on-demand new PG) with
-  two-phase confirmation; pay-per-use or yearly/monthly (yearly/monthly
-  returns an order that must be paid in the console)
+- Scenario planning: staged preparation checklist and operation flow by
+  creation intent (database route, storage, public access, SSL)
+- Application flavor query
+- Manageable PostgreSQL instance query — create-with-existing-instance
+  scenario
+- Database instance flavor query — create-with-new-instance scenario
+  (via KooCLI)
+- Surrounding dependency queries: VPC, subnet, availability zone,
+  security group, OBS bucket, and more (via KooCLI)
+- Creation submission: Single/Ha, pay-per-use or yearly/monthly,
+  two-phase confirmation; yearly/monthly returns a console-payable order
 
 **Application deletion**
 
-- Delete the Supabase application while retaining the PG (which may
-  continue to incur charges); no PG cascade deletion
-- Delete the PG instance managed by an application (four-layer
-  verification: dual identifiers, managed binding, no shared reference,
-  live pre-delete read; pay-per-use only)
+- Delete the application, retaining PG (no cascade deletion)
+- Delete the managed PG instance: four-layer verification (dual
+  identifiers, managed binding, shared-reference check, live pre-delete
+  read); pay-per-use only
 
 **Access control**
 
 - SSL toggle (enabling requires a verified certificate ID)
 - EIP bind/unbind
-- Application password change (via protected local request references; no
-  plaintext collection)
+- Application password change (via protected local request references;
+  no plaintext collection)
 
 **Security groups (KooCLI channel)**
 
-- Query groups and rules, create groups, add/remove single port rules
-  (ingress/egress, TCP/UDP), delete whole groups
+- Group and rule queries, group creation, rule add/remove
+  (ingress/egress, TCP/UDP), whole-group deletion
 
 **ApiKey**
 
-- Metadata query (six-field whitelist, no plaintext)
+- Metadata query (whitelisted output, no plaintext)
 - Reset (with a strong downstream-invalidation warning)
-- Deliver a chosen key to a protected local file (never echoed in chat)
+- Delivery to a protected local file (never echoed in chat)
 
 **Business configuration**
 
-- Sign-up/anonymous toggles, Auth providers (GitHub/SMTP), URLs and
-  confirmation mail templates, OBS storage configuration
+- Sign-up/anonymous toggles, Auth providers (GitHub/SMTP), URLs and mail
+  templates, OBS storage
 
-**Jobs and the local execution record**
+**Jobs and execution record**
 
-- Job status query and bounded read-only watching
-- Local plan inspection/cancellation/reconciliation; unknown outcomes are
-  durably recorded and never replayed
+- Job status query and bounded watching
+- Plan inspection/cancellation/reconciliation; unknown outcomes durably
+  recorded, never replayed
 
 **Cross-cutting**
 
-- Two-phase confirmation (confirm + plan_id binding parameters, target, and
-  a credential digest)
-- Cloud-write switch off by default; shared-core read-only interception,
-  protection lists, structured audit, and output redaction
+- Two-phase confirmation (confirm + plan_id binding parameters, target,
+  and a credential digest)
+- Cloud-write switch off by default; read-only interception, protection
+  lists, structured audit, output redaction
 
 ## Tool list
 

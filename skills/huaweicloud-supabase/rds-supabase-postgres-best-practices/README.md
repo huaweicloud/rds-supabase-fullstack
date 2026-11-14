@@ -22,37 +22,11 @@ Postgres 规则库技能，源自 Supabase 维护的通用规则集（"for Postg
 | 8 | 高级特性（全文检索、JSONB 索引） | LOW | `advanced-` |
 | 9 | 华为云 RDS 部署专属（JWT claims RLS、参数模板、身份辅助函数、定时任务） | CRITICAL | `rds-` |
 
-使用方式：Agent 在执行 SQL 相关任务时按 SKILL.md 的症状与任务索引定位规则文件后按规则修改 SQL；也可直接检索 `grep -il "关键词" references/`。新增规则遵循 `references/_contributing.md` 的格式契约。
+使用方式：Agent 在执行 SQL 相关任务时按 SKILL.md 的症状与任务索引定位规则文件后按规则修改 SQL；也可直接检索 `grep -il "关键词" references/`。新增规则遵循 `references/_contributing.md` 的格式契约。规则库不限定数据库操作通道：SQL 可经 MCP `execute_sql`、psql 或 RDS 控制台执行。
 
-## 快速安装
+## 安装
 
-### 安装范围
-
-本技能为纯规则文档（SKILL.md 与 38 个规则文件），自包含、零运行期依赖：不需要 MCP 服务器、不需要凭据、不限定数据库连接方式（SQL 变更可经任意通道执行）。单独安装即可完整使用。
-
-### 方式一：自然语言安装（推荐）
-
-将下面这句话发送给你的 AI Agent（适用于 Claude Code、CodeArts、opencode 等支持 Agent Skills 标准的宿主）：
-
-> 从 https://github.com/huaweicloud/rds-supabase-fullstack 克隆仓库，把 `skills/huaweicloud-supabase/rds-supabase-postgres-best-practices/` 复制到本项目的项目级技能目录（禁止装入个人级或系统级目录），安装完成后报告安装路径。
-
-说明：
-
-- 各宿主的项目级技能目录：Claude Code 为 `<项目根>/.claude/skills/`，opencode 为 `<项目根>/.opencode/skills/`，CodeArts 为 `<项目根>/.codeartsdoer/skills/`；其余宿主使用其项目级技能机制。
-- 需要完整技能包（平台操作、客户端集成等）时改为整套安装：将安装语句中的范围替换为 `skills/huaweicloud-supabase/` 全目录。
-
-### 方式二：手动安装
-
-```bash
-TMP=$(mktemp -d)
-git clone https://github.com/huaweicloud/rds-supabase-fullstack "$TMP/repo"
-cp -r "$TMP/repo/skills/huaweicloud-supabase/rds-supabase-postgres-best-practices" <项目技能目录>/
-rm -rf "$TMP"
-```
-
-网络不可达时改用 ZIP 归档下载：把上述 git clone 替换为下载 `https://github.com/huaweicloud/rds-supabase-fullstack/archive/refs/heads/main.zip` 并解压，复制解压目录下 `skills/huaweicloud-supabase/rds-supabase-postgres-best-practices`。禁止使用 `npx skills add` 等包管理器安装——技能包未发布至此类渠道。
-
-安装校验：技能目录内含 `SKILL.md` 且 `references/` 下有 35 个规则文件；克隆了仓库的可运行 `uv run --directory server/mcp_server_rds_supabase python ../../scripts/validate_skills.py`，期望输出 `validate-skills: OK (8 skills)`。
+见 [INSTALL.md](INSTALL.md)。
 
 ## 使用
 
@@ -63,8 +37,6 @@ rm -rf "$TMP"
 > 这条关联查询越来越慢，帮我优化并说明原因。
 
 > 给多租户表写 RLS 策略，用户只能访问自己租户的数据。
-
-规则库不限定数据库操作通道：SQL 可经 MCP `execute_sql`、psql 或 RDS 控制台执行；规则本身适用于任何 Postgres 通道。
 
 ## 许可
 

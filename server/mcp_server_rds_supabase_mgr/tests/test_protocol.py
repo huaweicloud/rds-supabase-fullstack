@@ -103,7 +103,7 @@ class ProtocolTests(unittest.IsolatedAsyncioTestCase):
                 async with stdio_client(params,errlog=errors) as (read,write):
                     async with ClientSession(read,write) as session:
                         await session.initialize();tools=await session.list_tools()
-                        self.assertEqual(len(tools.tools),31)
+                        self.assertEqual(len(tools.tools),32)
                         for name,ref in [('change_supabase_application_password','password'),('update_supabase_storage','storage'),('update_supabase_auth_config','auth')]:
                             result=await session.call_tool(name,{'application_id':'fixture-app','request_ref':ref})
                             payload=result.structured_content or json.loads(result.content[0].text)

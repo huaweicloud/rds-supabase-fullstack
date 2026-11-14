@@ -4,8 +4,8 @@
 
 ## Version
 
-0.4.0a22 (development prerelease); Python `3.10+`; MCP Python SDK `2.x`;
-31 tools.
+0.4.0a23 (development prerelease); Python `3.10+`; MCP Python SDK `2.x`;
+32 tools.
 
 ## Overview
 
@@ -88,7 +88,11 @@ lifecycle, control plane).
   break it down item by item - what to prepare for each scenario and
   how:
   - **Managed database instance**: create a new instance, or attach an
-    existing one
+    existing one. Creation returns differ by scenario - attaching returns
+    the application job id and application id only; creating new builds
+    the instance first and the application creation starts only after it
+    succeeds, returning the instance job id and instance id, with the
+    application job absent until the instance is ready
   - **OBS storage integration**: for image, video, and large-file
     storage needs
   - **EIP binding**: for public-network access
@@ -188,7 +192,7 @@ alias.
 | `plan_supabase_creation` | Pre-creation planning: staged resource preparation checklist and operation flow | READ |
 | `list_supabase_flavors` | Query application performance flavors for creation sizing | READ |
 | `list_supabase_manageable_instances` | Query existing PostgreSQL instances available for attachment | READ |
-| `create_supabase_application` | Create a Supabase application, with a new or existing instance | DANGEROUS |
+| `create_supabase_application` | Create a Supabase application with a new or existing instance; each scenario returns its own job combination | DANGEROUS |
 | `delete_supabase_application` | Delete the application; on the user's choice also delete the managed database instance, two deletions with separate job ids | DANGEROUS |
 | `delete_supabase_managed_instance` | Delete the managed database instance - irreversible; verifies the managed binding and shared references layer by layer to prevent wrong deletion | DANGEROUS |
 | `get_supabase_order` | Query a prepaid order's status, amounts, currency and line items | READ |
@@ -205,6 +209,7 @@ alias.
 | `delete_supabase_security_group_rule` | Remove a specific access rule to narrow the exposed surface | DANGEROUS |
 | `delete_supabase_security_group` | Delete an entire security group with all its rules; only flow-created, unreferenced groups | DANGEROUS |
 | `show_operation_job_status` | Query the current status of a submitted operation task | READ |
+| `show_supabase_creation_progress` | Analyze end-to-end creation progress: instance creating, application waiting, application creating, succeeded or failed | READ |
 | `wait_operation_job_complete` | Poll an operation task to a terminal state within a bounded timeout | READ |
 
 ## Security groups and the KooCLI channel

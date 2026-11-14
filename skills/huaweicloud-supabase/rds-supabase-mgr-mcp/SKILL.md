@@ -1,11 +1,11 @@
 ---
 name: rds-supabase-mgr-mcp
-description: RDS Supabase 应用全生命周期管理技能：从零创建一个能访问的应用（创建、公网开通 EIP 与安全组配置、接入信息交付）、使用已有应用、按需增强（存储对接、邮箱登录、GitHub 登录）、日常变更（改密码、重置 Key、SSL、EIP）、查询接入信息、删除收尾。管理面 MCP 31 个工具 + KooCLI 协同。Use when：管理 RDS Supabase 应用的创建、配置、网络开通、认证对接、变更与删除。不用于 SQL 与数据操作。
+description: RDS Supabase 应用全生命周期管理技能：从零创建一个能访问的应用（创建、公网开通 EIP 与安全组配置、接入信息交付）、使用已有应用、按需增强（存储对接、邮箱登录、GitHub 登录）、日常变更（改密码、重置 Key、SSL、EIP）、查询接入信息、删除收尾。管理面 MCP 32 个工具 + KooCLI 协同。Use when：管理 RDS Supabase 应用的创建、配置、网络开通、认证对接、变更与删除。不用于 SQL 与数据操作。
 ---
 
 # RDS Supabase 应用全生命周期管理
 
-版本 0.8.3；配套服务端 mcp_server_supabase ≥ 0.4.0a22（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
+版本 0.9.0；配套服务端 mcp_server_supabase ≥ 0.4.0a23（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
 
 贯穿所有场景的四条铁律：
 1. **写操作两段式**：先预览（confirm=false），把参数、影响、费用展示给用户；用户确认后才提交（confirm=true + 预览返回的 plan_id）。预览 10 分钟有效，参数变了重新预览。
@@ -138,7 +138,7 @@ https://github.com/huaweicloud/rds-supabase-fullstack
 1. 操作员把创建请求（含密码、存储凭据等秘密）写入本地请求文件，确认别名如 `create-app`
 2. **预览前先过一遍[核对清单](references/scenarios.md)**（场景手册"预览前逐项核对清单"）：每个字段对照规则检查，秘密字段只核"已配置"——最常见的三类错误（version 填成 PG 版本、漏 ha、密码不合规）在这一步就能拦住
 3. `create_supabase_application(request_ref, confirm=false)` 预览 → 把脱敏参数给用户看 → 确认 → 提交
-4. **等结果**：按需计费返回任务编号（job_id），等大约 **20-30 分钟**；**包周期返回订单号（order_id）**——走订单流：`get_supabase_order` 查金额与状态，用户核准后 `pay_supabase_order` 预览→确认（plan_id 两阶段；单次提交、失败不自动重试），支付后才开始创建，然后按同样节奏等任务；放弃则 `cancel_supabase_order`
+4. **等结果**：返回结构随场景不同——关联已有实例只返回 job_id+application_id；同时新建实例返回 job_id+application_id+instance_job_id+instance_id（应用在实例创建成功后才触发创建，实例就绪前查不到应用任务）。**进展跟踪用 `show_supabase_creation_progress`**（一次调用覆盖实例创建中→应用等待→应用创建中→完成/失败全阶段，自动按场景编排查询顺序）；单个任务细节用 `show_operation_job_status`。按需计费等大约 **20-30 分钟**；**包周期返回订单号（order_id）**——走订单流：`get_supabase_order` 查金额与状态，用户核准后 `pay_supabase_order` 预览→确认（plan_id 两阶段；单次提交、失败不自动重试），支付后才开始创建，然后按同样节奏等任务；放弃则 `cancel_supabase_order`
    - 提交后马上 `wait_operation_job_complete(job_id)` 看一眼（抓秒级失败）
    - 然后告诉用户"预计 20-30 分钟"，给出任务编号
    - 之后**每次用户回来问，查一次** `show_operation_job_status`——不要自己连续刷几十次

@@ -193,11 +193,31 @@ def register(server):
     @server.tool()
     @guard(risk=ToolRisk.DANGEROUS)
     async def create_supabase_application(request_ref: str, confirm: bool = False, plan_id: str | None = None) -> dict:
-        """Create a Single Supabase application using a protected local request alias and explicit confirmation.
-        Existing PG or postPaid new PG only; no automatic payment. Backend policies remain authoritative.
-        Returns application and optional PG job/resource IDs; verify every resource and business behavior separately.
+        """Create a Supabase application using a protected local request alias and explicit confirmation.
+
+        Returns differ by scenario. Attaching an existing PostgreSQL instance: the application
+        creation job id and the application id. Creating a new instance: the instance is created
+        first and the application creation starts only after it succeeds - the response carries
+        the instance creation job id and instance id alongside the application job id, and the
+        application job will not exist until the instance is ready (track with
+        show_supabase_creation_progress). Prepaid instances return an order id instead of jobs.
         """
         return await service.create_reference(request_ref,confirm,plan_id)
+
+    @server.tool()
+    @guard(risk=ToolRisk.READ)
+    async def show_supabase_creation_progress(application_id: str, application_job_id: str,
+                                              instance_job_id: str | None = None,
+                                              instance_id: str | None = None) -> dict:
+        """Analyze the end-to-end creation progress of one application from the ids returned by create_supabase_application.
+
+        Existing-instance scenario: pass application_id and application_job_id only. New-instance
+        scenario: also pass instance_job_id and instance_id - the instance task is checked first,
+        and the application task is only queried once the instance has succeeded, because the
+        application is created after the instance is ready. Returns one phase verdict:
+        instance_creating, application_creating, succeeded, or failed with the failed stage.
+        """
+        return await service.creation_progress(application_id, application_job_id, instance_job_id, instance_id)
 
     @server.tool()
     @guard(risk=ToolRisk.DANGEROUS)

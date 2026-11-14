@@ -5,6 +5,32 @@ semantic versioning.
 
 ## [Unreleased]
 
+### Added
+
+- `mcp_server_rds_supabase_mgr` v0.4.0a23: new tool
+  `show_supabase_creation_progress` (READ) - one-call, scenario-aware
+  analysis of application creation progress. Existing-instance scenario
+  (application_id + application_job_id): reads the application
+  inventory filtered by id, then the application job. New-instance
+  scenario (adds instance_job_id + instance_id, both required together):
+  checks the instance job FIRST and only queries the application job
+  after the instance completed - the application is created after the
+  instance succeeds, so its job does not exist before that point.
+  Returns a single phase verdict (instance_creating / application_
+  creating / succeeded / failed with the failed stage), per-resource
+  job statuses, a plain-language summary, and the next action;
+  completion_verified is true only on succeeded. create_supabase_
+  application's docstring now documents the scenario-specific returns:
+  attaching an existing instance returns the application job and
+  application id; creating a new instance returns the instance job id
+  and instance id alongside them, with the application job absent
+  until the instance is ready. README (zh/en) details both return
+  shapes under the managed-database-instance bullet in the creation
+  feature group and lists the new tool; skill `rds-supabase-mgr-mcp`
+  v0.9.0 wires the progress tool into the scenario-1 waiting cadence
+  (five-phase verdict, instance-first ordering) and keeps
+  show_operation_job_status for single-task detail. Tool count 32.
+
 ### Changed
 
 - `mcp_server_rds_supabase_mgr` v0.4.0a22: `delete_supabase_application`

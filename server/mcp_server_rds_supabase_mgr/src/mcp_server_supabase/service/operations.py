@@ -143,6 +143,68 @@ class Operations:
             result['instance_job_id'] = instance_job_id
         return result
 
+    async def creation_progress(self, application_id, application_job_id,
+                                instance_job_id=None, instance_id=None):
+        """One-call creation progress analysis for either creation scenario.
+
+        Existing-instance scenario (no instance ids): checks the application inventory
+        (filtered by application id) and the application creation job. New-instance
+        scenario (both instance ids): checks the instance job FIRST - the application
+        is only created after the instance succeeds, so its job is queried only then -
+        then the application inventory and the application job.
+        """
+        application_id = segment(application_id); application_job_id = segment(application_job_id)
+        new_instance = instance_job_id is not None or instance_id is not None
+        if new_instance and (instance_job_id is None or instance_id is None):
+            raise McpToolError('MCP_INVALID_ARGS',
+                               'The new-instance scenario requires both instance_job_id and instance_id, or neither')
+        instance_job_id = segment(instance_job_id) if instance_job_id else None
+        instance_id = segment(instance_id) if instance_id else None
+
+        _, listing = await self.client.request('GET', ROOT + '/applications',
+                                               query=application_query(1, 0, application_id=application_id))
+        rows = listing.get('data') if isinstance(listing, dict) else None
+        app_row = rows[0] if isinstance(rows, list) and len(rows) == 1 and isinstance(rows[0], dict) else None
+
+        instance = None
+        if new_instance:
+            instance_job = await self.job(instance_job_id)
+            instance = {'instance_id': instance_id, 'job_id': instance_job_id,
+                        'job_status': instance_job['task_status']}
+            if instance_job['task_status'] != 'completed':
+                # The application has not started yet (or the instance failed): its job
+                # does not exist at this stage - do not query it.
+                app_job_status = 'not_started' if instance_job['task_status'] == 'running' else None
+                phase = 'instance_creating' if instance_job['task_status'] == 'running' else 'failed'
+                return self._progress_result(phase, 'new_instance', app_row, app_job_status, instance,
+                                             failed_stage='instance' if phase == 'failed' else None)
+
+        app_job = await self.job(application_job_id)
+        phase = {'completed': 'succeeded', 'failed': 'failed'}.get(app_job['task_status'], 'application_creating')
+        failed_stage = 'application' if phase == 'failed' else None
+        if app_row is not None and app_row.get('status') == 'normal' and app_job['task_status'] == 'completed':
+            phase = 'succeeded'
+        return self._progress_result(phase, 'new_instance' if new_instance else 'existing_instance',
+                                     app_row, app_job['task_status'], instance, failed_stage=failed_stage)
+
+    def _progress_result(self, phase, scenario, app_row, app_job_status, instance, failed_stage=None):
+        application = {'application_id': app_row['id'] if app_row else None,
+                       'application_status': app_row.get('status') if app_row else 'not_created',
+                       'job_status': app_job_status}
+        summaries = {
+            'succeeded': 'Creation completed: the application is ready. Complete post-creation steps (public access, key delivery) if pending.',
+            'application_creating': 'The application creation task is running.' if scenario == 'existing_instance'
+                                    else 'The managed instance is ready; the application creation task is running.',
+            'instance_creating': 'The managed instance is still creating; the application has not started yet - wait and query again.',
+            'failed': 'Creation failed; check the failed stage and the task details before any retry.',
+        }
+        return {'phase': phase, 'scenario': scenario, 'application': application,
+                'instance': instance, 'failed_stage': failed_stage,
+                'summary': summaries[phase],
+                'next_action': 'Query again after a reasonable interval; do not resubmit the creation.' if phase in ('instance_creating', 'application_creating')
+                               else 'On failure, inspect the task details; a retry needs a fresh preview and confirmation.',
+                'completion_verified': phase == 'succeeded'}
+
     async def delete_managed_instance(self, application_id, instance_id, confirm=False, plan_id=None):
         # Native RDS instance deletion (DELETE /v3/{project}/instances/{id}). The live
         # application detail is the only authoritative binding source: the named

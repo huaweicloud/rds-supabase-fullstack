@@ -4,7 +4,7 @@
 
 ## 版本
 
-0.4.0a22（开发预发行版）；Python `3.10+`；MCP Python SDK `2.x`；31 个工具。
+0.4.0a23（开发预发行版）；Python `3.10+`；MCP Python SDK `2.x`；32 个工具。
 
 ## 概述
 
@@ -75,7 +75,9 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
 
 - 创建前分析业务场景和使用方式，逐项拆解，输出每个场景要准备什么、
   怎么做：
-  - **托管数据库实例**：新建实例，或关联已有实例
+  - **托管数据库实例**：新建实例，或关联已有实例。两种场景的创建返回不同——
+    关联已有实例只返回应用任务编号与应用 ID；新建实例先建实例、成功后才触发应用
+    创建，返回实例任务编号与实例 ID，应用任务在实例就绪前查不到
   - **OBS 存储对接**：有图片、视频、大文件存储需求时使用
   - **EIP 绑定**：需要公网访问时使用
   - **SSL 对接**：高安全要求场景；需先购买 CCM 证书
@@ -126,6 +128,7 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
 
 - 查询下发操作任务的状态
 - 在超时时间范围内轮询操作任务状态至终态，等待任务完成
+- 应用创建进展综合分析：一次调用覆盖"实例创建中→应用等待→应用创建中→完成/失败"全阶段
 
 
 **通用能力**
@@ -153,7 +156,7 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
 | `plan_supabase_creation` | 创建前的场景规划：输出分阶段的资源准备清单与操作流程 | READ |
 | `list_supabase_flavors` | 查询应用可用性能规格，供创建选型 | READ |
 | `list_supabase_manageable_instances` | 查询可关联的已有 PostgreSQL 实例 | READ |
-| `create_supabase_application` | 创建 Supabase 应用，支持新建实例或关联已有实例 | DANGEROUS |
+| `create_supabase_application` | 创建 Supabase 应用，支持新建实例或关联已有实例；两种场景返回不同任务组合 | DANGEROUS |
 | `delete_supabase_application` | 删除应用；经用户选择可同时删除托管数据库实例，两笔删除各自返回任务编号 | DANGEROUS |
 | `delete_supabase_managed_instance` | 删除应用所托管的数据库实例，数据不可恢复；逐层校验托管关系与共享引用，杜绝误删 | DANGEROUS |
 | `get_supabase_order` | 查询包周期订单的状态、金额、币种与订单明细 | READ |
@@ -170,6 +173,7 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
 | `delete_supabase_security_group_rule` | 删除指定访问规则，收窄开放面 | DANGEROUS |
 | `delete_supabase_security_group` | 删除整个安全组及其全部规则；仅限本流程创建且无引用的安全组 | DANGEROUS |
 | `show_operation_job_status` | 查询下发操作任务的当前状态 | READ |
+| `show_supabase_creation_progress` | 综合分析应用创建进展：实例创建中、应用等待、应用创建中、完成或失败 | READ |
 | `wait_operation_job_complete` | 在超时范围内轮询操作任务至终态，等待任务完成 | READ |
 
 ## 安全组与 KooCLI 通道

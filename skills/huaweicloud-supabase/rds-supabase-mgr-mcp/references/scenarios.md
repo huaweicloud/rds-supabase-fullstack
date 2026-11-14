@@ -97,7 +97,7 @@ SKILL.md 是主文档；本文件是各场景的详细步骤、字段来源与�
 
 ### 提交与等待
 
-提交返回 202 + job_id + application_id（路线 A 另有 instance_id + instance_job_id）。**路线 A 有两个任务，分别确认**。等待节奏：提交后 1 次 `wait_operation_job_complete`（最多 10 次/共 50 秒，抓秒级失败）→ 告知用户"预计 20-30 分钟"→ 每次用户回来问就 `show_operation_job_status` 查一次。观察预算用完（observation_exhausted）≠ 云任务失败。
+提交返回 202 + job_id + application_id（路线 A 另有 instance_id + instance_job_id——应用在实例创建成功后才触发创建，实例就绪前查不到应用任务）。**路线 A 有两个任务，分别确认**。等待节奏：**综合进展用 `show_supabase_creation_progress`**（路线 A 传全部四个 ID，自动按"先实例后应用"编排，返回实例创建中/应用等待/应用创建中/完成/失败五态）→ 提交后先查 1 次抓秒级失败 → 告知用户"预计 20-30 分钟"→ 每次用户回来问就再查 1 次；需要单任务细节（entity/时间戳）时才用 `show_operation_job_status`。观察预算用完（observation_exhausted）≠ 云任务失败。
 
 ### 失败处置（创建）
 

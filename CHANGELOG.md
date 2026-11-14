@@ -5,6 +5,17 @@ semantic versioning.
 
 ## [Unreleased]
 
+### Changed
+
+- `mcp_server_rds_supabase_mgr` v0.4.0a15 security-group tool descriptions
+  rewritten to lead with the RDS Supabase purpose instead of transport
+  mechanics: each description now states what the tool does for an RDS
+  Supabase application, with `add_supabase_security_group_rule`
+  explaining that 8443 is the default public entry and 5432 the managed
+  PostgreSQL port, while noting both follow the user's customized ports
+  when an existing instance was attached at creation (verify the actual
+  ports per deployment instead of assuming the defaults).
+
 ### Fixed
 
 - Skill `rds-supabase-mgr-mcp` INSTALL.md verification row claimed five

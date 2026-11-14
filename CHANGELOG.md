@@ -7,6 +7,25 @@ semantic versioning.
 
 ### Changed
 
+- `mcp_server_rds_supabase_mgr` v0.4.0a36: the name and password fields
+  of `discover_supabase_create_basic_options` now carry their full
+  contracts instead of one-line notes. name gains the complete rules
+  (4-64 characters, at most 64 UTF-8 bytes when containing Chinese at 3
+  bytes per character, must start with a letter or Chinese character,
+  case-sensitive, letters/digits/hyphen/underscore/Chinese only) and a
+  suggested value that is checked live against the existing application
+  list for uniqueness (deterministic per-day base with a counter suffix
+  on collision; a listing failure degrades to the rules without the
+  cross-check, visible in probe_status). password states the fixed
+  dashboard login user `supabase` and the full rule text: 8-32
+  characters with at least three of uppercase/lowercase/digits/special
+  characters ~ ! @ # $ % ^ * - _ = + ? ,. Verified live in cn-east-3:
+  the suggestion `supabase-app-1115` was returned collision-free
+  against the real application list. Skill v0.9.7; tool count
+  unchanged (38).
+
+### Changed
+
 - `mcp_server_rds_supabase_mgr` v0.4.0a29: `HUAWEICLOUD_PROJECT_ID`
   becomes optional, completing the GaussDB-style zero-config adoption.
   When absent, the regional project is discovered automatically via IAM

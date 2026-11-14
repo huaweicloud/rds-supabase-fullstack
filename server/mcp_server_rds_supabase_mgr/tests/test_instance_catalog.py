@@ -351,7 +351,7 @@ class NetworkDiscoveryTests(unittest.IsolatedAsyncioTestCase):
 
 
 class BasicOptionsTests(unittest.IsolatedAsyncioTestCase):
-    def make(self, results):
+    def make(self, results, existing_names=None):
         ops = type('FakeOps', (), {})()
         ops.calls = []
         async def candidates(kind, az_code=None, mode=None):
@@ -361,6 +361,10 @@ class BasicOptionsTests(unittest.IsolatedAsyncioTestCase):
                 raise result
             return result
         ops.creation_candidates = candidates
+        async def read(kind, application_id=None, limit=10, offset=0, **filters):
+            ops.calls.append((kind, limit))
+            return {'data': [{'name': name} for name in (existing_names or [])]}
+        ops.read = read
         return BasicOptionsDiscovery(ops), ops
 
     def flavor_page(self, specs):
@@ -380,8 +384,17 @@ class BasicOptionsTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result['basic_options']['mode']['values'], ['Single', 'Ha'])
         self.assertEqual(result['basic_options']['version']['recommended'], '1.0.0')
         self.assertEqual(result['basic_options']['flavor_ref']['recommended'], 'rds.supabase.n1.large.2')
-        self.assertEqual(fake.calls, [('flavors', 'cn-east-3a', 'Single'), ('flavors', 'cn-east-3a', 'Ha')])
+        self.assertEqual(fake.calls, [('flavors', 'cn-east-3a', 'Single'), ('flavors', 'cn-east-3a', 'Ha'), ('applications', 100)])
         self.assertIn('discover_available_network_for_create', str(result['excluded_scopes']))
+        name_field = result['basic_options']['name']
+        self.assertTrue(name_field['suggested'].startswith('supabase-app-'))
+        self.assertTrue(any('64 字节' in r for r in name_field['requirements']))
+        self.assertTrue(any('字母或中文开头' in r for r in name_field['requirements']))
+        password = result['basic_options']['password']
+        self.assertEqual(password['login_user'], 'supabase')
+        self.assertTrue(any('8~32' in r for r in password['requirements']))
+        self.assertTrue(any('三种' in r for r in password['requirements']))
+        self.assertEqual(result['probe_status']['existing_application_names'], 'ok')
 
     async def test_ha_probe_rejection_means_single_only(self):
         from huaweicloud_mcp_core.errors import McpToolError as Err
@@ -402,6 +415,30 @@ class BasicOptionsTests(unittest.IsolatedAsyncioTestCase):
         result = await ops.discover('cn-east-3a')
         # nothing saleable in cn-east-3a -> falls back to unfiltered spec list with the note
         self.assertEqual(result['basic_options']['flavor_ref']['values'], ['rds.supabase.a'])
+
+    async def test_suggested_name_avoids_collisions(self):
+        import datetime
+        stamp = datetime.date.today().strftime('%m%d')
+        ops, _ = self.make([
+            self.flavor_page(['rds.supabase.n1.large.2']),
+            self.flavor_page([]),
+        ], existing_names=['supabase-app-' + stamp, 'supabase-app-' + stamp + '-1'])
+        result = await ops.discover('cn-east-3a')
+        suggested = result['basic_options']['name']['suggested']
+        self.assertEqual(suggested, 'supabase-app-' + stamp + '-2')
+
+    async def test_name_listing_failure_degrades_to_requirements_only(self):
+        from huaweicloud_mcp_core.errors import McpToolError as Err
+        discovery, fake = self.make([
+            self.flavor_page(['rds.supabase.n1.large.2']),
+            self.flavor_page([]),
+        ])
+        async def broken_read(*args, **kwargs):
+            raise Err('MCP_SDK_ERROR', 'listing unavailable')
+        fake.read = broken_read
+        result = await discovery.discover('cn-east-3a')
+        self.assertIn('error:', result['probe_status']['existing_application_names'])
+        self.assertTrue(result['basic_options']['name']['suggested'])  # suggestion still present
 
     async def test_invalid_az_rejected(self):
         ops, _ = self.make([])

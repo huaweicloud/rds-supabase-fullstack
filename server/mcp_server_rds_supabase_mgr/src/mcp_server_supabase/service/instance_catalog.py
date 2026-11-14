@@ -265,6 +265,24 @@ class BasicOptionsDiscovery:
             self.operations=Operations()
         return self.operations
 
+    def _suggest_name(self,existing):
+        """A rules-compliant, collision-free reference name.
+
+        Rules: 4-64 chars (<=64 UTF-8 bytes with Chinese at 3 bytes each), starts
+        with a letter or Chinese character, case-sensitive, letters/digits/hyphen/
+        underscore/Chinese only. The suggestion is deterministic per day so the
+        agent can quote it across turns without re-querying.
+        """
+        import datetime
+        stamp=datetime.date.today().strftime('%m%d')
+        base='supabase-app-'+stamp
+        candidate=base
+        index=1
+        while candidate in existing:
+            index+=1
+            candidate='%s-%d'%(base,index)
+        return candidate
+
     async def discover(self,az_code):
         az_code=az_code if isinstance(az_code,str) and re.fullmatch(r'[a-z]{2,}-[a-z]+-\d+[a-z]',az_code or '') else None
         if not az_code:
@@ -290,6 +308,14 @@ class BasicOptionsDiscovery:
             flavors_ha=None  # a 400 rejection is the documented signal that Ha is unsupported here
         ha_supported=isinstance(flavors_ha,list) and bool(flavors_ha)
         rows=flavors_single if isinstance(flavors_single,list) else []
+        existing_names=set()
+        try:
+            listing=await self._ops().read('applications',limit=100)
+            for row in (listing.get('data') or []):
+                if isinstance(row,dict) and row.get('name'):existing_names.add(str(row['name']))
+            probes['existing_application_names']='ok'
+        except McpToolError as error:
+            probes['existing_application_names']='error: '+_error_text(error)
         versions=sorted({str(row.get('version')) for row in rows if isinstance(row,dict) and row.get('version')})
         # Application flavors carry per-AZ sale status; keep only specs saleable in the requested AZ.
         def saleable(row):
@@ -298,8 +324,14 @@ class BasicOptionsDiscovery:
         specs=[row for row in rows if isinstance(row,dict) and row.get('spec_code')]
         saleable_specs=[row for row in specs if saleable(row)]
         preferred=saleable_specs or specs
+        suggested_name=self._suggest_name(existing_names)
         options={
-            'name':{'note':'应用名称，4-64 字符；由用户起名，工具不生成'},
+            'name':{'requirements':['长度 4-64 个字符；含中文时不超过 64 字节（一个中文字符占 3 字节）',
+                                    '必须以字母或中文开头',
+                                    '区分大小写',
+                                    '可包含字母、数字、中划线、下划线或中文，不能包含其他特殊字符'],
+                    'suggested':suggested_name,
+                    'note':'按规则给出参考名（已对照现有应用列表确保不重复）；用户可改名，最终名称由用户确认'},
             'version':{'values':versions,'recommended':versions[-1] if versions else None,
                        'note':'Supabase 应用版本（x.y.z，非 PG 引擎版本）；取可用最高版'},
             'mode':{'values':['Single','Ha'] if ha_supported else ['Single'],
@@ -310,7 +342,10 @@ class BasicOptionsDiscovery:
                           'note':'应用规格（rds.supabase.*，与托管实例规格 rds.pg.* 是两回事）；仅列在所选 AZ 可售的规格，默认勾选 2U4G 档'},
             'availability_zone':{'values':[az_code],
                                  'note':'本次查询的 AZ；Ha 模式需两个不同 AZ（主+备），用 list_supabase_flavors_with_azs 查全部可售 AZ'},
-            'password':{'note':'8-32 位三类字符；用户经本地请求文件提供，工具不生成'},
+            'password':{'login_user':'supabase',
+                        'requirements':['密码为 8~32 个字符',
+                                        '至少包含以下字符中的三种：大写字母、小写字母、数字和特殊字符 ~ ! @ # $ % ^ * - _ = + ? ,'],
+                        'note':'dashboard 登录用户固定为 supabase；密码由用户经本地请求文件提供，工具不生成、不回显'},
             'storage_component':{'values':[{'enabled':False},{'enabled':True}],
                                  'recommended':{'enabled':False},
                                  'note':'OBS 存储对接：有图片/视频/大文件需求才启用；启用需桶名与 AK/SK（经本地请求文件）'},

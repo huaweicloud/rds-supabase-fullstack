@@ -177,40 +177,42 @@ submits. Tools that carry passwords or credentials accept no plaintext -
 secrets are pre-provisioned into a local request file and referenced by
 alias.
 
-| Tool | Scenario | Risk |
-|---|---|---|
-| `get_supabase_capabilities` | See the scenarios and boundaries this service manages | READ |
-| `list_supabase_applications` | Browse all Supabase applications with pagination, name filtering and sorting | READ |
-| `show_supabase_application` | Inspect one application's full configuration: flavor, nodes, network, SSL and storage integration | READ |
-| `list_supabase_api_keys` | View every API key's type and status; key values are never returned | READ |
-| `reset_supabase_api_key` | Reset a key on suspected leakage or scheduled rotation; the old key stops working | DANGEROUS |
-| `deliver_supabase_api_key` | Write a key's value to a protected local file for secure delivery | DANGEROUS |
-| `show_supabase_auth_config` | View the authentication baseline: sign-up toggles, third-party login, mail templates | READ |
-| `update_supabase_auth_flags` | Toggle user sign-up and anonymous access | WRITE |
-| `update_supabase_auth_config` | Configure GitHub and SMTP login, callback URLs and mail templates | WRITE |
-| `update_supabase_storage` | Integrate or change the OBS storage bucket | WRITE |
-| `plan_supabase_creation` | Pre-creation planning: staged resource preparation checklist and operation flow | READ |
-| `list_supabase_flavors_with_azs` | Query application flavors with the AZ list each flavor supports, for sizing and AZ selection | READ |
-| `list_supabase_manageable_instances` | Query existing PostgreSQL instances available for attachment | READ |
-| `create_supabase_application` | Create a Supabase application with a new or existing instance; each scenario returns its own job combination | DANGEROUS |
-| `delete_supabase_application` | Delete the application; on the user's choice also delete the managed database instance, two deletions with separate job ids | DANGEROUS |
-| `delete_supabase_managed_instance` | Delete the managed database instance - irreversible; verifies the managed binding and shared references layer by layer to prevent wrong deletion | DANGEROUS |
-| `get_supabase_order` | Query a prepaid order's status, amounts, currency and line items | READ |
-| `pay_supabase_order` | Complete a balance payment for the approved order, amount and currency to start prepaid delivery | DANGEROUS |
-| `cancel_supabase_order` | Abandon an unneeded pending-payment order | DANGEROUS |
-| `change_supabase_ssl` | Enable or disable SSL-encrypted transport for the application | WRITE |
-| `plan_supabase_ssl` | Pre-switch planning: certificate requirements and impact assessment | READ |
-| `change_supabase_eip` | Bind or unbind an elastic public IP to open or close public access | WRITE |
-| `change_supabase_application_password` | Change the application password; the new password is supplied via the local request file, never through conversation | DANGEROUS |
-| `list_supabase_security_groups` | Browse security groups | READ |
-| `show_supabase_security_group` | Inspect a security group and all its rules | READ |
-| `create_supabase_security_group` | Create a dedicated security group, auto-tagged with origin and purpose | WRITE |
-| `add_supabase_security_group_rule` | Add one inbound or outbound access rule, sized to the actual deployment ports | DANGEROUS |
-| `delete_supabase_security_group_rule` | Remove a specific access rule to narrow the exposed surface | DANGEROUS |
-| `delete_supabase_security_group` | Delete an entire security group with all its rules; only flow-created, unreferenced groups | DANGEROUS |
-| `show_operation_job_status` | Query the current status of a submitted operation task | READ |
-| `show_supabase_creation_progress` | Analyze end-to-end creation progress: instance creating, application waiting, application creating, succeeded or failed | READ |
-| `wait_operation_job_complete` | Poll an operation task to a terminal state within a bounded timeout | READ |
+| Tool | Scenario | Risk | API doc |
+|---|---|---|---|
+| `get_supabase_capabilities` | See the scenarios and boundaries this service manages | READ | - |
+| `list_supabase_applications` | Browse all Supabase applications with pagination, name filtering and sorting | READ | [ListSupabaseApplications](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListSupabaseApplications) |
+| `show_supabase_application` | Inspect one application's full configuration: flavor, nodes, network, SSL and storage integration | READ | [ShowSupabaseApplication](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ShowSupabaseApplication) |
+| `list_supabase_api_keys` | View every API key's type and status; key values are never returned | READ | [ListSupabaseApplicationApiKeys](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListSupabaseApplicationApiKeys) |
+| `reset_supabase_api_key` | Reset a key on suspected leakage or scheduled rotation; the old key stops working | DANGEROUS | [ResetSupabaseApplicationApiKey](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ResetSupabaseApplicationApiKey) |
+| `deliver_supabase_api_key` | Write a key's value to a protected local file for secure delivery | DANGEROUS | [ShowSupabaseApplicationApiKeyValue](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ShowSupabaseApplicationApiKeyValue) |
+| `show_supabase_auth_config` | View the authentication baseline: sign-up toggles, third-party login, mail templates | READ | [ShowSupabaseApplicationAuthConfig](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ShowSupabaseApplicationAuthConfig) |
+| `update_supabase_auth_flags` | Toggle user sign-up and anonymous access | WRITE | [ModifySupabaseApplicationAuthConfig](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ModifySupabaseApplicationAuthConfig) |
+| `update_supabase_auth_config` | Configure GitHub and SMTP login, callback URLs and mail templates | WRITE | [ModifySupabaseApplicationAuthConfig](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ModifySupabaseApplicationAuthConfig) |
+| `update_supabase_storage` | Integrate or change the OBS storage bucket | WRITE | [ModifySupabaseApplicationStorage](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ModifySupabaseApplicationStorage) |
+| `plan_supabase_creation` | Pre-creation planning: staged resource preparation checklist and operation flow | READ | - |
+| `list_supabase_flavors_with_azs` | Query application flavors with the AZ list each flavor supports, for sizing and AZ selection | READ | [ListSupabaseApplicationFlavors](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListSupabaseApplicationFlavors) |
+| `list_supabase_manageable_instances` | Query existing PostgreSQL instances available for attachment | READ | [ListSupabaseManageableInstances](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListSupabaseManageableInstances) |
+| `create_supabase_application` | Create a Supabase application with a new or existing instance; each scenario returns its own job combination | DANGEROUS | [CreateSupabaseApplication](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=CreateSupabaseApplication) |
+| `delete_supabase_application` | Delete the application; on the user's choice also delete the managed database instance, two deletions with separate job ids | DANGEROUS | [DeleteSupabaseApplication](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=DeleteSupabaseApplication) |
+| `delete_supabase_managed_instance` | Delete the managed database instance - irreversible; verifies the managed binding and shared references layer by layer to prevent wrong deletion | DANGEROUS | [DeleteInstance](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=DeleteInstance) |
+| `get_supabase_order` | Query a prepaid order's status, amounts, currency and line items | READ | [ShowCustomerOrderDetails](https://console.huaweicloud.com/apiexplorer/#/openapi/BSS/doc?api=ShowCustomerOrderDetails) |
+| `pay_supabase_order` | Complete a balance payment for the approved order, amount and currency to start prepaid delivery | DANGEROUS | [PayOrders](https://console.huaweicloud.com/apiexplorer/#/openapi/BSS/doc?api=PayOrders) |
+| `cancel_supabase_order` | Abandon an unneeded pending-payment order | DANGEROUS | [CancelCustomerOrder](https://console.huaweicloud.com/apiexplorer/#/openapi/BSS/doc?api=CancelCustomerOrder) |
+| `change_supabase_ssl` | Enable or disable SSL-encrypted transport for the application | WRITE | [SwitchSupabaseApplicationSsl](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=SwitchSupabaseApplicationSsl) |
+| `plan_supabase_ssl` | Pre-switch planning: certificate requirements and impact assessment | READ | - |
+| `change_supabase_eip` | Bind or unbind an elastic public IP to open or close public access | WRITE | [SwitchSupabaseApplicationEipBind](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=SwitchSupabaseApplicationEipBind) |
+| `change_supabase_application_password` | Change the application password; the new password is supplied via the local request file, never through conversation | DANGEROUS | [ModifySupabaseApplicationPassword](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ModifySupabaseApplicationPassword) |
+| `list_supabase_security_groups` | Browse security groups | READ | [ListSecurityGroups](https://console.huaweicloud.com/apiexplorer/#/openapi/VPC/doc?api=ListSecurityGroups) |
+| `show_supabase_security_group` | Inspect a security group and all its rules | READ | [ShowSecurityGroup](https://console.huaweicloud.com/apiexplorer/#/openapi/VPC/doc?api=ShowSecurityGroup) |
+| `create_supabase_security_group` | Create a dedicated security group, auto-tagged with origin and purpose | WRITE | [CreateSecurityGroup](https://console.huaweicloud.com/apiexplorer/#/openapi/VPC/doc?api=CreateSecurityGroup) |
+| `add_supabase_security_group_rule` | Add one inbound or outbound access rule, sized to the actual deployment ports | DANGEROUS | [CreateSecurityGroupRule](https://console.huaweicloud.com/apiexplorer/#/openapi/VPC/doc?api=CreateSecurityGroupRule) |
+| `delete_supabase_security_group_rule` | Remove a specific access rule to narrow the exposed surface | DANGEROUS | [DeleteSecurityGroupRule](https://console.huaweicloud.com/apiexplorer/#/openapi/VPC/doc?api=DeleteSecurityGroupRule) |
+| `delete_supabase_security_group` | Delete an entire security group with all its rules; only flow-created, unreferenced groups | DANGEROUS | [DeleteSecurityGroup](https://console.huaweicloud.com/apiexplorer/#/openapi/VPC/doc?api=DeleteSecurityGroup) |
+| `show_operation_job_status` | Query the current status of a submitted operation task | READ | [ListJobInfo](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListJobInfo) |
+| `show_supabase_creation_progress` | Analyze end-to-end creation progress: instance creating, application waiting, application creating, succeeded or failed | READ | - |
+| `wait_operation_job_complete` | Poll an operation task to a terminal state within a bounded timeout | READ | [ListJobInfo](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListJobInfo) |
+
+The full API reference is at the [Huawei Cloud RDS API docs](https://support.huaweicloud.com/api-rds/rds_01_0002.html); some Supabase APIs are newer than the published catalog - when API Explorer lacks one, this server's actual behavior is authoritative.
 
 ## Security groups and the KooCLI channel
 

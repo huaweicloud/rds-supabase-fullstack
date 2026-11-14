@@ -7,6 +7,21 @@ semantic versioning.
 
 ### Changed
 
+- `mcp_server_rds_supabase_mgr` v0.4.0a26: the README tool table (zh/en)
+  gains an API-doc column linking each tool to the corresponding
+  operation in Huawei Cloud API Explorer. Mapping verified against the
+  live KooCLI 7.3.12 RDS operation catalog: the Supabase application
+  surface (List/Show/Create/Delete SupabaseApplication, ApiKeys, Auth,
+  Storage, Password, EipBind, Ssl, Flavors, ManageableInstances), the
+  generic RDS instance deletion and task-center query (DeleteInstance,
+  ListJobInfo), the VPC security-group operations behind the KooCLI
+  channel, and the BSS order operations (ShowCustomerOrderDetails,
+  PayOrders, CancelCustomerOrder). Purely local planning/analysis tools
+  (capabilities, creation/SSL planning, creation-progress analysis)
+  carry no cloud API and show a dash. A note points to the RDS API
+  reference index and flags that newer Supabase APIs may not yet appear
+  in the published catalog.
+
 - `mcp_server_rds_supabase_mgr` v0.4.0a25: renamed
   `list_supabase_flavors` to `list_supabase_flavors_with_azs` - the name
   now says what the response carries: each flavor's supported

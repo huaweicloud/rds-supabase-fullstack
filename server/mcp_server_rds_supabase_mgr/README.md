@@ -141,40 +141,40 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
 全部写工具执行两阶段确认：先以预览模式返回变更内容与计划编号，经确认后才真正提交。
 涉及密码、凭据等秘密的工具不接收明文，秘密由操作方预先写入本地请求文件，工具仅凭别名引用。
 
-| 工具 | 功能场景 | 风险 |
-|---|---|---|
-| `get_supabase_capabilities` | 查看本服务支持管理的场景与操作边界 | READ |
-| `list_supabase_applications` | 分页浏览全部 Supabase 应用，可按名称过滤、按创建时间排序 | READ |
-| `show_supabase_application` | 查看单个应用的完整配置：规格、节点、网络、SSL 与存储对接状态 | READ |
-| `list_supabase_api_keys` | 查看应用全部 API Key 的类型与状态，不返回密钥值 | READ |
-| `reset_supabase_api_key` | 密钥疑似泄露或定期轮换时重置指定 Key，旧 Key 随之失效 | DANGEROUS |
-| `deliver_supabase_api_key` | 将指定 Key 的密钥值写入本地受保护文件，供安全交付 | DANGEROUS |
-| `show_supabase_auth_config` | 查看认证配置基线：注册开关、第三方登录、邮件模板 | READ |
-| `update_supabase_auth_flags` | 开关用户注册与匿名访问 | WRITE |
-| `update_supabase_auth_config` | 配置 GitHub、SMTP 登录方式与回调地址、邮件模板 | WRITE |
-| `update_supabase_storage` | 对接或变更 OBS 存储桶 | WRITE |
-| `plan_supabase_creation` | 创建前的场景规划：输出分阶段的资源准备清单与操作流程 | READ |
-| `list_supabase_flavors_with_azs` | 查询应用可用性能规格及各规格支持的可用区列表，供创建选型与可用区选择 | READ |
-| `list_supabase_manageable_instances` | 查询可关联的已有 PostgreSQL 实例 | READ |
-| `create_supabase_application` | 创建 Supabase 应用，支持新建实例或关联已有实例；两种场景返回不同任务组合 | DANGEROUS |
-| `delete_supabase_application` | 删除应用；经用户选择可同时删除托管数据库实例，两笔删除各自返回任务编号 | DANGEROUS |
-| `delete_supabase_managed_instance` | 删除应用所托管的数据库实例，数据不可恢复；逐层校验托管关系与共享引用，杜绝误删 | DANGEROUS |
-| `get_supabase_order` | 查询包周期订单的状态、金额、币种与订单明细 | READ |
-| `pay_supabase_order` | 按核准的订单号、金额、币种完成余额支付，开启包周期实例交付 | DANGEROUS |
-| `cancel_supabase_order` | 取消不再需要的待支付订单 | DANGEROUS |
-| `change_supabase_ssl` | 启用或关闭应用的 SSL 加密传输 | WRITE |
-| `plan_supabase_ssl` | SSL 切换前的规划：证书要求与影响评估 | READ |
-| `change_supabase_eip` | 绑定或解绑弹性公网 IP，开通或关闭公网访问 | WRITE |
-| `change_supabase_application_password` | 修改应用密码；新密码经本地请求文件提供，不经过对话 | DANGEROUS |
-| `list_supabase_security_groups` | 浏览安全组列表 | READ |
-| `show_supabase_security_group` | 查看安全组详情与全部规则 | READ |
-| `create_supabase_security_group` | 为应用创建专用安全组，自动标记来源与用途 | WRITE |
-| `add_supabase_security_group_rule` | 为安全组新增一条出入方向访问规则，按实际部署端口配置 | DANGEROUS |
-| `delete_supabase_security_group_rule` | 删除指定访问规则，收窄开放面 | DANGEROUS |
-| `delete_supabase_security_group` | 删除整个安全组及其全部规则；仅限本流程创建且无引用的安全组 | DANGEROUS |
-| `show_operation_job_status` | 查询下发操作任务的当前状态 | READ |
-| `show_supabase_creation_progress` | 综合分析应用创建进展：实例创建中、应用等待、应用创建中、完成或失败 | READ |
-| `wait_operation_job_complete` | 在超时范围内轮询操作任务至终态，等待任务完成 | READ |
+| 工具 | 功能场景 | 风险 | API 文档 |
+|---|---|---|---|
+| `get_supabase_capabilities` | 查看本服务支持管理的场景与操作边界 | READ | - |
+| `list_supabase_applications` | 分页浏览全部 Supabase 应用，可按名称过滤、按创建时间排序 | READ | [ListSupabaseApplications](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListSupabaseApplications) |
+| `show_supabase_application` | 查看单个应用的完整配置：规格、节点、网络、SSL 与存储对接状态 | READ | [ShowSupabaseApplication](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ShowSupabaseApplication) |
+| `list_supabase_api_keys` | 查看应用全部 API Key 的类型与状态，不返回密钥值 | READ | [ListSupabaseApplicationApiKeys](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListSupabaseApplicationApiKeys) |
+| `reset_supabase_api_key` | 密钥疑似泄露或定期轮换时重置指定 Key，旧 Key 随之失效 | DANGEROUS | [ResetSupabaseApplicationApiKey](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ResetSupabaseApplicationApiKey) |
+| `deliver_supabase_api_key` | 将指定 Key 的密钥值写入本地受保护文件，供安全交付 | DANGEROUS | [ShowSupabaseApplicationApiKeyValue](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ShowSupabaseApplicationApiKeyValue) |
+| `show_supabase_auth_config` | 查看认证配置基线：注册开关、第三方登录、邮件模板 | READ | [ShowSupabaseApplicationAuthConfig](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ShowSupabaseApplicationAuthConfig) |
+| `update_supabase_auth_flags` | 开关用户注册与匿名访问 | WRITE | [ModifySupabaseApplicationAuthConfig](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ModifySupabaseApplicationAuthConfig) |
+| `update_supabase_auth_config` | 配置 GitHub、SMTP 登录方式与回调地址、邮件模板 | WRITE | [ModifySupabaseApplicationAuthConfig](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ModifySupabaseApplicationAuthConfig) |
+| `update_supabase_storage` | 对接或变更 OBS 存储桶 | WRITE | [ModifySupabaseApplicationStorage](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ModifySupabaseApplicationStorage) |
+| `plan_supabase_creation` | 创建前的场景规划：输出分阶段的资源准备清单与操作流程 | READ | - |
+| `list_supabase_flavors_with_azs` | 查询应用可用性能规格及各规格支持的可用区列表，供创建选型与可用区选择 | READ | [ListSupabaseApplicationFlavors](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListSupabaseApplicationFlavors) |
+| `list_supabase_manageable_instances` | 查询可关联的已有 PostgreSQL 实例 | READ | [ListSupabaseManageableInstances](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListSupabaseManageableInstances) |
+| `create_supabase_application` | 创建 Supabase 应用，支持新建实例或关联已有实例；两种场景返回不同任务组合 | DANGEROUS | [CreateSupabaseApplication](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=CreateSupabaseApplication) |
+| `delete_supabase_application` | 删除应用；经用户选择可同时删除托管数据库实例，两笔删除各自返回任务编号 | DANGEROUS | [DeleteSupabaseApplication](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=DeleteSupabaseApplication) |
+| `delete_supabase_managed_instance` | 删除应用所托管的数据库实例，数据不可恢复；逐层校验托管关系与共享引用，杜绝误删 | DANGEROUS | [DeleteInstance](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=DeleteInstance) |
+| `get_supabase_order` | 查询包周期订单的状态、金额、币种与订单明细 | READ | [ShowCustomerOrderDetails](https://console.huaweicloud.com/apiexplorer/#/openapi/BSS/doc?api=ShowCustomerOrderDetails) |
+| `pay_supabase_order` | 按核准的订单号、金额、币种完成余额支付，开启包周期实例交付 | DANGEROUS | [PayOrders](https://console.huaweicloud.com/apiexplorer/#/openapi/BSS/doc?api=PayOrders) |
+| `cancel_supabase_order` | 取消不再需要的待支付订单 | DANGEROUS | [CancelCustomerOrder](https://console.huaweicloud.com/apiexplorer/#/openapi/BSS/doc?api=CancelCustomerOrder) |
+| `change_supabase_ssl` | 启用或关闭应用的 SSL 加密传输 | WRITE | [SwitchSupabaseApplicationSsl](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=SwitchSupabaseApplicationSsl) |
+| `plan_supabase_ssl` | SSL 切换前的规划：证书要求与影响评估 | READ | - |
+| `change_supabase_eip` | 绑定或解绑弹性公网 IP，开通或关闭公网访问 | WRITE | [SwitchSupabaseApplicationEipBind](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=SwitchSupabaseApplicationEipBind) |
+| `change_supabase_application_password` | 修改应用密码；新密码经本地请求文件提供，不经过对话 | DANGEROUS | [ModifySupabaseApplicationPassword](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ModifySupabaseApplicationPassword) |
+| `list_supabase_security_groups` | 浏览安全组列表 | READ | [ListSecurityGroups](https://console.huaweicloud.com/apiexplorer/#/openapi/VPC/doc?api=ListSecurityGroups) |
+| `show_supabase_security_group` | 查看安全组详情与全部规则 | READ | [ShowSecurityGroup](https://console.huaweicloud.com/apiexplorer/#/openapi/VPC/doc?api=ShowSecurityGroup) |
+| `create_supabase_security_group` | 为应用创建专用安全组，自动标记来源与用途 | WRITE | [CreateSecurityGroup](https://console.huaweicloud.com/apiexplorer/#/openapi/VPC/doc?api=CreateSecurityGroup) |
+| `add_supabase_security_group_rule` | 为安全组新增一条出入方向访问规则，按实际部署端口配置 | DANGEROUS | [CreateSecurityGroupRule](https://console.huaweicloud.com/apiexplorer/#/openapi/VPC/doc?api=CreateSecurityGroupRule) |
+| `delete_supabase_security_group_rule` | 删除指定访问规则，收窄开放面 | DANGEROUS | [DeleteSecurityGroupRule](https://console.huaweicloud.com/apiexplorer/#/openapi/VPC/doc?api=DeleteSecurityGroupRule) |
+| `delete_supabase_security_group` | 删除整个安全组及其全部规则；仅限本流程创建且无引用的安全组 | DANGEROUS | [DeleteSecurityGroup](https://console.huaweicloud.com/apiexplorer/#/openapi/VPC/doc?api=DeleteSecurityGroup) |
+| `show_operation_job_status` | 查询下发操作任务的当前状态 | READ | [ListJobInfo](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListJobInfo) |
+| `show_supabase_creation_progress` | 综合分析应用创建进展：实例创建中、应用等待、应用创建中、完成或失败 | READ | - |
+| `wait_operation_job_complete` | 在超时范围内轮询操作任务至终态，等待任务完成 | READ | [ListJobInfo](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListJobInfo) |
 
 ## 安全组与 KooCLI 通道
 

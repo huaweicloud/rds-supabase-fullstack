@@ -73,23 +73,38 @@ lifecycle, control plane).
 
 **Application query**
 
-- List and inspect Supabase applications in the current project (public IP,
-  port, flavor, mode, status)
-- List the available management capabilities (offline declaration; no cloud
-  probing)
+- List Supabase applications with pagination, filtering, and sorting
+- Inspect Supabase application detail: basic configuration (name/mode/
+  status/port), flavor configuration (flavor/volume/nodes), security
+  configuration (SSL), and network configuration (public/private IPs, DNAT)
+- List the management capabilities and boundaries of this MCP (offline
+  declaration; no cloud probing)
 
 **Application creation**
 
-- Discover creation candidates: manageable PG instances, Supabase flavors
-- Intent-driven creation planning (staged preparation plan; no execution)
+- Pre-creation scenario planning and preparation checklist: staged
+  resource preparation and operation flow by creation intent (database
+  route / storage / public access / SSL)
+- Query Supabase application performance flavors
+- Query PostgreSQL instances manageable by a Supabase application (for
+  the create-with-existing-instance scenario)
+- Query instance performance flavors (for the create-with-new-instance
+  scenario; via KooCLI RDS flavor queries)
+- Query the surrounding dependencies for application creation: VPC,
+  subnet and other network configuration, availability zones, security
+  groups, OBS buckets, and more (via KooCLI; this MCP ships no
+  input-discovery tools)
 - Single/Ha creation submission (existing PG or on-demand new PG) with
   two-phase confirmation; pay-per-use or yearly/monthly (yearly/monthly
   returns an order that must be paid in the console)
 
 **Application deletion**
 
-- Delete the Supabase application while retaining the PG (which may continue
-  to incur charges); no PG cascade deletion
+- Delete the Supabase application while retaining the PG (which may
+  continue to incur charges); no PG cascade deletion
+- Delete the PG instance managed by an application (four-layer
+  verification: dual identifiers, managed binding, no shared reference,
+  live pre-delete read; pay-per-use only)
 
 **Access control**
 

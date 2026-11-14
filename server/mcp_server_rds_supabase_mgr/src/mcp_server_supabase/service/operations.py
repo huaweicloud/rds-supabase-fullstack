@@ -47,30 +47,6 @@ class Operations:
                             "credential":fingerprint(self.client.token if self.client.token is not None else os.getenv("HUAWEICLOUD_AUTH_TOKEN", "")),
                             "method":method,"path":path,"body":body})
 
-    async def reconcile_auth(self, plan_id, application_id, expected):
-        # Local ledger write + cloud reads only. No replay, cloud write, or arbitrary job ID.
-        if os.getenv("HUAWEICLOUD_MCP_READ_ONLY", "false").lower() == "true":
-            raise McpToolError("MCP_READ_ONLY", "Local ledger updates are disabled")
-        if not expected or any(k not in ('enable_account_sign_up','enable_anonymous_users') or type(v) is not bool for k,v in expected.items()):
-            raise McpToolError("MCP_INVALID_ARGS", "Supply exactly the original registration boolean changes")
-        path=self.app(application_id)
-        digest=self.intent_digest('PUT',path+'/auth-config',expected)
-        record=self.plans.record(plan_id)
-        if record['state']!='accepted' or record['digest']!=digest or not record['job_id']:
-            raise McpToolError('MCP_GUARDRAIL_BLOCKED','Only an accepted matching Auth plan with its recorded job can be reconciled')
-        task=await self.job(record['job_id'])
-        if task['task_status']!='completed':
-            raise McpToolError('MCP_GUARDRAIL_BLOCKED','Recorded task is not demonstrably completed')
-        _, target=await self.client.request('GET',path)
-        if not isinstance(target,dict) or target.get('id')!=application_id or target.get('status')!='normal' or target.get('current_actions'):
-            raise McpToolError('MCP_GUARDRAIL_BLOCKED','Application identity or readiness is not verified')
-        _, actual=await self.client.request('GET',path+'/auth-config')
-        if not isinstance(actual,dict) or any(type(actual.get(k)) is not bool or actual[k] != value for k,value in expected.items()):
-            raise McpToolError('MCP_GUARDRAIL_BLOCKED','Auth resource state does not match the recorded intent')
-        result=self.plans.verify_auth(plan_id,digest,record['job_id'])
-        return {**result,'cloud_writes_performed':False,
-                'note':'Resource values were observed at resource_checked_at; business behavior is unverified. A later change still needs a new preview and confirmation.'}
-
     async def deliver_key(self,application_id,key_id,delivery_ref,confirm=False,plan_id=None):
         from mcp_server_supabase.service.key_delivery import deliver
         return await deliver(self,application_id,key_id,delivery_ref,confirm,plan_id)
@@ -87,7 +63,7 @@ class Operations:
                                 'If the Supabase application still exists it loses its database - delete the application first when possible; the backend may reject a bound instance.',
                                 'Pay-per-use instances only: yearly/monthly instances are rejected here and must be unsubscribed in the console.'],
                    'completion_verified': False,
-                   'follow_up': 'Track the returned job with show_supabase_job; a completed job still requires re-reading the instance inventory to confirm removal. This record remains non-replayable.'}
+                   'follow_up': 'Track the returned job with show_operation_job_status; a completed job still requires re-reading the instance inventory to confirm removal. This record remains non-replayable.'}
         if not confirm:
             return {'status': 'confirmation_required', 'execution': 'not_executed',
                     'application_id': application_id, 'instance_id': instance_id,
@@ -423,7 +399,7 @@ class Operations:
                                    hint='For first enable or credential identity change, provision complete credentials locally and preview again.')
         self.plans.claim(plan_id, digest)
         unknown=RecoveryError("MCP_SDK_ERROR", "Write result unknown", "submission_unknown",
-                              "Use inspect_supabase_plan, then query the associated job and resource; do not replay or delete the ledger.", plan_id)
+                              "Query the operation task and the target resource directly; do not resubmit - previews and the recorded intent are single-use.", plan_id)
         try:
             status, data = await self.client.request(method, path + suffix, body=body)
         except RecoveryError as error:

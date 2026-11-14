@@ -73,29 +73,3 @@ class PlanStore:
         result.pop('digest')
         return {**result,'resource_verified':result['state']=='verified',
                 'business_verified':False,'completion_verified':False}
-
-    def verify_auth(self, plan, digest, job_id):
-        with self.connect() as db:
-            db.execute('BEGIN IMMEDIATE')
-            row=db.execute('SELECT state,digest,job FROM plans WHERE id=?',(plan,)).fetchone()
-            if row != ('accepted',digest,job_id):
-                raise McpToolError('MCP_GUARDRAIL_BLOCKED','Execution record changed; do not release it')
-            db.execute("UPDATE plans SET state='verified' WHERE id=?",(plan,))
-            db.execute('INSERT INTO verification VALUES (?,?,?)',(plan,time.time(),'auth_flags'))
-        return self.inspect(plan)
-
-    def cancel(self, plan):
-        """Revoke an unsubmitted local intent atomically; never cancel a cloud task."""
-        with self.connect() as db:
-            db.execute('BEGIN IMMEDIATE')
-            row = db.execute('SELECT state FROM plans WHERE id=?', (plan,)).fetchone()
-            if not row:
-                raise McpToolError('MCP_NOT_FOUND', 'Unknown plan',
-                                   hint='Use the plan ID returned by the preview.')
-            if row[0] not in ('prepared', 'cancelled'):
-                raise McpToolError('MCP_GUARDRAIL_BLOCKED',
-                                   'Submission has started; local cancellation is unavailable',
-                                   hint='Inspect the plan and cloud job; the cloud operation may continue.')
-            db.execute("UPDATE plans SET state='cancelled' WHERE id=? AND state='prepared'", (plan,))
-        return {'plan_id': plan, 'state': 'cancelled', 'execution': 'not_executed',
-                'cloud_cancellation_requested': False}

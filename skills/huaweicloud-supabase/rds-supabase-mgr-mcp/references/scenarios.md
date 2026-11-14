@@ -14,7 +14,7 @@ SKILL.md 是主文档；本文件是各场景的详细步骤、字段来源与�
 |---|---|---|
 | 创建含未支持字段 | 说明是否必要、是否独立后置操作；必要条件未满足暂停 | 删除该要求后直接创建 |
 | 用户调整范围 | 重做方案并确认，旧计划在可用时取消 | 继续用旧 plan_id |
-| 预览后取消 | 调 `cancel_supabase_plan`；工具缺失则停止并说明计划等待过期 | 宣称云端已撤销 |
+| 预览后取消 | 预览不提交即作废（10 分钟过期），无需操作 | 宣称云端已撤销 |
 | 已提交后取消 | 查询记录/任务，解释任务可能继续 | 调另一个写工具模拟取消 |
 | 缺工具/未知契约 | 明确能力缺口及可完成部分 | 拼 HTTP 请求、借 Shell 执行 |
 | 202 受理 | 报告已受理、保留 job/plan 标识 | 宣布完成 |
@@ -97,7 +97,7 @@ SKILL.md 是主文档；本文件是各场景的详细步骤、字段来源与�
 
 ### 提交与等待
 
-提交返回 202 + job_id + application_id（路线 A 另有 instance_id + instance_job_id）。**路线 A 有两个任务，分别确认**。等待节奏：提交后 1 次 `wait_supabase_job`（最多 10 次/共 50 秒，抓秒级失败）→ 告知用户"预计 20-30 分钟"→ 每次用户回来问就 `show_supabase_job` 查一次。观察预算用完（observation_exhausted）≠ 云任务失败。
+提交返回 202 + job_id + application_id（路线 A 另有 instance_id + instance_job_id）。**路线 A 有两个任务，分别确认**。等待节奏：提交后 1 次 `wait_operation_job_complete`（最多 10 次/共 50 秒，抓秒级失败）→ 告知用户"预计 20-30 分钟"→ 每次用户回来问就 `show_operation_job_status` 查一次。观察预算用完（observation_exhausted）≠ 云任务失败。
 
 ### 失败处置（创建）
 
@@ -108,7 +108,7 @@ SKILL.md 是主文档；本文件是各场景的详细步骤、字段来源与�
 | 预览超 10 分钟/参数变 | MCP_GUARDRAIL_BLOCKED | 重新预览确认 |
 | 同意图有未完成执行 | MCP_GUARDRAIL_BLOCKED | 查记录核对，不新建计划绕过 |
 | 响应含 order_id（包周期） | status=order_created，计划记 accepted | 走订单工具闭环：`get_supabase_order` 查状态/金额/币种并给用户核对 → 用户核准后 `pay_supabase_order`（预览→确认+plan_id；余额支付，有折扣订单走控制台）→ 支付后才开始创建，按正常节奏查任务；放弃则 `cancel_supabase_order`（未支付才能取消）；金额/状态变化须重新核准 |
-| 提交中断 | submission_unknown + plan_id | `inspect_supabase_plan` → 查任务/资源；禁止重放 |
+| 提交中断 | submission_unknown + plan_id | `show_operation_job_status` 查任务、回查资源；禁止重放 |
 | 后端明确拒绝（4xx） | MCP_INVALID_ARGS / MCP_PERMISSION_DENIED / MCP_NOT_FOUND 等，报错**附后端 error_code/error_msg**；计划标 **failed** | 如实转述后端报错；修正参数后**重新预览再提交**（failed 不阻塞重试，与结果不明不同） |
 | 写开关没开 / 只读拦截开着 | MCP_READ_ONLY | 操作员同时核对两个变量：SUPABASE_ENABLE_WRITES=true 且 HUAWEICLOUD_MCP_READ_ONLY=false，改完重启 |
 | 任务 failed/状态识别不了 | next_action 指向人工 | 停止当前链路，交操作方 |

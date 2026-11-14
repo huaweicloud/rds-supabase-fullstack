@@ -5,6 +5,36 @@ semantic versioning.
 
 ## [Unreleased]
 
+### Changed
+
+- `mcp_server_rds_supabase_mgr` v0.4.0a20: tool-surface cleanup.
+  Removed `inspect_supabase_plan`, `cancel_supabase_plan`, and
+  `reconcile_supabase_auth_plan` - the local-ledger operation trio added
+  a category unrelated to cloud resource management while providing
+  little decision value: the failure envelope already carries the plan
+  id and outcome category, previews expire on their own within ten
+  minutes (not submitting is the cancellation), and the auth
+  reconciliation tool was a long-flagged orphan affecting only local
+  state. On ambiguous outcomes the guidance is now to verify directly
+  against the operation task and the target resource. Renamed the job
+  tools to their generic operation-task semantics:
+  `show_supabase_job` -> `show_operation_job_status` and
+  `wait_supabase_job` -> `wait_operation_job_complete` (they track any
+  submitted operation task - creation, deletion, SSL, EIP - not a
+  Supabase-specific job). The orphaned PlanStore.verify_auth/cancel
+  methods and the reconciliation service/test module were removed with
+  them; diagnostics now exercises the surviving preview flow. Tool
+  count 31. README (zh/en) rewritten in kind: the access-control group
+  drops the password bullet, the creation group drops the submission
+  bullet and gains the billing note (RDS Supabase free public beta;
+  managed instance pay-per-use or yearly/monthly, Single or Ha), and
+  the tool table's scenario column was rebuilt end to end - plain
+  scenario-first descriptions instead of parenthetical jargon such as
+  "needs confirmation" or "via request_ref", with the two-phase
+  confirmation and secret-by-alias rules stated once in the section
+  preamble. Skill `rds-supabase-mgr-mcp` v0.8.1 follows the renames and
+  rewritten error guidance.
+
 ### Added
 
 - `mcp_server_rds_supabase_mgr` v0.4.0a19: order lifecycle tools for prepaid

@@ -4,7 +4,7 @@
 
 ## 版本
 
-0.4.0a19（开发预发行版）；Python `3.10+`；MCP Python SDK `2.x`；34 个工具。
+0.4.0a20（开发预发行版）；Python `3.10+`；MCP Python SDK `2.x`；31 个工具。
 
 ## 概述
 
@@ -85,7 +85,8 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
 - 数据库实例规格查询——同时新建实例场景（经 KooCLI）
 - 周边依赖自动发现：VPC、子网、可用区、安全组、OBS 桶等依赖资源的列表与详情配置
   （使用 KooCLI 功能探索）
-- 创建提交：Single/Ha、按需/包周期，两阶段确认；包周期返回订单，经订单工具支付
+- 计费说明：RDS Supabase 免费公测；托管实例支持包周期和按需两种计费方式，
+  支持单机与主备版部署形态
 
 **订单管理（包周期实例）**
 
@@ -102,7 +103,6 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
 
 - SSL 启用与关闭（启用需购买 CCM 证书）
 - 弹性公网 IP 绑定与解除（控制公网访问）
-- 应用改密（经本地受保护请求引用，不收集明文）
 
 **安全组配置（KooCLI 通道）**
 
@@ -124,12 +124,9 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
 
 **任务状态跟踪**
 
-- 查询下发任务的状态
-- 在超时时间范围内轮询任务状态至终态，用于等待任务完成
+- 查询下发操作任务的状态
+- 在超时时间范围内轮询操作任务状态至终态，等待任务完成
 
-**本地执行记录**
-
-- 计划检查/取消/核对；结果未知持久记录，禁止重放
 
 **通用能力**
 
@@ -138,45 +135,42 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
 
 ## 可用工具
 
-| 工具 | 场景 | 风险 |
-|---|---|---|
-| `get_supabase_capabilities` | 列出管理能力范围 | READ |
-| `list_supabase_applications` | 分页查询应用（支持排序过滤） | READ |
-| `show_supabase_application` | 查询应用详情（状态/SSL/IP 等） | READ |
-| `list_supabase_api_keys` | API Key 元数据（无 value 值） | READ |
-| `reset_supabase_api_key` | ApiKey 重置（需确认） | DANGEROUS |
-| `deliver_supabase_api_key` | 指定 Key 交付到本地文件（需确认） | DANGEROUS |
-| `show_supabase_auth_config` | 查询 Auth 认证配置 | READ |
-| `update_supabase_auth_flags` | 注册/匿名开关（需确认） | WRITE |
-| `update_supabase_auth_config` | Auth 提供方/URL/模板（需确认，经 request_ref） | WRITE |
-| `update_supabase_storage` | OBS 存储配置（需确认） | WRITE |
-| `plan_supabase_creation` | 创建规划（意图驱动，非执行） | READ |
-| `list_supabase_flavors` | Supabase 规格候选 | READ |
-| `list_supabase_manageable_instances` | 可托管 PG 查询 | READ |
-| `create_supabase_application` | 创建提交（需确认，经 request_ref） | DANGEROUS |
-| `delete_supabase_application` | 删除应用保留 PG（需确认） | DANGEROUS |
-| `delete_supabase_managed_instance` | 删除应用托管的 PG 实例（需确认；校验托管绑定且无其他应用引用，仅按需计费） | DANGEROUS |
-| `get_supabase_order` | 查询包周期订单（状态/金额/明细分页） | READ |
-| `pay_supabase_order` | 订单余额支付（需确认；核准订单号+金额+币种，plan_id 两阶段） | DANGEROUS |
-| `cancel_supabase_order` | 取消未支付订单（需确认，plan_id 两阶段） | DANGEROUS |
-| `change_supabase_ssl` | SSL 开关（需确认） | WRITE |
-| `plan_supabase_ssl` | SSL 切换规划 | READ |
-| `change_supabase_eip` | EIP 绑定/解绑（需确认） | WRITE |
-| `change_supabase_application_password` | 应用改密（需确认，经 request_ref） | DANGEROUS |
-| `list_supabase_security_groups` | 安全组列表 | READ |
-| `show_supabase_security_group` | 安全组详情及规则 | READ |
-| `create_supabase_security_group` | 创建安全组（需确认） | WRITE |
-| `add_supabase_security_group_rule` | 加单条规则（需确认；入/出方向，TCP/UDP） | DANGEROUS |
-| `delete_supabase_security_group_rule` | 删单条规则（需确认，校验所有权） | DANGEROUS |
-| `delete_supabase_security_group` | 删除整组（需确认，删前核对无引用） | DANGEROUS |
-| `show_supabase_job` | 任务状态查询 | READ |
-| `wait_supabase_job` | 有界只读观察 | READ |
-| `inspect_supabase_plan` | 本地计划检查 | READ |
-| `cancel_supabase_plan` | 取消未提交计划 | WRITE |
-| `reconcile_supabase_auth_plan` | Auth 计划核对 | WRITE |
+全部写工具执行两阶段确认：先以预览模式返回变更内容与计划编号，经确认后才真正提交。
+涉及密码、凭据等秘密的工具不接收明文，秘密由操作方预先写入本地请求文件，工具仅凭别名引用。
 
-所有 READ 工具随时可用；WRITE/DANGEROUS 工具受两阶段确认与环境开关约束
-（见[安全机制](#安全机制)）。
+| 工具 | 功能场景 | 风险 |
+|---|---|---|
+| `get_supabase_capabilities` | 查看本服务支持管理的场景与操作边界 | READ |
+| `list_supabase_applications` | 分页浏览全部 Supabase 应用，可按名称过滤、按创建时间排序 | READ |
+| `show_supabase_application` | 查看单个应用的完整配置：规格、节点、网络、SSL 与存储对接状态 | READ |
+| `list_supabase_api_keys` | 查看应用全部 API Key 的类型与状态，不返回密钥值 | READ |
+| `reset_supabase_api_key` | 密钥疑似泄露或定期轮换时重置指定 Key，旧 Key 随之失效 | DANGEROUS |
+| `deliver_supabase_api_key` | 将指定 Key 的密钥值写入本地受保护文件，供安全交付 | DANGEROUS |
+| `show_supabase_auth_config` | 查看认证配置基线：注册开关、第三方登录、邮件模板 | READ |
+| `update_supabase_auth_flags` | 开关用户注册与匿名访问 | WRITE |
+| `update_supabase_auth_config` | 配置 GitHub、SMTP 登录方式与回调地址、邮件模板 | WRITE |
+| `update_supabase_storage` | 对接或变更 OBS 存储桶 | WRITE |
+| `plan_supabase_creation` | 创建前的场景规划：输出分阶段的资源准备清单与操作流程 | READ |
+| `list_supabase_flavors` | 查询应用可用性能规格，供创建选型 | READ |
+| `list_supabase_manageable_instances` | 查询可关联的已有 PostgreSQL 实例 | READ |
+| `create_supabase_application` | 创建 Supabase 应用，支持新建实例或关联已有实例 | DANGEROUS |
+| `delete_supabase_application` | 删除应用并保留数据库实例，停止应用服务 | DANGEROUS |
+| `delete_supabase_managed_instance` | 删除应用所托管的数据库实例，数据不可恢复；逐层校验托管关系与共享引用，杜绝误删 | DANGEROUS |
+| `get_supabase_order` | 查询包周期订单的状态、金额、币种与订单明细 | READ |
+| `pay_supabase_order` | 按核准的订单号、金额、币种完成余额支付，开启包周期实例交付 | DANGEROUS |
+| `cancel_supabase_order` | 取消不再需要的待支付订单 | DANGEROUS |
+| `change_supabase_ssl` | 启用或关闭应用的 SSL 加密传输 | WRITE |
+| `plan_supabase_ssl` | SSL 切换前的规划：证书要求与影响评估 | READ |
+| `change_supabase_eip` | 绑定或解绑弹性公网 IP，开通或关闭公网访问 | WRITE |
+| `change_supabase_application_password` | 修改应用密码；新密码经本地请求文件提供，不经过对话 | DANGEROUS |
+| `list_supabase_security_groups` | 浏览安全组列表 | READ |
+| `show_supabase_security_group` | 查看安全组详情与全部规则 | READ |
+| `create_supabase_security_group` | 为应用创建专用安全组 | WRITE |
+| `add_supabase_security_group_rule` | 为安全组新增一条出入方向访问规则，按实际部署端口配置 | DANGEROUS |
+| `delete_supabase_security_group_rule` | 删除指定访问规则，收窄开放面 | DANGEROUS |
+| `delete_supabase_security_group` | 删除整个安全组及其全部规则，仅限无引用时 | DANGEROUS |
+| `show_operation_job_status` | 查询下发操作任务的当前状态 | READ |
+| `wait_operation_job_complete` | 在超时范围内轮询操作任务至终态，等待任务完成 | READ |
 
 ## 安全组与 KooCLI 通道
 
@@ -283,9 +277,8 @@ uv run python -m mcp_server_supabase.diagnostics readonly --allow-cloud-read
 - **两阶段确认**：写工具默认 `confirm=false` 持久化十分钟计划并返回 `plan_id`；
   确认后以**相同参数** `confirm=true` + `plan_id` 提交。参数、项目、服务地址或
   凭据变更须重新预览确认。
-- **本地执行记录**：SQLite 记录计划、任务与状态。提交超时或结果未知时先
-  `inspect_supabase_plan`；`submitted`/`accepted`/`unknown` 均不得自行重放，
-  禁止删除记录绕过保护。
+- **本地执行记录**：SQLite 记录每笔计划与执行状态。提交超时或结果未知时，
+  直接查询操作任务与目标资源核对；任何已提交的计划不得重复提交，防止重复执行。
 - **敏感请求本地引用**：改密、SMTP、GitHub、OBS 凭据经操作方预置的本地注册表
   （`SUPABASE_REQUESTS_FILE`）以别名提供；工具不接受明文，不读取交付文件内容。
 - **202 只表示受理**：任务 `completed` 不等于业务验证完成，须回查资源。
@@ -322,8 +315,8 @@ rules:
    文件（含 root 密码、存储凭据等秘密）。
 3. `create_supabase_application(request_ref, confirm=false)` 预览 → 把脱敏参数
    给用户核对 → 相同参数 `confirm=true` + `plan_id` 提交。
-4. 用返回的 `job_id` 调用 `show_supabase_job`（或 `wait_supabase_job` 有界等待）
-   到终态。
+4. 用返回的 `job_id` 调用 `show_operation_job_status`（或 `wait_operation_job_complete`
+   有界等待）到终态。
 5. 回查 `show_supabase_application`：公网 IP 未绑定时先 `change_supabase_eip`，
    再以 `list_supabase_api_keys` + `deliver_supabase_api_key` 交付接入信息。
 

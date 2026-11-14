@@ -97,18 +97,14 @@ def register(server):
 
     @server.tool()
     @guard(risk=ToolRisk.READ)
-    async def show_supabase_job(job_id: str) -> dict:
-        """Query an accepted job once. Raw status is evidence, not verified business completion."""
+    async def show_operation_job_status(job_id: str) -> dict:
+        """Query the current status of one submitted operation task, such as creation, deletion, SSL or EIP changes. The raw status is evidence only - a completed task still requires re-reading the resource to verify the business outcome."""
         return await service.job(job_id)
 
     @server.tool()
     @guard(risk=ToolRisk.READ)
-    async def wait_supabase_job(job_id: str, max_attempts: int = 3, interval_seconds: int = 2) -> dict:
-        """Observe one task with up to 10 reads, 1-5s intervals and a 50s tool budget.
-
-        Task completion is not resource/business verification. Unknown states stop observation.
-        Never submits/replays writes or releases the execution ledger.
-        """
+    async def wait_operation_job_complete(job_id: str, max_attempts: int = 3, interval_seconds: int = 2) -> dict:
+        """Poll one operation task within a bounded timeout until it reaches a terminal state, for waiting on task completion. Observes only - it never submits, replays or cancels anything."""
         return await service.wait_job(job_id, max_attempts, interval_seconds)
 
     @server.tool()
@@ -147,38 +143,6 @@ def register(server):
         """Update only supplied registration flags. Omitted flags remain unchanged; review anonymous access."""
         body = {k:v for k,v in {"enable_account_sign_up":enable_account_sign_up,"enable_anonymous_users":enable_anonymous_users}.items() if v is not None}
         return await service.mutate(application_id, "auth_flags", body, confirm, plan_id)
-
-    @server.tool()
-    @guard(risk=ToolRisk.READ)
-    async def inspect_supabase_plan(plan_id: str) -> dict:
-        """Read local execution record after timeout or restart; does not infer cloud completion."""
-        return service.plans.inspect(plan_id)
-
-    @server.tool()
-    @guard(risk=ToolRisk.WRITE)
-    async def cancel_supabase_plan(plan_id: str) -> dict:
-        """Cancel a local preview before submission; never cancels a cloud job.
-
-        Args: plan_id is the opaque ID returned by a write preview.
-        Returns: cancelled for prepared/already cancelled plans; an error once submission starts.
-        """
-        return service.plans.cancel(plan_id)
-
-    @server.tool()
-    @guard(risk=ToolRisk.WRITE)
-    async def reconcile_supabase_auth_plan(plan_id: str, application_id: str,
-            enable_account_sign_up: bool | None = None,
-            enable_anonymous_users: bool | None = None) -> dict:
-        """Verify an accepted Auth plan using its recorded job and fresh resource reads.
-
-        Supply exactly the original changed fields. Updates only the local execution ledger;
-        performs no cloud write. Requires local WRITE permission, not cloud-write opt-in.
-        Unknown submissions, changed identity/parameters, and unsupported actions stay blocked.
-        Business verification remains manual. Never authorizes replay of the original plan.
-        """
-        expected={k:v for k,v in {'enable_account_sign_up':enable_account_sign_up,
-                                  'enable_anonymous_users':enable_anonymous_users}.items() if v is not None}
-        return await service.reconcile_auth(plan_id,application_id,expected)
 
     @server.tool()
     @guard(risk=ToolRisk.DANGEROUS)

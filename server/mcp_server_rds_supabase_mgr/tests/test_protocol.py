@@ -35,12 +35,12 @@ class ProtocolTests(unittest.IsolatedAsyncioTestCase):
                 self.assertNotIn('private-marker-value', errors.read())
             self.assertFalse(state.exists(), 'Rejected requests must not issue plans')
 
-    async def test_preview_cancel_and_inspect_over_stdio(self):
+    async def test_write_preview_over_stdio(self):
         with tempfile.TemporaryDirectory() as directory:
             env = {**os.environ, 'SUPABASE_STATE_FILE':str(Path(directory)/'plans.db'),
                    'HUAWEICLOUD_MCP_READ_ONLY':'false', 'SUPABASE_ENABLE_WRITES':'false'}
             params = StdioServerParameters(command=sys.executable,
-                args=['-m', 'mcp_server_supabase.main'], env=env)
+                args=['-m','mcp_server_supabase.main'], env=env)
             with tempfile.TemporaryFile(mode='w+') as errors:
                 async with stdio_client(params, errlog=errors) as (read, write):
                     async with ClientSession(read, write) as session:
@@ -48,38 +48,27 @@ class ProtocolTests(unittest.IsolatedAsyncioTestCase):
                         result = await session.call_tool('change_supabase_ssl', {'application_id':'fixture-app','enable_ssl':False})
                         preview = result.structured_content or json.loads(result.content[0].text)
                         self.assertEqual(preview['status'], 'confirmation_required')
-                        result = await session.call_tool('cancel_supabase_plan', {'plan_id':preview['plan_id']})
-                        cancelled = result.structured_content or json.loads(result.content[0].text)
-                        self.assertEqual(cancelled['state'], 'cancelled')
-                        self.assertFalse(cancelled['cloud_cancellation_requested'])
-                        result = await session.call_tool('inspect_supabase_plan', {'plan_id':preview['plan_id']})
-                        state = result.structured_content or json.loads(result.content[0].text)
-                        self.assertEqual(state['state'], 'cancelled')
+                        self.assertTrue(preview['plan_id'])
                         result = await session.call_tool('get_supabase_capabilities', {})
                         capabilities = result.structured_content or json.loads(result.content[0].text)
                         self.assertEqual(len(capabilities['scenarios']), 6)
                         self.assertTrue(capabilities['implemented_operations'])
 
-    async def test_local_cancel_obeys_read_only_policy(self):
-        from mcp_server_supabase.service.plans import PlanStore
+    async def test_read_only_blocks_write_tools_over_stdio(self):
         with tempfile.TemporaryDirectory() as directory:
-            state = Path(directory)/'plans.db'
-            store = PlanStore(state)
-            plan = store.issue('readonly-cancel')
-            env = {**os.environ, 'SUPABASE_STATE_FILE':str(state),
+            env = {**os.environ, 'SUPABASE_STATE_FILE':str(Path(directory)/'plans.db'),
                    'HUAWEICLOUD_MCP_READ_ONLY':'true', 'SUPABASE_ENABLE_WRITES':'false'}
             params = StdioServerParameters(command=sys.executable,
-                args=['-m', 'mcp_server_supabase.main'], env=env)
+                args=['-m','mcp_server_supabase.main'], env=env)
             with tempfile.TemporaryFile(mode='w+') as errors:
                 async with stdio_client(params, errlog=errors) as (read, write):
                     async with ClientSession(read, write) as session:
                         await session.initialize()
-                        result = await session.call_tool('cancel_supabase_plan', {'plan_id':plan['plan_id']})
+                        result = await session.call_tool('change_supabase_ssl', {'application_id':'fixture-app','enable_ssl':False})
                         payload = result.structured_content or json.loads(result.content[0].text)
                         self.assertEqual(payload['error']['code'], 'MCP_READ_ONLY')
-            self.assertEqual(store.inspect(plan['plan_id'])['state'], 'prepared')
 
-    async def test_auth_reconcile_is_discoverable_and_readonly_guarded(self):
+    async def test_job_tools_discoverable_and_locally_validated(self):
         with tempfile.TemporaryDirectory() as directory:
             state=Path(directory)/'plans.db'
             env={k:v for k,v in os.environ.items() if not k.startswith(('HUAWEICLOUD_','SUPABASE_'))}
@@ -90,10 +79,17 @@ class ProtocolTests(unittest.IsolatedAsyncioTestCase):
                     async with ClientSession(read,write) as session:
                         await session.initialize()
                         tools=await session.list_tools()
-                        self.assertIn('reconcile_supabase_auth_plan',{t.name for t in tools.tools})
-                        result=await session.call_tool('reconcile_supabase_auth_plan',{'plan_id':'fixture','application_id':'fixture','enable_anonymous_users':True})
+                        names={t.name for t in tools.tools}
+                        self.assertIn('show_operation_job_status',names)
+                        self.assertIn('wait_operation_job_complete',names)
+                        for name in ('inspect_supabase_plan','cancel_supabase_plan','reconcile_supabase_auth_plan'):
+                            self.assertNotIn(name,names)
+                        result=await session.call_tool('wait_operation_job_complete',{'job_id':'fixture-job','max_attempts':99})
                         payload=result.structured_content or json.loads(result.content[0].text)
-                        self.assertEqual(payload['error']['code'],'MCP_READ_ONLY')
+                        self.assertEqual(payload['error']['code'],'MCP_INVALID_ARGS')
+                        result=await session.call_tool('show_operation_job_status',{'job_id':'../bad'})
+                        payload=result.structured_content or json.loads(result.content[0].text)
+                        self.assertEqual(payload['error']['code'],'MCP_INVALID_ARGS')
             self.assertFalse(state.exists())
 
     async def test_new_secret_previews_cross_real_stdio_without_leaks(self):
@@ -107,7 +103,7 @@ class ProtocolTests(unittest.IsolatedAsyncioTestCase):
                 async with stdio_client(params,errlog=errors) as (read,write):
                     async with ClientSession(read,write) as session:
                         await session.initialize();tools=await session.list_tools()
-                        self.assertEqual(len(tools.tools),34)
+                        self.assertEqual(len(tools.tools),31)
                         for name,ref in [('change_supabase_application_password','password'),('update_supabase_storage','storage'),('update_supabase_auth_config','auth')]:
                             result=await session.call_tool(name,{'application_id':'fixture-app','request_ref':ref})
                             payload=result.structured_content or json.loads(result.content[0].text)

@@ -4,8 +4,8 @@
 
 ## Version
 
-0.4.0a19 (development prerelease); Python `3.10+`; MCP Python SDK `2.x`;
-34 tools.
+0.4.0a20 (development prerelease); Python `3.10+`; MCP Python SDK `2.x`;
+31 tools.
 
 ## Overview
 
@@ -125,8 +125,6 @@ lifecycle, control plane).
 
 - SSL enable/disable (enabling requires a purchased CCM certificate)
 - Elastic public IP bind/unbind (controls public access)
-- Application password change (via protected local request references;
-  no plaintext collection)
 
 **Security group configuration (KooCLI channel)**
 
@@ -169,46 +167,45 @@ lifecycle, control plane).
 
 ## Tool list
 
+Every write tool runs a two-phase confirmation: a preview returns the
+changes and a plan identifier first, and only an explicit confirmation
+submits. Tools that carry passwords or credentials accept no plaintext -
+secrets are pre-provisioned into a local request file and referenced by
+alias.
+
 | Tool | Scenario | Risk |
 |---|---|---|
-| `get_supabase_capabilities` | List management capabilities | READ |
-| `list_supabase_applications` | List applications (pagination, filter, sort) | READ |
-| `show_supabase_application` | Application detail (status/SSL/IP) | READ |
-| `list_supabase_api_keys` | API Key metadata (no values) | READ |
-| `reset_supabase_api_key` | Reset an ApiKey (confirm) | DANGEROUS |
-| `deliver_supabase_api_key` | Deliver a key to a local file (confirm) | DANGEROUS |
-| `show_supabase_auth_config` | Query Auth configuration | READ |
-| `update_supabase_auth_flags` | Sign-up/anonymous toggles (confirm) | WRITE |
-| `update_supabase_auth_config` | Auth providers/URLs/templates (confirm, via request_ref) | WRITE |
-| `update_supabase_storage` | OBS storage configuration (confirm) | WRITE |
-| `plan_supabase_creation` | Creation planning (intent-driven, no execution) | READ |
-| `list_supabase_flavors` | Supabase flavor candidates | READ |
-| `list_supabase_manageable_instances` | Manageable PG instances | READ |
-| `create_supabase_application` | Creation submission (confirm, via request_ref) | DANGEROUS |
-| `delete_supabase_application` | Delete application, keep PG (confirm) | DANGEROUS |
-| `delete_supabase_managed_instance` | Delete the managed PG instance (confirm; binding-verified, unshared, pay-per-use only) | DANGEROUS |
-| `get_supabase_order` | Query a prepaid order (status/amount/lines) | READ |
-| `pay_supabase_order` | Pay an order from balance (confirm; approved order+amount+currency, plan_id two-phase) | DANGEROUS |
-| `cancel_supabase_order` | Cancel an unpaid order (confirm, plan_id two-phase) | DANGEROUS |
-| `change_supabase_ssl` | SSL toggle (confirm) | WRITE |
-| `plan_supabase_ssl` | SSL switch planning | READ |
-| `change_supabase_eip` | EIP bind/unbind (confirm) | WRITE |
-| `change_supabase_application_password` | Application password change (confirm, via request_ref) | DANGEROUS |
-| `list_supabase_security_groups` | List security groups | READ |
-| `show_supabase_security_group` | Group detail with rules | READ |
-| `create_supabase_security_group` | Create group (confirm) | WRITE |
-| `add_supabase_security_group_rule` | Add one rule (confirm; ingress/egress, TCP/UDP) | DANGEROUS |
-| `delete_supabase_security_group_rule` | Remove one rule (confirm, ownership-checked) | DANGEROUS |
-| `delete_supabase_security_group` | Delete whole group (confirm, reference-checked) | DANGEROUS |
-| `show_supabase_job` | Job status query | READ |
-| `wait_supabase_job` | Bounded read-only watching | READ |
-| `inspect_supabase_plan` | Local plan inspection | READ |
-| `cancel_supabase_plan` | Cancel an unsubmitted plan | WRITE |
-| `reconcile_supabase_auth_plan` | Auth plan reconciliation | WRITE |
-
-READ tools are always available; WRITE/DANGEROUS tools are governed by
-two-phase confirmation and environment switches (see
-[Safety mechanisms](#safety-mechanisms)).
+| `get_supabase_capabilities` | See the scenarios and boundaries this service manages | READ |
+| `list_supabase_applications` | Browse all Supabase applications with pagination, name filtering and sorting | READ |
+| `show_supabase_application` | Inspect one application's full configuration: flavor, nodes, network, SSL and storage integration | READ |
+| `list_supabase_api_keys` | View every API key's type and status; key values are never returned | READ |
+| `reset_supabase_api_key` | Reset a key on suspected leakage or scheduled rotation; the old key stops working | DANGEROUS |
+| `deliver_supabase_api_key` | Write a key's value to a protected local file for secure delivery | DANGEROUS |
+| `show_supabase_auth_config` | View the authentication baseline: sign-up toggles, third-party login, mail templates | READ |
+| `update_supabase_auth_flags` | Toggle user sign-up and anonymous access | WRITE |
+| `update_supabase_auth_config` | Configure GitHub and SMTP login, callback URLs and mail templates | WRITE |
+| `update_supabase_storage` | Integrate or change the OBS storage bucket | WRITE |
+| `plan_supabase_creation` | Pre-creation planning: staged resource preparation checklist and operation flow | READ |
+| `list_supabase_flavors` | Query application performance flavors for creation sizing | READ |
+| `list_supabase_manageable_instances` | Query existing PostgreSQL instances available for attachment | READ |
+| `create_supabase_application` | Create a Supabase application, with a new or existing instance | DANGEROUS |
+| `delete_supabase_application` | Delete the application and keep the database instance | DANGEROUS |
+| `delete_supabase_managed_instance` | Delete the managed database instance - irreversible; verifies the managed binding and shared references layer by layer to prevent wrong deletion | DANGEROUS |
+| `get_supabase_order` | Query a prepaid order's status, amounts, currency and line items | READ |
+| `pay_supabase_order` | Complete a balance payment for the approved order, amount and currency to start prepaid delivery | DANGEROUS |
+| `cancel_supabase_order` | Abandon an unneeded pending-payment order | DANGEROUS |
+| `change_supabase_ssl` | Enable or disable SSL-encrypted transport for the application | WRITE |
+| `plan_supabase_ssl` | Pre-switch planning: certificate requirements and impact assessment | READ |
+| `change_supabase_eip` | Bind or unbind an elastic public IP to open or close public access | WRITE |
+| `change_supabase_application_password` | Change the application password; the new password is supplied via the local request file, never through conversation | DANGEROUS |
+| `list_supabase_security_groups` | Browse security groups | READ |
+| `show_supabase_security_group` | Inspect a security group and all its rules | READ |
+| `create_supabase_security_group` | Create a dedicated security group for an application | WRITE |
+| `add_supabase_security_group_rule` | Add one inbound or outbound access rule, sized to the actual deployment ports | DANGEROUS |
+| `delete_supabase_security_group_rule` | Remove a specific access rule to narrow the exposed surface | DANGEROUS |
+| `delete_supabase_security_group` | Delete an entire security group with all its rules, only when nothing references it | DANGEROUS |
+| `show_operation_job_status` | Query the current status of a submitted operation task | READ |
+| `wait_operation_job_complete` | Poll an operation task to a terminal state within a bounded timeout | READ |
 
 ## Security groups and the KooCLI channel
 
@@ -332,10 +329,10 @@ tool parameters.
   resubmitting **identical parameters** with `confirm=true` + `plan_id`.
   Any change to parameters, project, endpoint, or credentials requires a
   fresh preview.
-- **Local execution record**: SQLite records plans, jobs, and states. On a
-  timeout or unknown outcome, inspect first (`inspect_supabase_plan`);
-  `submitted`/`accepted`/`unknown` must never be replayed, and deleting the
-  record to bypass protection is forbidden.
+- **Local execution record**: SQLite records every plan and execution
+  state. On a timeout or unknown outcome, verify directly against the
+  operation task and the target resource; no submitted plan may be
+  resubmitted, preventing double execution.
 - **Local sensitive-request references**: password, SMTP, GitHub, and OBS
   credentials are supplied via an operator-provisioned local registry
   (`SUPABASE_REQUESTS_FILE`) by alias; tools accept no plaintext and never
@@ -383,8 +380,8 @@ rules:
 3. Preview with `create_supabase_application(request_ref, confirm=false)`,
    show the redacted parameters to the user, then submit identical
    parameters with `confirm=true` + `plan_id`.
-4. Track the returned `job_id` with `show_supabase_job` (or bounded
-   `wait_supabase_job`) to a terminal state.
+4. Track the returned `job_id` with `show_operation_job_status` (or bounded
+   `wait_operation_job_complete`) to a terminal state.
 5. Re-read `show_supabase_application`; if no public IP, bind an EIP with
    `change_supabase_eip`, then deliver access information via
    `list_supabase_api_keys` + `deliver_supabase_api_key`.

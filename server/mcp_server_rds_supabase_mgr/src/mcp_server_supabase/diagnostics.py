@@ -87,7 +87,7 @@ async def protocol_report(mode, application_id=None, job_id=None):
                 tools = await session.list_tools()
                 names = {tool.name for tool in tools.tools}
                 checks.append({'check':'tool_discovery','passed':{'get_supabase_capabilities',
-                    'plan_supabase_creation','cancel_supabase_plan','list_supabase_api_keys','wait_supabase_job','reconcile_supabase_auth_plan'} <= names})
+                    'plan_supabase_creation','list_supabase_api_keys','wait_operation_job_complete','show_operation_job_status'} <= names})
                 async def call(name, args, predicate=None):
                     result = await session.call_tool(name,args)
                     data = payload(result)
@@ -103,18 +103,15 @@ async def protocol_report(mode, application_id=None, job_id=None):
                     await call('plan_supabase_creation',{'manage_type':'newly_instance'},
                                lambda d:d.get('execution')=='not_executed')
                     await call('plan_supabase_ssl',{'enable_ssl':True},lambda d:d.get('execution')=='not_executed')
-                    preview = await call('change_supabase_ssl',{'application_id':'offline-fixture','enable_ssl':False},
-                                         lambda d:d.get('status')=='confirmation_required' and bool(d.get('plan_id')))
-                    if preview:
-                        await call('cancel_supabase_plan',{'plan_id':preview['plan_id']},
-                                   lambda d:d.get('state')=='cancelled' and d.get('cloud_cancellation_requested') is False)
+                    await call('change_supabase_ssl',{'application_id':'offline-fixture','enable_ssl':False},
+                               lambda d:d.get('status')=='confirmation_required' and bool(d.get('plan_id')))
                 else:
                     await call('list_supabase_applications',{'limit':1})
                     if application_id:
                         await call('show_supabase_application',{'application_id':application_id})
                         await call('list_supabase_api_keys',{'application_id':application_id,'limit':1})
                     if job_id:
-                        await call('show_supabase_job',{'job_id':job_id})
+                        await call('show_operation_job_status',{'job_id':job_id})
     return {'mode':mode,'passed':all(check['passed'] for check in checks),'checks':checks,
             'network_attempted':not offline,'cloud_writes_enabled':False,
             'completion_verified':False,

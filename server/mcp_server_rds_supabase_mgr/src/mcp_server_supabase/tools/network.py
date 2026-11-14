@@ -18,9 +18,9 @@ def register(server):
 
     @server.tool()
     @guard(risk=ToolRisk.WRITE)
-    async def create_supabase_security_group(name:str,confirm:bool=False,plan_id:str|None=None)->dict:
-        """Preview then create a native VPC group; no automatic attachment or application ingress."""
-        return await service.create_group(name,confirm,plan_id)
+    async def create_supabase_security_group(name:str,description:str|None=None,confirm:bool=False,plan_id:str|None=None)->dict:
+        """Preview then create a native VPC group; no automatic attachment or application ingress. Pass a purpose description (<=255 chars, no angle brackets) so auto-created groups stay auditable."""
+        return await service.create_group(name,description,confirm,plan_id)
 
     @server.tool()
     @guard(risk=ToolRisk.DANGEROUS)

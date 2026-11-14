@@ -35,10 +35,19 @@ class Network(Operations):
             raise McpToolError('MCP_SDK_ERROR','Security group identity not verified')
         return {'data':safe(group)}
 
-    async def create_group(self,name,confirm=False,plan_id=None):
+    async def create_group(self,name,description=None,confirm=False,plan_id=None):
         if not isinstance(name,str) or not re.fullmatch(r'[A-Za-z0-9_.-]{1,64}',name):
             raise McpToolError('MCP_INVALID_ARGS','Use a 1-64 character ASCII group name with letters, digits, underscore, dot or hyphen')
-        return await self._change('POST','security-groups',{'security_group':{'name':name}},confirm,plan_id,'security_group')
+        # VPC v3 contract: optional description, at most 255 characters, no angle
+        # brackets. The caller passes the purpose so auto-created groups stay
+        # auditable (e.g. dedicated Supabase application group vs managed-PG
+        # access group); the skill documents the standard wording.
+        if description is not None:
+            if not isinstance(description,str) or len(description)>255 or '<' in description or '>' in description:
+                raise McpToolError('MCP_INVALID_ARGS','Use a description of at most 255 characters without angle brackets')
+        body={'security_group':{'name':name}}
+        if description is not None:body['security_group']['description']=description
+        return await self._change('POST','security-groups',body,confirm,plan_id,'security_group')
 
     async def add_rule(self,group_id,source_cidr,port=8443,confirm=False,plan_id=None):
         identifier(group_id)

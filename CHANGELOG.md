@@ -7,6 +7,25 @@ semantic versioning.
 
 ### Changed
 
+- `mcp_server_rds_supabase_mgr` v0.4.0a14: auto-created resources are now
+  marked for auditability. create_supabase_security_group accepts an optional
+  description (VPC v3 contract: at most 255 characters, no angle brackets,
+  validated locally); the skill prescribes the standard wording - the
+  application group carries 自动创建的，用于Supabase应用 and the route-A
+  database group carries 自动创建的，用于托管实例接入, so operators can
+  tell agent-created dedicated groups from manually created shared ones in
+  the console. Newly created EIPs (KooCLI path) must carry the tag
+  USAGE_FOR=Supabase应用公网访问，自动创建的 per the skill's EIP step and
+  quick-reference command; the planner's pre-creation and post-creation
+  steps state both marking rules. Tests: description round-trips into the
+  request body and preview, oversized/angle-bracket descriptions rejected
+  locally.
+- Skill `rds-supabase-mgr-mcp` v0.6.1: security-group creation now requires
+  the purpose description (standard wording for the application group and
+  the managed-PG access group, with the rationale: distinguishable in the
+  console, auditable cleanup); EIP creation via KooCLI requires the
+  USAGE_FOR tag with the exact value and a ready-to-copy tags JSON snippet
+  in the quick-reference table. Server floor raised to 0.4.0a14.
 - `mcp_server_rds_supabase_mgr` v0.4.0a13: three real-testing fixes.
   Application list/detail no longer fail with MCP_SDK_ERROR on rows without
   public_ip (absent until an EIP is bound) or private_ip (absent while the

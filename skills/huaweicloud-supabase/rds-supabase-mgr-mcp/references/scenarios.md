@@ -117,9 +117,9 @@ SKILL.md 是主文档；本文件是各场景的详细步骤、字段来源与�
 
 ### 公网开通与安全组
 
-安全组在创建前就准备好：**应用组必须新建专用组**（别复用已有组），建好后立刻配上规则——入方向 8443（用户来源网段）、出方向 5432；数据库组（路线 A）同样新建专用组，入方向 5432 放行所选子网。MCP 工具能加入方向规则，出方向和 0.0.0.0/0 走 KooCLI（用户明确确认后）。
+安全组在创建前就准备好：**应用组必须新建专用组**（别复用已有组），`create_supabase_security_group` 创建时**必须带 description 标记用途**——应用组填 `自动创建的，用于Supabase应用`，数据库组填 `自动创建的，用于托管实例接入`（控制台一眼可辨、审计清理有据）。建好后立刻配上规则——入方向 8443（用户来源网段）、出方向 5432；数据库组（路线 A）同样新建专用组，入方向 5432 放行所选子网。MCP 工具能加入方向规则，出方向和 0.0.0.0/0 走 KooCLI（用户明确确认后）。
 
-绑定 EIP：`change_supabase_eip`（is_bind=true 须 public_ip_id + IPv4 两样）。
+绑定 EIP：`change_supabase_eip`（is_bind=true 须 public_ip_id + IPv4 两样）。**新建 EIP（KooCLI）时必须加标签 `USAGE_FOR: Supabase应用公网访问，自动创建的`**，与其他 EIP 区分开。
 
 绑定后验证：`show_supabase_application` 的 public_ip 非空 → **同步改 Auth 的 `api_external_url`** 为拼装的公网访问地址（`update_supabase_auth_config` 预览→确认→查任务→回查；邮箱确认链接和 OAuth 回调都指向它，不改则登录链路断）→ curl 探测访问地址（任何状态码=网络可达）→ 不通回头查规则和 EIP。
 

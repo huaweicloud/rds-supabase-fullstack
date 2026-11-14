@@ -32,9 +32,24 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
     async def test_group_create_is_not_rule_creation(self):
         preview=await self.ops.create_group('app-group')
         self.client.request.return_value=(201,{'security_group':{'id':GROUP}})
-        result=await self.ops.create_group('app-group',True,preview['plan_id'])
+        result=await self.ops.create_group('app-group',confirm=True,plan_id=preview['plan_id'])
         self.assertEqual(result['resource_id'],GROUP)
         self.assertEqual(self.client.request.call_args.kwargs['body'],{'security_group':{'name':'app-group'}})
+
+    async def test_group_create_carries_purpose_description(self):
+        # Auto-created groups carry a purpose description so operators can tell
+        # dedicated Supabase groups from manually created shared groups.
+        description='自动创建的，用于Supabase应用'
+        preview=await self.ops.create_group('supabase-app-group',description)
+        self.assertEqual(preview['changes']['security_group']['description'],description)
+        self.client.request.return_value=(201,{'security_group':{'id':GROUP}})
+        await self.ops.create_group('supabase-app-group',description,True,preview['plan_id'])
+        self.assertEqual(self.client.request.call_args.kwargs['body'],
+                         {'security_group':{'name':'supabase-app-group','description':description}})
+        # Oversized and angle-bracket descriptions are rejected locally.
+        for bad in ('x'*256,'<script>'):
+            with self.assertRaises(McpToolError):
+                await self.ops.create_group('g',bad)
 
     async def test_delete_checks_ownership(self):
         preview=await self.ops.delete_rule(GROUP,RULE)
@@ -65,7 +80,7 @@ class NetworkTests(unittest.IsolatedAsyncioTestCase):
     async def test_malformed_mutation_response_keeps_unknown(self):
         preview=await self.ops.create_group('app-group')
         self.client.request.return_value=(202,{})
-        with self.assertRaises(McpToolError):await self.ops.create_group('app-group',True,preview['plan_id'])
+        with self.assertRaises(McpToolError):await self.ops.create_group('app-group',confirm=True,plan_id=preview['plan_id'])
         self.assertEqual(self.ops.plans.inspect(preview['plan_id'])['state'],'unknown')
 
     async def test_list_and_show_fixed_paths(self):

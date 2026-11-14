@@ -5,7 +5,7 @@ description: RDS Supabase 应用全生命周期管理技能：从零创建一个
 
 # RDS Supabase 应用全生命周期管理
 
-版本 0.6.0；配套服务端 mcp_server_supabase ≥ 0.4.0a13（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
+版本 0.6.1；配套服务端 mcp_server_supabase ≥ 0.4.0a14（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
 
 贯穿所有场景的四条铁律：
 1. **写操作两段式**：先预览（confirm=false），把参数、影响、费用展示给用户；用户确认后才提交（confirm=true + 预览返回的 plan_id）。预览 10 分钟有效，参数变了重新预览。
@@ -98,7 +98,7 @@ https://github.com/huaweicloud/rds-supabase-fullstack
 | 应用规格 | 列出候选给用户选，**默认勾选 2U4G 档**（mode 跟部署模式走）。**顺带用规格接口探测部署模式**：`list_supabase_flavors(az_code, mode='Ha')` 成功返回 → 该环境支持 Single 和 Ha，如实告诉用户可选；**报 400（后端拒绝）→ 该环境只有 Single**，告知用户并继续查 `mode='Single'` 的规格 | `list_supabase_flavors(az_code, mode)` |
 | 应用密码 | **本地随机生成**：8-32 位，至少含大写字母/小写字母/数字/特殊字符（`~!@#$%^*-_+=?,`）中的三种，只从这些字符里生成；直接写入请求文件，用户不用填，对话里也不出现。这是默认用户 supabase 的密码，也是 Dashboard 管理员的登录密码 | 本地命令 |
 | 存储 | 问一句"业务要传图片/视频/文件吗？"——要，按场景三第 1 节对接（结论回填创建请求）；不要，**storage_component 仍必须写进请求：`{enabled:false}`（三字段全空），不能整个省略** | — |
-| 安全组 | **应用安全组必须新建专用组**，Agent 自动创建（别复用已有组——共享组改规则会波及别的资源）：`create_supabase_security_group` 预览→确认，建好就把**出入两个方向的规则**配上（规则表见本步末尾）。路线 A 的数据库组同样新建专用组。**两个组 ID 都要进创建请求，事后没法补** | MCP + KooCLI |
+| 安全组 | **应用安全组必须新建专用组**，Agent 自动创建（别复用已有组——共享组改规则会波及别的资源）：`create_supabase_security_group` 预览→确认，**创建时必须带 description 标记用途**：应用组填 `自动创建的，用于Supabase应用`；路线 A 的数据库组同样新建专用组，description 填 `自动创建的，用于托管实例接入`——控制台里一眼能分清哪些组是流程自动建的、归哪个用途，后续审计清理有依据。建好就把**出入两个方向的规则**配上（规则表见本步末尾）。**两个组 ID 都要进创建请求，事后没法补** | MCP + KooCLI |
 | 网络 | **自动选**：查 VPC 和子网，挑一个可用 IP 充足的子网，不烦用户 | KooCLI（见速查表） |
 
 **路线 A 额外要定的（新建数据库）：**
@@ -149,7 +149,7 @@ https://github.com/huaweicloud/rds-supabase-fullstack
 
 **4.1 绑定 EIP**
 1. 查现有空闲 EIP 列给用户选（KooCLI，见速查表）
-2. 用户想用新的 → 用 KooCLI 创建：区域/线路/带宽/计费/名称**逐项和用户确认后**再执行
+2. 用户想用新的 → 用 KooCLI 创建：区域/线路/带宽/计费/名称**逐项和用户确认后**再执行；**必须加标签 `USAGE_FOR: Supabase应用公网访问，自动创建的`**——控制台里能认出这条 EIP 是流程自动创建、干什么用的，与其他 EIP 区分开（标签写进 cli-json-file 的 tags 字段，命令见速查表）
 3. `change_supabase_eip(application_id, is_bind=true, public_ip_id, public_ip_address)` 预览 → 确认 → 提交 → 等任务 → 回查 `show_supabase_application` 的 public_ip 不再是空
 4. **绑定成功后必须同步改 Auth 的 `api_external_url`**：公网地址变了，邮箱确认链接和 OAuth 回调都指向这个 URL，不改则登录链路是断的。把拼装出的公网访问地址写入请求文件别名（如 `auth-url`，只含这一个字段）→ `update_supabase_auth_config` 预览 → 确认 → 查任务 → `show_supabase_auth_config` 回查不再是 localhost
 
@@ -306,7 +306,7 @@ Key 值**永远不会出现在对话里**——这是红线，用户要也是本
 | 查环境支持的磁盘类型 | `hcloud RDS ListStorageTypes --cli-region=<region>`（按引擎过滤；先 --help 核实参数） |
 | 查 VPC / 子网 | `hcloud VPC ListVpcs` / `hcloud VPC ListSubnets --cli-region=<region>` |
 | 查 EIP（找空闲的） | `hcloud EIP ListPublicips --cli-region=<region>` |
-| 创建 EIP | `hcloud EIP CreatePublicip --cli-json-file=<配置文件>`（逐项确认后执行） |
+| 创建 EIP | `hcloud EIP CreatePublicip --cli-json-file=<配置文件>`（逐项确认后执行）。**json 里必须带标签**：`"tags": [{"key": "USAGE_FOR", "value": "Supabase应用公网访问，自动创建的"}]`——标记这条 EIP 是流程自动创建、供 Supabase 应用公网访问用的 |
 | 列 OBS 桶 | `hcloud obs ls` |
 | 建 OBS 桶 | `hcloud obs mb obs://<桶名> -location=<region> -acl=private`（多 AZ 加 -multiAZ） |
 | 加出方向/全网入方向安全组规则 | `hcloud VPC` 安全组规则命令（direction=egress 或 0.0.0.0/0，先 --help 核实） |

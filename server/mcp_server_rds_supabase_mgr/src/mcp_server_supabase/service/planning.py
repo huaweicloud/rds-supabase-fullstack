@@ -46,7 +46,7 @@ class PlanningService:
             pre.append("decide the OBS bucket: reuse an existing private bucket (KooCLI hcloud obs ls; a public bucket needs explicit risk acknowledgment) or create a dedicated private multi-AZ bucket (KooCLI hcloud obs mb); write bucket name plus persistent AK/SK into storage_component - the creation path requires full credentials, SK omission is not available")
         elif needs_storage is False:
             pre.append("write storage_component as {enabled:false} - the field is mandatory even when storage is not used")
-        pre.append("the application security group must be newly created and dedicated - never reuse an existing group (shared groups risk collateral damage); create it via create_supabase_security_group and configure both directions immediately: 8443 ingress from the user CIDR plus 5432 egress (KooCLI). On route A create a dedicated database group too (5432 ingress from the chosen subnet). Both IDs go into the creation request - they cannot be attached later")
+        pre.append("the application security group must be newly created and dedicated - never reuse an existing group (shared groups risk collateral damage); create it via create_supabase_security_group with a purpose description (mark auto-created groups: the application group as 自动创建的，用于Supabase应用, the route-A database group as 自动创建的，用于托管实例接入) and configure both directions immediately: 8443 ingress from the user CIDR plus 5432 egress (KooCLI). On route A create a dedicated database group too (5432 ingress from the chosen subnet). Both IDs go into the creation request - they cannot be attached later")
         if manage_type == "newly_instance":
             pre += ["choose the AZ via KooCLI RDS ListAvailableZones - one AZ for Single, two distinct AZs (primary and standby) for Ha; the top-level availability_zone carries the primary",
                     "probe deployment-mode support with list_supabase_flavors(az_code, mode='Ha'): a successful answer means Single and Ha are both available; a 400 rejection means this environment supports Single only - report the result honestly",
@@ -68,7 +68,7 @@ class PlanningService:
 
         post = []
         if needs_public_access is True or needs_public_access is None:
-            post += ["bind an EIP (list or create via KooCLI, bind via change_supabase_eip) and verify public_ip is set",
+            post += ["bind an EIP (list or create via KooCLI, bind via change_supabase_eip) and verify public_ip is set; a newly created EIP must carry the tag USAGE_FOR=Supabase应用公网访问，自动创建的 so auto-created EIPs stay distinguishable",
                      "open the security-group rules: application group 8443 ingress from the user CIDR (0.0.0.0/0 only after explicit confirmation, via KooCLI), application group 5432 egress (KooCLI), database group 5432 ingress from the subnet",
                      "update api_external_url to the assembled public address via update_supabase_auth_config - mandatory after a successful bind; email links and OAuth callbacks point at it",
                      "probe the access address (any HTTP status means reachable)"]

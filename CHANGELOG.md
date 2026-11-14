@@ -5,6 +5,17 @@ semantic versioning.
 
 ## [Unreleased]
 
+### Removed
+
+- Legacy validation artifacts carrying the retired `hw-rds-supabase` /
+  `hw-rds-supabase-py` project name: `docs/validation/tool-availability.md`,
+  `full-tool-test-report.md`, `run_full_tool_test.py`, and their result JSON
+  (a v0.3.0-era snapshot of 38 tools, superseded by the current server and
+  its 0.4.0 test suites). The live server has been named
+  `mcp-server-huaweicloud-rds-supabase` for a long time; no remaining file
+  references the old name. The other validation documents (e2e comparison,
+  skill behavior eval) never used it and are retained.
+
 ### Changed
 
 - Skill `rds-supabase-mgr-mcp` v0.6.2: KooCLI is now provisioned at install

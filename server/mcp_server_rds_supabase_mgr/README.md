@@ -13,7 +13,7 @@ MCP 工具，覆盖应用的创建、配置、公网访问开通、变更与删�
 （control plane）：通过原生 RDS 管理接口操作 Supabase 应用；SQL 与数据操作属独立
 数据面服务，见 `server/mcp_server_rds_supabase`，两台服务器分开交付，互不替换。
 
-安全组操作经 KooCLI 通道执行（见[安全组与 KooCLI 通道](#安全组与-koocli-通道)）。
+安全组工具已内置 KooCLI 能力，开箱即用（见[安全组工具与 KooCLI 的分工](#安全组工具与-koocli-的分工)）。
 
 配套专项 Skill：`skills/huaweicloud-supabase/rds-supabase-mgr-mcp`（意图理解、
 信息补齐、影响展示与确认指导）。
@@ -106,7 +106,7 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
 - SSL 启用与关闭（启用需购买 CCM 证书）
 - 弹性公网 IP 绑定与解除（控制公网访问）
 
-**安全组配置（KooCLI 通道）**
+**安全组配置**
 
 - 安全组列表与详情查询
 - 创建安全组，匹配应用要求
@@ -176,12 +176,24 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
 | `show_supabase_creation_progress` | 综合分析应用创建进展：实例创建中、应用等待、应用创建中、完成或失败 | READ | - |
 | `wait_operation_job_complete` | 在超时范围内轮询操作任务至终态，等待任务完成 | READ | [ListJobInfo](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListJobInfo) |
 
-## 安全组与 KooCLI 通道
+## 安全组工具与 KooCLI 的分工
 
-安全组六个工具不经过 RDS 服务端点：原生 RDS 入口不代理 VPC API，直调必然失败。
-它们通过本机 KooCLI（`hcloud`）执行，调用 VPC v3 操作
-（`CreateSecurityGroup/v3`、`CreateSecurityGroupRule/v3` 等）。
+安全组六个工具（查询、建组、删组、规则增删）**已封装 KooCLI 能力，可直接正常使用**，
+无需 Agent 另行调用 hcloud：工具内部自动完成 VPC v3 操作的调用、凭据注入与结果解析，
+并提供预览确认、来源标签、误删防护等管理能力。
 
+**使用原则：优先用工具，工具覆盖不了再用 KooCLI 原生命令。**
+
+| 场景 | 用什么 |
+|---|---|
+| 安全组的全部常规操作（查列表/详情、建组、加规则、删规则、删组） | **本服务工具** |
+| 放行 0.0.0.0/0 全网入方向（工具按设计拒绝，需用户明确确认） | KooCLI 原生命令 |
+| 工具明确不支持的边缘操作（如地址组管理） | KooCLI 原生命令 |
+
+工具内部实现（运维排障时才需了解）：
+
+- 原生 RDS 入口不代理 VPC API，工具内部经本机 KooCLI（`hcloud`）调用 VPC v3 操作
+  （`CreateSecurityGroup/v3`、`CreateSecurityGroupRule/v3` 等）。
 - **KooCLI 前置条件**：本机需安装 hcloud 并接受首次运行隐私协议。安装方法见
   技能 [INSTALL.md 第四节](../../skills/huaweicloud-supabase/rds-supabase-mgr-mcp/INSTALL.md)。
 - **二进制定位**：`HCLOUD_BIN` 环境变量 → 固定安装目录 → PATH，每次调用重新定位，
@@ -189,9 +201,8 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
 - **凭据注入**：`HUAWEICLOUD_ACCESS_KEY`/`HUAWEICLOUD_SECRET_KEY` 同时存在时按命令
   注入；否则回落 hcloud profile。**REST Token 模式下需本机配置 hcloud profile**
   （`hcloud configure init`），否则安全组工具报凭据缺失。
-- **区域与项目**：区域取 `HUAWEICLOUD_REGION`，缺省时从 `SUPABASE_RDS_ENDPOINT`
-  域名推导；项目由 KooCLI 按区域默认项目解析，子项目账号须在 hcloud profile 配置
-  `--cli-project-id`。
+- **区域与项目**：区域取 `HUAWEICLOUD_REGION`；项目由 KooCLI 按区域默认项目解析，
+  子项目账号须在 hcloud profile 配置 `--cli-project-id`。
 - **错误透传**：VPC 后端 error_code/error_msg/request_id 原样透传；隐私协议未接受、
   二进制缺失、超时各有专用错误码与处置指引。
 - **来源标记**：建组自动打 `AUTO_CREATE=true` 与 `USE_FOR=Supabase` 双标签；整组删除
@@ -263,7 +274,7 @@ uv run python -m mcp_server_supabase.diagnostics readonly --allow-cloud-read
 | `HUAWEICLOUD_ACCESS_KEY` | sdk_core 模式必填 | 账号 AK | - |
 | `HUAWEICLOUD_SECRET_KEY` | sdk_core 模式必填 | 账号 SK | - |
 | `HUAWEICLOUD_SECURITY_TOKEN` | 否 | STS 临时凭据 token | - |
-| `HUAWEICLOUD_REGION` | 否 | 安全组 KooCLI 通道区域；缺省从 `SUPABASE_RDS_ENDPOINT` 域名推导 | 推导 |
+| `HUAWEICLOUD_REGION` | 否 | 区域：安全组工具与 RDS 服务入口推导共用；子项目解析由 hcloud profile 处理 | - |
 | `HCLOUD_BIN` | 否 | KooCLI 二进制路径覆盖（固定目录与 PATH 之外的显式指定） | 自动定位 |
 | `SUPABASE_ENABLE_WRITES` | 否 | 云写开关；`true` 才能执行云侧写操作 | `false` |
 | `HUAWEICLOUD_MCP_READ_ONLY` | 否 | `true` 拦截所有 WRITE/DANGEROUS 工具 | `false` |

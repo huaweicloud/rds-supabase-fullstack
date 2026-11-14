@@ -5,6 +5,23 @@ semantic versioning.
 
 ## [Unreleased]
 
+### Changed
+
+- `mcp_server_rds_supabase_mgr` v0.4.0a28: README (zh/en) security-group
+  section rewritten around the correct usage model: the six security-group
+  tools already wrap the KooCLI capability and work out of the box - the
+  agent uses the tools first and falls back to raw KooCLI commands only
+  where the tools deliberately do not go (0.0.0.0/0 world ingress, edge
+  operations). The old section read as if the tools were a KooCLI
+  alternative the operator had to wire up; it now leads with the
+  tools-first principle and a scenario table, and demotes the internal
+  implementation details (binary location, credential injection,
+  region/project resolution, error passthrough, origin tagging) to an
+  operations-troubleshooting subsection. Cross-references, the feature
+  heading, and the HUAWEICLOUD_REGION table row follow; the skill's
+  step-zero and security-group guidance state the same tools-first
+  division of labor.
+
 ### Fixed
 
 - `mcp_server_rds_supabase_mgr` v0.4.0a27: prepaid charge_info validation

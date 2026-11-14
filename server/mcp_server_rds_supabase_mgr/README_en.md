@@ -17,8 +17,8 @@ management API. SQL and data operations belong to a separate data-plane
 service, see `server/mcp_server_rds_supabase`; the two servers are delivered
 independently and do not replace each other.
 
-Security-group operations execute through the KooCLI channel
-(see [Security groups and the KooCLI channel](#security-groups-and-the-koocli-channel)).
+The security-group tools wrap the KooCLI capability and work out of the box
+(see [Security-group tools and the KooCLI division of labor](#security-group-tools-and-the-koocli-division-of-labor)).
 
 Companion skill: `skills/huaweicloud-supabase/rds-supabase-mgr-mcp` (intent
 understanding, information completion, impact presentation, and confirmation
@@ -130,7 +130,7 @@ lifecycle, control plane).
 - SSL enable/disable (enabling requires a purchased CCM certificate)
 - Elastic public IP bind/unbind (controls public access)
 
-**Security group configuration (KooCLI channel)**
+**Security group configuration**
 
 - Security group list and detail queries
 - Create security groups matching application requirements
@@ -214,34 +214,49 @@ alias.
 
 The full API reference is at the [Huawei Cloud RDS API docs](https://support.huaweicloud.com/api-rds/rds_01_0002.html); some Supabase APIs are newer than the published catalog - when API Explorer lacks one, this server's actual behavior is authoritative.
 
-## Security groups and the KooCLI channel
+## Security-group tools and the KooCLI division of labor
 
-The six security-group tools do not go through the RDS endpoint: the native
-RDS origin does not proxy the VPC API, so direct calls always fail. They
-execute via the local KooCLI (`hcloud`), calling VPC v3 operations
-(`CreateSecurityGroup/v3`, `CreateSecurityGroupRule/v3`, and so on).
+The six security-group tools (queries, group create/delete, rule add/remove)
+**already wrap the KooCLI capability and work out of the box** - the agent
+does not need to run hcloud separately: the tools invoke the VPC v3
+operations internally with credential injection and result parsing, plus
+preview confirmation, origin tagging, and wrong-deletion protection.
 
-- **KooCLI prerequisite**: hcloud must be installed locally and its first-run
+**Principle: prefer the tools; fall back to raw KooCLI only when they do
+not cover the need.**
+
+| Scenario | Use |
+|---|---|
+| Every routine security-group operation (list/detail, create group, add/remove rules, delete group) | **This service's tools** |
+| Opening 0.0.0.0/0 world-wide ingress (tools refuse by design; requires explicit user confirmation) | Raw KooCLI commands |
+| Edge operations the tools deliberately do not support (e.g. address-group management) | Raw KooCLI commands |
+
+Internal implementation (relevant for operations troubleshooting only):
+
+- The native RDS origin does not proxy the VPC API; the tools call VPC v3
+  operations (`CreateSecurityGroup/v3`, `CreateSecurityGroupRule/v3`, ...)
+  through the local KooCLI (`hcloud`).
+- **KooCLI prerequisite**: hcloud installed locally with its first-run
   privacy agreement accepted. Installation: section 4 of the skill
   [INSTALL.md](../../skills/huaweicloud-supabase/rds-supabase-mgr-mcp/INSTALL.md).
 - **Binary location**: `HCLOUD_BIN` environment variable → fixed install
   directories → PATH, re-resolved on every call; no session restart needed
   after installation.
-- **Credential injection**: credentials are injected per command only when
-  both `HUAWEICLOUD_ACCESS_KEY` and `HUAWEICLOUD_SECRET_KEY` are set;
-  otherwise the hcloud profile is used. **REST token mode requires a local
-  hcloud profile** (`hcloud configure init`), or these tools report missing
+- **Credential injection**: injected per command only when both
+  `HUAWEICLOUD_ACCESS_KEY` and `HUAWEICLOUD_SECRET_KEY` are set; otherwise
+  the hcloud profile is used. **REST token mode requires a local hcloud
+  profile** (`hcloud configure init`), or these tools report missing
   credentials.
-- **Region and project**: region comes from `HUAWEICLOUD_REGION`, falling
-  back to derivation from the `SUPABASE_RDS_ENDPOINT` hostname; the project
-  is resolved by KooCLI as the region default project — sub-project accounts
-  must configure `--cli-project-id` in the hcloud profile.
+- **Region and project**: region comes from `HUAWEICLOUD_REGION`; the
+  project is resolved by KooCLI as the region default project —
+  sub-project accounts must configure `--cli-project-id` in the hcloud
+  profile.
 - **Error passthrough**: VPC backend error_code/error_msg/request_id pass
   through verbatim; an unaccepted privacy agreement, a missing binary, and
   timeouts each map to a dedicated error code with remediation guidance.
-- **Origin tagging**: every created group is auto-tagged AUTO_CREATE=true and
-  USE_FOR=Supabase; whole-group deletion verifies the tag pair and rejects
-  every group not created by this flow, preventing wrong deletion.
+- **Origin tagging**: every created group is auto-tagged AUTO_CREATE=true
+  and USE_FOR=Supabase; whole-group deletion verifies the tag pair and
+  rejects every group not created by this flow, preventing wrong deletion.
 
 ## Usage guide
 
@@ -317,7 +332,7 @@ tool parameters.
 | `HUAWEICLOUD_ACCESS_KEY` | sdk_core mode | Account AK | - |
 | `HUAWEICLOUD_SECRET_KEY` | sdk_core mode | Account SK | - |
 | `HUAWEICLOUD_SECURITY_TOKEN` | no | STS temporary-credential token | - |
-| `HUAWEICLOUD_REGION` | no | Region for the security-group KooCLI channel; derived from the `SUPABASE_RDS_ENDPOINT` hostname when absent | derived |
+| `HUAWEICLOUD_REGION` | no | Region: shared by the security-group tools and RDS endpoint derivation; sub-project resolution stays with the hcloud profile | - |
 | `HCLOUD_BIN` | no | Explicit KooCLI binary path override | auto-located |
 | `SUPABASE_ENABLE_WRITES` | no | Cloud-write switch; must be `true` for cloud writes | `false` |
 | `HUAWEICLOUD_MCP_READ_ONLY` | no | `true` intercepts all WRITE/DANGEROUS tools | `false` |

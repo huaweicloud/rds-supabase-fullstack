@@ -195,12 +195,13 @@ class Operations:
                 return {**result,**notices,'plan_id':plan_id}
             if data.get('order_id'):
                 # Prepaid flow: the backend answers with an order, not a job. The
-                # order was created (accepted); payment is the user's console step.
+                # order was created (accepted); payment follows the guarded order tools.
                 result={'status':'order_created','order_id':segment(data['order_id']),'job_id':None}
                 self.plans.finish(plan_id,'accepted',None)
                 return {**result,**notices,'warnings':notices['warnings']+[
-                    'A prepaid order was created; this MCP never pays it.',
-                    'The user pays and tracks the order in the console; resource creation starts after payment - re-verify resources once a job appears.'],
+                    'A prepaid order was created; it must be paid before the resource is provisioned.',
+                    'Query the order with get_supabase_order, obtain approval for the exact amount and currency, then pay with pay_supabase_order (or cancel with cancel_supabase_order if abandoned).',
+                    'Resource creation starts after payment - re-verify resources once a job appears.'],
                     'plan_id':plan_id}
             raise ValueError()
         except BaseException:

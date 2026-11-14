@@ -854,6 +854,17 @@ dev = [
 ]
 
 [[package]]
+name = "huaweicloudsdkbss"
+version = "3.1.220"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "huaweicloudsdkcore" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d3/a8/07d941f0f2829b3d3ecbeceba294148fbdf19bc8cfd2081008bd1015e9ce/huaweicloudsdkbss-3.1.220-py3-none-any.whl", hash = "sha256:05afd6dd5126d96d15acc6167915f0b3ec5c8011fe63152379a7907b5cc124f8", size = 717533, upload-time = "2026-10-29T09:38:28.301Z" },
+]
+
+[[package]]
 name = "huaweicloudsdkcore"
 version = "3.1.220"
 source = { registry = "https://pypi.org/simple" }
@@ -959,10 +970,11 @@ wheels = [
 
 [[package]]
 name = "mcp-server-supabase"
-version = "0.3.8a2"
+version = "0.4.0a18"
 source = { editable = "." }
 dependencies = [
     { name = "huaweicloud-mcp-core" },
+    { name = "huaweicloudsdkbss" },
     { name = "huaweicloudsdkcore" },
     { name = "mcp" },
 ]
@@ -978,6 +990,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "huaweicloud-mcp-core", directory = "../../libs/huaweicloud_mcp_core" },
+    { name = "huaweicloudsdkbss", specifier = ">=3.1.218,<4" },
     { name = "huaweicloudsdkcore", specifier = ">=3.1.220,<4" },
     { name = "mcp", specifier = ">=2.0" },
 ]

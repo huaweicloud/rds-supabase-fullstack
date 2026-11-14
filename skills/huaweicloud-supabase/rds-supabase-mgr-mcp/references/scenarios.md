@@ -107,7 +107,7 @@ SKILL.md 是主文档；本文件是各场景的详细步骤、字段来源与�
 | 结构校验不过 | MCP_INVALID_ARGS（**点名具体字段**，如 ha.mode、volume.size、password） | 按点名字段修正；不删用户要求后静默重试 |
 | 预览超 10 分钟/参数变 | MCP_GUARDRAIL_BLOCKED | 重新预览确认 |
 | 同意图有未完成执行 | MCP_GUARDRAIL_BLOCKED | 查记录核对，不新建计划绕过 |
-| 响应含 order_id（包周期） | status=order_created，计划记 accepted | 告知用户去控制台支付订单，支付后才开始创建；MCP 不自动支付；支付完成后按正常节奏查任务 |
+| 响应含 order_id（包周期） | status=order_created，计划记 accepted | 走订单工具闭环：`get_supabase_order` 查状态/金额/币种并给用户核对 → 用户核准后 `pay_supabase_order`（预览→确认+plan_id；余额支付，有折扣订单走控制台）→ 支付后才开始创建，按正常节奏查任务；放弃则 `cancel_supabase_order`（未支付才能取消）；金额/状态变化须重新核准 |
 | 提交中断 | submission_unknown + plan_id | `inspect_supabase_plan` → 查任务/资源；禁止重放 |
 | 后端明确拒绝（4xx） | MCP_INVALID_ARGS / MCP_PERMISSION_DENIED / MCP_NOT_FOUND 等，报错**附后端 error_code/error_msg**；计划标 **failed** | 如实转述后端报错；修正参数后**重新预览再提交**（failed 不阻塞重试，与结果不明不同） |
 | 写开关没开 / 只读拦截开着 | MCP_READ_ONLY | 操作员同时核对两个变量：SUPABASE_ENABLE_WRITES=true 且 HUAWEICLOUD_MCP_READ_ONLY=false，改完重启 |

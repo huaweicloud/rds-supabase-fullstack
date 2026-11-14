@@ -4,7 +4,7 @@
 
 ## 版本
 
-0.4.0a18（开发预发行版）；Python `3.10+`；MCP Python SDK `2.x`；31 个工具。
+0.4.0a19（开发预发行版）；Python `3.10+`；MCP Python SDK `2.x`；34 个工具。
 
 ## 概述
 
@@ -85,7 +85,13 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
 - 数据库实例规格查询——同时新建实例场景（经 KooCLI）
 - 周边依赖自动发现：VPC、子网、可用区、安全组、OBS 桶等依赖资源的列表与详情配置
   （使用 KooCLI 功能探索）
-- 创建提交：Single/Ha、按需/包周期，两阶段确认；包周期返回订单，控制台支付
+- 创建提交：Single/Ha、按需/包周期，两阶段确认；包周期返回订单，经订单工具支付
+
+**订单管理（包周期实例）**
+
+- 包周期订单查询：状态、金额、币种、订单明细分页
+- 订单支付：按核准的订单号、金额、币种余额支付；预览→确认两阶段，单次提交
+- 未支付订单取消：放弃不需要的待支付订单
 
 **应用删除**
 
@@ -150,6 +156,9 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
 | `create_supabase_application` | 创建提交（需确认，经 request_ref） | DANGEROUS |
 | `delete_supabase_application` | 删除应用保留 PG（需确认） | DANGEROUS |
 | `delete_supabase_managed_instance` | 删除应用托管的 PG 实例（需确认；校验托管绑定且无其他应用引用，仅按需计费） | DANGEROUS |
+| `get_supabase_order` | 查询包周期订单（状态/金额/明细分页） | READ |
+| `pay_supabase_order` | 订单余额支付（需确认；核准订单号+金额+币种，plan_id 两阶段） | DANGEROUS |
+| `cancel_supabase_order` | 取消未支付订单（需确认，plan_id 两阶段） | DANGEROUS |
 | `change_supabase_ssl` | SSL 开关（需确认） | WRITE |
 | `plan_supabase_ssl` | SSL 切换规划 | READ |
 | `change_supabase_eip` | EIP 绑定/解绑（需确认） | WRITE |

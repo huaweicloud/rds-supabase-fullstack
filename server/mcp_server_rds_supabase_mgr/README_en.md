@@ -4,8 +4,8 @@
 
 ## Version
 
-0.4.0a18 (development prerelease); Python `3.10+`; MCP Python SDK `2.x`;
-31 tools.
+0.4.0a19 (development prerelease); Python `3.10+`; MCP Python SDK `2.x`;
+34 tools.
 
 ## Overview
 
@@ -105,7 +105,14 @@ lifecycle, control plane).
   surrounding resources — VPC, subnet, availability zone, security group,
   OBS bucket, and more (using KooCLI capability exploration)
 - Creation submission: Single/Ha, pay-per-use or yearly/monthly,
-  two-phase confirmation; yearly/monthly returns a console-payable order
+  two-phase confirmation; yearly/monthly returns an order paid via the order tools
+
+**Order management (yearly/monthly instances)**
+
+- Prepaid order query: status, amounts, currency, paginated line items
+- Order payment: balance payment for the approved order ID, amount and
+  currency; preview-then-confirm two-phase, one submission
+- Unpaid order cancellation: abandon an unneeded pending-payment order
 
 **Application deletion**
 
@@ -180,6 +187,9 @@ lifecycle, control plane).
 | `create_supabase_application` | Creation submission (confirm, via request_ref) | DANGEROUS |
 | `delete_supabase_application` | Delete application, keep PG (confirm) | DANGEROUS |
 | `delete_supabase_managed_instance` | Delete the managed PG instance (confirm; binding-verified, unshared, pay-per-use only) | DANGEROUS |
+| `get_supabase_order` | Query a prepaid order (status/amount/lines) | READ |
+| `pay_supabase_order` | Pay an order from balance (confirm; approved order+amount+currency, plan_id two-phase) | DANGEROUS |
+| `cancel_supabase_order` | Cancel an unpaid order (confirm, plan_id two-phase) | DANGEROUS |
 | `change_supabase_ssl` | SSL toggle (confirm) | WRITE |
 | `plan_supabase_ssl` | SSL switch planning | READ |
 | `change_supabase_eip` | EIP bind/unbind (confirm) | WRITE |

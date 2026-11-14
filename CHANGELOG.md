@@ -7,6 +7,39 @@ semantic versioning.
 
 ### Added
 
+- `mcp_server_rds_supabase_mgr` v0.4.0a19: order lifecycle tools for prepaid
+  managed PostgreSQL instances, ported from Huawei Cloud's own GaussDB MCP
+  reference implementation (huaweicloud-gaussdb-mcp, gaussdb-integration
+  branch) and adapted to this server's conventions. New tools:
+  `get_supabase_order` (READ; order status, amounts, currency, paginated
+  line items via BSS `GET /v2/orders/customer-orders/details/{id}`),
+  `pay_supabase_order` (DANGEROUS; balance payment via BSS
+  `POST /v3/orders/customer-orders/pay` with use_coupon/use_discount=NO),
+  and `cancel_supabase_order` (DANGEROUS; unpaid-order cancellation via BSS
+  `PUT /v2/orders/customer-orders/cancel`). New dependency
+  `huaweicloudsdkbss>=3.1.218,<4` (3.1.220 locked); BSS calls use global
+  credentials against bss.myhuaweicloud.com with retry disabled so an
+  ambiguous payment result is never retried automatically.
+  The GaussDB defense chain is preserved in full: product-scope checks
+  across the main order, sub-orders, and every line item on every page
+  (default service type hws.service.type.rds, overridable via
+  SUPABASE_ORDER_SERVICE_TYPE pending a live-order confirmation);
+  expected_amount must match both official_amount and amount_after_discount
+  (discounted orders are rejected - use the console); currency must match
+  exactly; payment_time guards against stale status; a final refresh
+  happens immediately before the single payment submission; already-paid
+  orders return an idempotent already_processed result instead of a second
+  submission. Adaptations on top: the one-use plan ledger binds
+  (order_id, expected_amount, currency, endpoint, credential) - previews
+  expire in ten minutes and submissions cannot be replayed; the
+  SUPABASE_ENABLE_WRITES / HUAWEICLOUD_MCP_READ_ONLY gates apply; definite
+  rejections record failed while ambiguous submission outcomes record
+  unknown with a RecoveryError carrying the plan id; an in-process
+  asyncio lock serializes payments. create_supabase_application's prepaid
+  branch now routes to the order tools instead of telling the user to pay
+  in the console. Skill `rds-supabase-mgr-mcp` v0.8.0 updates the billing
+  guidance in SKILL.md and the scenario matrix; tool count 34.
+
 - `mcp_server_rds_supabase_mgr` v0.4.0a18: new tool
   `delete_supabase_managed_instance` (DANGEROUS) - deletes the PostgreSQL
   instance managed by one Supabase application through the native RDS

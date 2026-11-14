@@ -125,7 +125,7 @@ class CreationTests(unittest.IsolatedAsyncioTestCase):
         self.client.request.return_value=(202,{'order_id':'order-1'})
         result=await self.ops.create_reference('create',True,order_preview['plan_id'])
         self.assertEqual(result['status'],'order_created');self.assertEqual(result['order_id'],'order-1')
-        self.assertIn('never pays',str(result))
+        self.assertIn('pay_supabase_order',str(result))
         self.assertEqual(self.ops.plans.inspect(order_preview['plan_id'])['state'],'accepted')
     async def test_volume_type_follows_environment_selection(self):
         del self.body['existing_instance'];self.body['manage_type']='newly_instance'

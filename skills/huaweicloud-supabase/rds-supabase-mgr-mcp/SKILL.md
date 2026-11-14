@@ -1,11 +1,11 @@
 ---
 name: rds-supabase-mgr-mcp
-description: RDS Supabase 应用全生命周期管理技能：从零创建一个能访问的应用（创建、公网开通 EIP 与安全组配置、接入信息交付）、使用已有应用、按需增强（存储对接、邮箱登录、GitHub 登录）、日常变更（改密码、重置 Key、SSL、EIP）、查询接入信息、删除收尾。管理面 MCP 31 个工具 + KooCLI 协同。Use when：管理 RDS Supabase 应用的创建、配置、网络开通、认证对接、变更与删除。不用于 SQL 与数据操作。
+description: RDS Supabase 应用全生命周期管理技能：从零创建一个能访问的应用（创建、公网开通 EIP 与安全组配置、接入信息交付）、使用已有应用、按需增强（存储对接、邮箱登录、GitHub 登录）、日常变更（改密码、重置 Key、SSL、EIP）、查询接入信息、删除收尾。管理面 MCP 34 个工具 + KooCLI 协同。Use when：管理 RDS Supabase 应用的创建、配置、网络开通、认证对接、变更与删除。不用于 SQL 与数据操作。
 ---
 
 # RDS Supabase 应用全生命周期管理
 
-版本 0.7.2；配套服务端 mcp_server_supabase ≥ 0.4.0a18（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
+版本 0.8.0；配套服务端 mcp_server_supabase ≥ 0.4.0a19（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
 
 贯穿所有场景的四条铁律：
 1. **写操作两段式**：先预览（confirm=false），把参数、影响、费用展示给用户；用户确认后才提交（confirm=true + 预览返回的 plan_id）。预览 10 分钟有效，参数变了重新预览。
@@ -110,7 +110,7 @@ https://github.com/huaweicloud/rds-supabase-fullstack
 | 可用区 | 查 AZ 列表。**Single 选一个**（自动选第一个可用）；**Ha 选两个不同的 AZ**（主 AZ + 备 AZ，接口会校验；只给一个会被拒）。数据库与同应用保持一致 | KooCLI |
 | 数据库版本 | 查版本列表，**自动选满足 ≥ 17.11.260900 的最高版** | KooCLI（查的是 PG 引擎版本，不是应用版本） |
 | 部署模式 | **问用户选**：单机 Single（自己用、学习、测试，成本低）或 主备 Ha（业务要高可用）。请求体的 ha 对象跟着选：Single 配 `{"mode":"Single","replication_mode":"async"}`，Ha 配 `{"mode":"Ha","replication_mode":"async"}`（要强同步用 sync） | — |
-| 计费方式 | **问用户选**：按需 postPaid（用多久付多久，随时可停）或 包周期 prePaid（**1-9 个月或 1-3 年**，价格更优）。包周期提交后返回的是**订单号**：用户去控制台支付，支付后才开始创建；MCP 不会自动支付 | — |
+| 计费方式 | **问用户选**：按需 postPaid（用多久付多久，随时可停）或 包周期 prePaid（**1-9 个月或 1-3 年**，价格更优）。包周期提交后返回的是**订单号**：走订单工具闭环——`get_supabase_order` 查状态与金额 → 用户核准订单号+金额+币种 → `pay_supabase_order` 预览→确认支付（余额支付；有折扣的订单走控制台）；不想要了 `cancel_supabase_order` 取消。支付后才开始创建 | — |
 | 数据库规格 | 查 RDS for PostgreSQL 规格列表给用户选（跟数据库版本和 AZ 相关，和应用规格是两回事，别混用） | KooCLI（速查表） |
 | 数据库密码 | 本地随机生成，规则同应用密码（8-32 位三类字符）；可以和应用密码用同一个值 | 本地命令 |
 | 磁盘 | **类型按环境选择**：先查该环境支持的盘型（速查表），选高性能 SSD（如 CLOUDSSD/ESSD），容量按业务估给用户确认 | KooCLI（速查表） |
@@ -138,7 +138,7 @@ https://github.com/huaweicloud/rds-supabase-fullstack
 1. 操作员把创建请求（含密码、存储凭据等秘密）写入本地请求文件，确认别名如 `create-app`
 2. **预览前先过一遍[核对清单](references/scenarios.md)**（场景手册"预览前逐项核对清单"）：每个字段对照规则检查，秘密字段只核"已配置"——最常见的三类错误（version 填成 PG 版本、漏 ha、密码不合规）在这一步就能拦住
 3. `create_supabase_application(request_ref, confirm=false)` 预览 → 把脱敏参数给用户看 → 确认 → 提交
-4. **等结果**：按需计费返回任务编号（job_id），等大约 **20-30 分钟**；**包周期返回订单号（order_id）**——先告知用户去控制台支付，支付后才开始创建，然后按同样节奏等任务
+4. **等结果**：按需计费返回任务编号（job_id），等大约 **20-30 分钟**；**包周期返回订单号（order_id）**——走订单流：`get_supabase_order` 查金额与状态，用户核准后 `pay_supabase_order` 预览→确认（plan_id 两阶段；单次提交、失败不自动重试），支付后才开始创建，然后按同样节奏等任务；放弃则 `cancel_supabase_order`
    - 提交后马上 `wait_supabase_job(job_id)` 看一眼（抓秒级失败）
    - 然后告诉用户"预计 20-30 分钟"，给出任务编号
    - 之后**每次用户回来问，查一次** `show_supabase_job`——不要自己连续刷几十次

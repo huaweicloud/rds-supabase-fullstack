@@ -67,9 +67,8 @@ uv run mcp-huaweicloud-rds-supabase-mgr          # stdio（默认）
       ],
       "env": {
         "SUPABASE_TRANSPORT": "sdk_core",
-        "SUPABASE_RDS_ENDPOINT": "<原生 RDS HTTPS 端点>",
-        "HUAWEICLOUD_PROJECT_ID": "<项目 ID>",
-        "HUAWEICLOUD_REGION": "<区域，如 cn-east-3；安全组工具的 KooCLI 通道用>",
+        "SUPABASE_RDS_ENDPOINT": "<原生 RDS HTTPS 端点，可选；缺省按区域推导>",
+        "HUAWEICLOUD_REGION": "<区域，如 cn-east-3>",
         "HUAWEICLOUD_ACCESS_KEY": "<AK>",
         "HUAWEICLOUD_SECRET_KEY": "<SK>",
         "HUAWEICLOUD_SECURITY_TOKEN": "<临时密钥才有，永久密钥删掉此行>",
@@ -92,8 +91,8 @@ opencode 项目 `opencode.json` 等价写法（V2 结构：服务器条目位于
         "command": ["uvx", "--from", "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr", "mcp-huaweicloud-rds-supabase-mgr"],
         "environment": {
           "SUPABASE_TRANSPORT": "sdk_core",
-          "SUPABASE_RDS_ENDPOINT": "<原生 RDS HTTPS 端点>",
-          "HUAWEICLOUD_PROJECT_ID": "<项目 ID>",
+          "SUPABASE_RDS_ENDPOINT": "<原生 RDS HTTPS 端点，可选；缺省按区域推导>",
+          "HUAWEICLOUD_REGION": "<区域，如 cn-east-3>",
           "HUAWEICLOUD_ACCESS_KEY": "<AK>",
           "HUAWEICLOUD_SECRET_KEY": "<SK>",
           "HUAWEICLOUD_MCP_READ_ONLY": "true",
@@ -109,13 +108,13 @@ opencode 项目 `opencode.json` 等价写法（V2 结构：服务器条目位于
 
 ```json
 {
-  "SUPABASE_RDS_ENDPOINT": "<原生 RDS HTTPS 端点>",
-  "HUAWEICLOUD_PROJECT_ID": "<项目 ID>",
+  "SUPABASE_RDS_ENDPOINT": "<原生 RDS HTTPS 端点，可选；缺省按区域推导>",
+  "HUAWEICLOUD_REGION": "<区域，如 cn-east-3>",
   "HUAWEICLOUD_AUTH_TOKEN": "<外部预置的服务 Token>"
 }
 ```
 
-**Token 模式的安全组限制**：安全组五工具走 KooCLI 通道、只认 AK/SK（或本机 hcloud profile）。Token 模式下这五个工具会报凭据缺失——要用安全组工具，要么本机执行一次 `hcloud configure init` 配好 profile，要么改用模板一的 AK/SK 模式。
+**Token 模式的限制**：安全组工具走 KooCLI 通道、只认 AK/SK（或本机 hcloud profile）；项目自动发现同样依赖 AK/SK。Token 模式下这两项都会报凭据缺失——要么本机执行一次 `hcloud configure init` 配好 profile 并显式配置 `HUAWEICLOUD_PROJECT_ID`，要么改用模板一的 AK/SK 模式（推荐，配置最简）。
 
 **模式选错的症状（记住这个坑）**：只填 AK/SK 不设 `SUPABASE_TRANSPORT=sdk_core`，服务端按 REST 模式启动并**完全忽略 AK/SK**，每次调用报 `MCP_PERMISSION_DENIED`。反过来，REST 模式没配 `HUAWEICLOUD_AUTH_TOKEN` 也是这个错。
 
@@ -144,7 +143,7 @@ opencode 项目 `opencode.json` 等价写法（V2 结构：服务器条目位于
 | 变量 | 何时必填 | 说明 |
 |---|---|---|
 | `SUPABASE_RDS_ENDPOINT` | 恒必填 | 原生 RDS HTTPS 端点（非 Console、非 /rest 代理）；可由 `diagnostics discover` 推导 |
-| `HUAWEICLOUD_PROJECT_ID` | 恒必填 | 目标项目 ID |
+| `HUAWEICLOUD_PROJECT_ID` | 否 | 目标项目 ID；缺省经 IAM 按区域自动发现（AK/SK 需项目列表权限；子项目账号显式配置） |
 | `SUPABASE_TRANSPORT` | AK/SK 模式必填（=sdk_core） | 默认 rest；rest 只认 Token |
 | `HUAWEICLOUD_ACCESS_KEY` / `HUAWEICLOUD_SECRET_KEY` | sdk_core 模式必填 | 访问密钥 |
 | `HUAWEICLOUD_SECURITY_TOKEN` | 临时密钥必填 | STS Token |

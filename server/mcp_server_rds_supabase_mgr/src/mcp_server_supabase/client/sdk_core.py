@@ -48,6 +48,10 @@ class SdkCoreClient:
     def _request(self, method, path, body, query, headers):
         sdk=None
         try:
+            if not self.project:
+                # First use: discover via IAM when neither env var carried a project.
+                from mcp_server_supabase.client.rest import ensure_project
+                self.project = ensure_project(self.project)
             url=urlsplit(self.endpoint)
             local=self.allow_loopback and url.hostname in ('127.0.0.1','localhost')
             if not url.hostname or url.username or url.password or url.query or url.fragment or url.path not in ('','/') or not (url.scheme=='https' or local and url.scheme=='http'):

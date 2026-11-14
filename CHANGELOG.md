@@ -7,6 +7,27 @@ semantic versioning.
 
 ### Changed
 
+- `mcp_server_rds_supabase_mgr` v0.4.0a29: `HUAWEICLOUD_PROJECT_ID`
+  becomes optional, completing the GaussDB-style zero-config adoption.
+  When absent, the regional project is discovered automatically via IAM
+  `KeystoneListProjects(name=HUAWEICLOUD_REGION)` on first use - once,
+  cached per (ak, sk, token, region) so credential rotation invalidates
+  it - with an explicit environment value still short-circuiting with
+  zero network calls. Sub-project accounts (not discoverable by region
+  name) keep the explicit variable as their documented path. The sdk_core
+  transport now resolves the project lazily on first request like the
+  REST transport, and the plan-intent digest resolves it before binding,
+  so previews and submissions sign the same identity. Combined with the
+  earlier region-derived endpoint, a minimal AK/SK configuration is now
+  three variables: HUAWEICLOUD_REGION + AK/SK. READMEs (zh/en) flip the
+  variable to optional with the discovery default and drop it from the
+  quick-start template; the skill shrinks the first-step checklist from
+  five items to three, documents the automatic resolution, and the
+  Token-mode limitation note now covers both the security-group tools
+  and project discovery (both need AK/SK or an explicit project id).
+
+### Changed
+
 - `mcp_server_rds_supabase_mgr` v0.4.0a28: README (zh/en) security-group
   section rewritten around the correct usage model: the six security-group
   tools already wrap the KooCLI capability and work out of the box - the

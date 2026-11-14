@@ -270,3 +270,26 @@ class ResolveEndpointTests(unittest.TestCase):
             for key, value in saved.items():
                 if value is not None:
                     os.environ[key] = value
+
+
+class ProjectResolutionTests(unittest.TestCase):
+    def test_explicit_and_lazy_paths(self):
+        from unittest.mock import patch
+        from mcp_server_supabase.client.project import resolve_project_id, reset_project_cache
+        saved = {k: os.environ.pop(k, None) for k in ('HUAWEICLOUD_PROJECT_ID', 'HUAWEICLOUD_REGION',
+                                                      'HUAWEICLOUD_ACCESS_KEY', 'HUAWEICLOUD_SECRET_KEY')}
+        try:
+            reset_project_cache()
+            os.environ['HUAWEICLOUD_PROJECT_ID'] = 'explicit-pid'
+            self.assertEqual(resolve_project_id(), 'explicit-pid')
+            os.environ.pop('HUAWEICLOUD_PROJECT_ID')
+            # neither project nor region: lazy empty, no raise, no network
+            self.assertEqual(resolve_project_id(), '')
+            # region without credentials: still lazy empty
+            os.environ['HUAWEICLOUD_REGION'] = 'cn-east-3'
+            self.assertEqual(resolve_project_id(), '')
+        finally:
+            reset_project_cache()
+            for key, value in saved.items():
+                if value is not None:
+                    os.environ[key] = value

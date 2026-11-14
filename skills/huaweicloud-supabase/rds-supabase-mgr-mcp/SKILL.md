@@ -22,15 +22,15 @@ description: RDS Supabase 应用全生命周期管理技能：从零创建一个
 
 **第零步：确认 KooCLI 可用**——安全组工具内部依赖它（VPC/AZ/规格查询等云资源协同也走它）。安装阶段已探测安装（INSTALL.md 第四节），此处只复核：`hcloud version` 能出版本号即通过——失败按 INSTALL.md 第四节处置（含首跑隐私协议）；CodeArts 沙箱模式会拦截 KooCLI，先关沙箱或沙箱外安装。**分工原则：安全组操作优先用 MCP 工具（已封装好），只有 0.0.0.0/0 全网入方向等工具拒绝的场景才兜底用 KooCLI 原生命令。**
 
-**第一步：拿到五项环境信息**
+**第一步：拿到三项环境信息**
 
 | 项 | 怎么拿 | 拿不到怎么办 |
 |---|---|---|
 | AK/SK（访问密钥） | 项目配置或用户输入；带 SecurityToken 的是临时密钥，标记下来（影响存储对接） | 让用户提供 |
 | Region（区域） | 用户提供或从项目配置读取 | 让用户从区域列表选 |
-| Project_ID | 一次性调用 `diagnostics discover`（CLI），自动解析并给出建议配置 | 让用户从控制台"我的凭证"查 |
-| RDS 端点 | 按 Region 推导 `https://rds.<region>.myhuaweicloud.com`，discover 可一并验证 | 用户输入后复测 |
 | OBS 端点 | 按 Region 推导 `obs.<region>.myhuaweicloud.com`，DNS + HTTP 探测验证 | 用户输入后复测 |
+
+Project_ID 与 RDS 端点**都不需要用户提供**：RDS 端点按 Region 自动推导；Project_ID 由服务端经 IAM 按区域自动发现（AK/SK 需项目列表权限），仅子项目账号才要用户显式提供。可用 `diagnostics discover`（CLI）一并核验。
 
 环境变量名必须是：`HUAWEICLOUD_ACCESS_KEY`、`HUAWEICLOUD_SECRET_KEY`（不是 SECRET_ACCESS_KEY 之类的变体）；带 SecurityToken 的是临时密钥，标记下来（影响存储对接）。凭据走哪种传输模式在第二步安装时定——模式选错，所有调用都会失败。
 
@@ -58,7 +58,7 @@ https://github.com/huaweicloud/rds-supabase-fullstack
 凭据模式**二选一**（选错=每次调用都报 MCP_PERMISSION_DENIED）：
 - **AK/SK（含临时密钥）**：必须设 `SUPABASE_TRANSPORT=sdk_core`。只填 AK/SK 不设 sdk_core，服务端按 REST 模式启动并完全忽略 AK/SK
 - **服务 Token**：默认 REST 模式，注入 `HUAWEICLOUD_AUTH_TOKEN`
-- 两种模式共同必填：`SUPABASE_RDS_ENDPOINT` + `HUAWEICLOUD_PROJECT_ID`
+- 共同必填只有 `HUAWEICLOUD_REGION`：端点按区域推导、项目经 IAM 自动发现（子项目账号例外，须显式配 `HUAWEICLOUD_PROJECT_ID`）
 
 红线：写入后核对配置文件在项目根之内、已列入项目 `.gitignore`、未触碰任何用户级/全局位置；首次接入保持只读（`HUAWEICLOUD_MCP_READ_ONLY=true`、`SUPABASE_ENABLE_WRITES=false`），验证通过再按需放开。uvx 拉取不通走 ZIP 逃生通道（安装手册第六节）——**任何情况下都不去 PyPI/npm/第三方源找包**。
 
@@ -313,7 +313,7 @@ Key 值**永远不会出现在对话里**——这是红线，用户要也是本
 | 建 OBS 桶 | `hcloud obs mb obs://<桶名> -location=<region> -acl=private`（多 AZ 加 -multiAZ） |
 | 加全网入方向安全组规则（0.0.0.0/0） | `hcloud VPC` 安全组规则命令（先 --help 核实；仅用户明确确认后执行——MCP 工具按设计不放行全网规则，出方向规则已由 MCP 工具支持） |
 
-**环境变量**：凭据两模式（AK/SK：`HUAWEICLOUD_ACCESS_KEY/SECRET_KEY/SECURITY_TOKEN` + `SUPABASE_TRANSPORT=sdk_core`；Token：`HUAWEICLOUD_AUTH_TOKEN`）、`HUAWEICLOUD_PROJECT_ID`、`HUAWEICLOUD_REGION`（安全组工具的 KooCLI 通道用；缺省时从 `SUPABASE_RDS_ENDPOINT` 域名推导）、`SUPABASE_RDS_ENDPOINT`、`SUPABASE_REQUESTS_FILE`（请求文件路径）、`SUPABASE_STATE_FILE`（本地记录库路径）、`SUPABASE_ENABLE_WRITES`（写开关）、`HUAWEICLOUD_MCP_READ_ONLY`（只读拦截）。完整清单见[安装手册](references/install.md)。
+**环境变量**：凭据两模式（AK/SK：`HUAWEICLOUD_ACCESS_KEY/SECRET_KEY/SECURITY_TOKEN` + `SUPABASE_TRANSPORT=sdk_core`；Token：`HUAWEICLOUD_AUTH_TOKEN`）、`HUAWEICLOUD_REGION`（核心变量：驱动端点推导、项目 IAM 发现与安全组工具）、`HUAWEICLOUD_PROJECT_ID`（可选覆盖，子项目账号必配）、`SUPABASE_RDS_ENDPOINT`（可选覆盖）、`SUPABASE_REQUESTS_FILE`（请求文件路径）、`SUPABASE_STATE_FILE`（本地记录库路径）、`SUPABASE_ENABLE_WRITES`（写开关）、`HUAWEICLOUD_MCP_READ_ONLY`（只读拦截）。完整清单见[安装手册](references/install.md)。
 
 **安全组五工具（list/show/create/加规则/删规则）走 KooCLI 通道**（`hcloud`，安装见 INSTALL.md 第四节；RDS 源站不代理 VPC API）。凭据要求：AK/SK 模式直接复用环境变量；Token 模式下须在本机配置 hcloud profile（`hcloud configure init`）或改用 AK/SK，否则安全组工具报凭据缺失。KooCLI 按区域默认项目解析 project_id，子项目账号须在 hcloud profile 里配 `--cli-project-id`。
 

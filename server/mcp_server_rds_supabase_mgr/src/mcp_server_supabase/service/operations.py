@@ -43,6 +43,11 @@ class Operations:
         return ROOT + "/" + segment(application_id) + "/supabase"
 
     def intent_digest(self, method, path, body):
+        if not self.client.project:
+            # Preview happens before any request: resolve the project (explicit env or
+            # IAM discovery) so the digest binds the same identity the request will sign.
+            from mcp_server_supabase.client.rest import ensure_project
+            self.client.project = ensure_project(self.client.project)
         return fingerprint({"endpoint":self.client.endpoint,"project":self.client.project,
                             "credential":fingerprint(self.client.token if self.client.token is not None else os.getenv("HUAWEICLOUD_AUTH_TOKEN", "")),
                             "method":method,"path":path,"body":body})

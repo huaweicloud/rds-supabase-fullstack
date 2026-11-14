@@ -43,8 +43,6 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
         "mcp-huaweicloud-rds-supabase-mgr"
       ],
       "env": {
-        "SUPABASE_RDS_ENDPOINT": "<原生 RDS HTTPS 端点>",
-        "HUAWEICLOUD_PROJECT_ID": "<项目 ID>",
         "HUAWEICLOUD_AUTH_TOKEN": "<服务 Token>",
         "HUAWEICLOUD_MCP_READ_ONLY": "true",
         "SUPABASE_ENABLE_WRITES": "false"
@@ -268,7 +266,7 @@ uv run python -m mcp_server_supabase.diagnostics readonly --allow-cloud-read
 | 变量 | 必填 | 说明 | 默认值 |
 |---|---|---|---|
 | `SUPABASE_RDS_ENDPOINT` | 否 | 原生 RDS HTTPS 服务入口（不含路径/查询/用户信息；非 Console 或 /rest 代理）。缺省时由 `HUAWEICLOUD_REGION` 推导标准区域入口 `https://rds.<region>.myhuaweicloud.com`；也可由 `diagnostics discover` 从凭据推导生成 | 按区域推导 |
-| `HUAWEICLOUD_PROJECT_ID` | 是 | 目标项目 ID（与局点一致） | - |
+| `HUAWEICLOUD_PROJECT_ID` | 否 | 目标项目 ID；缺省时通过 IAM 按 `HUAWEICLOUD_REGION` 自动发现（需 AK/SK 具备项目列表权限；子项目账号请显式配置） | IAM 发现 |
 | `HUAWEICLOUD_AUTH_TOKEN` | REST 模式必填 | 外部预置的服务 Token，每次请求读取 | - |
 | `SUPABASE_TRANSPORT` | 否 | 设为 `sdk_core` 启用华为 SDK Core 签名模式 | REST token |
 | `HUAWEICLOUD_ACCESS_KEY` | sdk_core 模式必填 | 账号 AK | - |

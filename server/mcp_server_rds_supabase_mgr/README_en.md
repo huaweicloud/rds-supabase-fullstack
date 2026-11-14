@@ -49,8 +49,6 @@ Generic stdio client configuration (token mode; AK/SK mode see
         "mcp-huaweicloud-rds-supabase-mgr"
       ],
       "env": {
-        "SUPABASE_RDS_ENDPOINT": "<native RDS HTTPS endpoint>",
-        "HUAWEICLOUD_PROJECT_ID": "<project ID>",
         "HUAWEICLOUD_AUTH_TOKEN": "<service token>",
         "HUAWEICLOUD_MCP_READ_ONLY": "true",
         "SUPABASE_ENABLE_WRITES": "false"
@@ -326,7 +324,7 @@ tool parameters.
 | Variable | Required | Description | Default |
 |---|---|---|---|
 | `SUPABASE_RDS_ENDPOINT` | no | Native RDS HTTPS origin (no path/query/userinfo; not the Console or a /rest proxy). When absent, derived from `HUAWEICLOUD_REGION` as `https://rds.<region>.myhuaweicloud.com`; also derivable via `diagnostics discover` | derived per region |
-| `HUAWEICLOUD_PROJECT_ID` | yes | Target project ID (region-consistent) | - |
+| `HUAWEICLOUD_PROJECT_ID` | no | Target project ID; discovered via IAM from `HUAWEICLOUD_REGION` when absent (AK/SK with project-list permission required; sub-project accounts should set it explicitly) | IAM discovery |
 | `HUAWEICLOUD_AUTH_TOKEN` | REST mode | Pre-provisioned service token, read per request | - |
 | `SUPABASE_TRANSPORT` | no | Set `sdk_core` to enable Huawei SDK Core signing | REST token |
 | `HUAWEICLOUD_ACCESS_KEY` | sdk_core mode | Account AK | - |

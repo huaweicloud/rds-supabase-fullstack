@@ -1,5 +1,6 @@
 import unittest
 from huaweicloud_mcp_core.errors import McpToolError
+from mcp_server_supabase.service.instance_catalog import InstanceCatalog, NetworkDiscovery
 
 
 class FakeKoocli:
@@ -248,3 +249,89 @@ class InstanceCatalogTests(unittest.IsolatedAsyncioTestCase):
 
 if __name__=='__main__':
     unittest.main()
+
+
+class NetworkDiscoveryTests(unittest.IsolatedAsyncioTestCase):
+    def make(self, pages):
+        fake = FakeKoocli()
+        for page in pages:
+            fake.push(page)
+        return NetworkDiscovery(fake), fake
+
+    def vpc(self, vid, name='vpc'):
+        return {'id': vid, 'name': name, 'cidr': '192.168.0.0/16'}
+
+    def subnet(self, sid, free, vpc_id, status='ACTIVE', az='cn-east-3a'):
+        row = {'id': sid, 'name': 'subnet-' + sid, 'vpc_id': vpc_id, 'cidr': '192.168.%s.0/24' % sid,
+               'status': status, 'availability_zone': az}
+        if free is not None:
+            row['available_ip_address_count'] = free
+        return row
+
+    async def test_prefers_two_free_ips(self):
+        ops, fake = self.make([
+            {'vpcs': [self.vpc('v1')]},
+            {'subnets': [self.subnet('s1', 251, 'v1')]},
+        ])
+        result = await ops.discover()
+        self.assertEqual(result['subnet_id'], 's1')
+        self.assertEqual(result['preference'], 'sufficient')
+        self.assertEqual(result['basic_config_usage'], {'vpc_id': 'v1', 'subnet_id': 's1'})
+        self.assertEqual(result['available_ip_count'], 251)
+        self.assertEqual(fake.calls[1], ('VPC', 'ListSubnets', {'limit': 100, 'vpc_id': 'v1'}))
+
+    async def test_falls_back_to_one_free_ip(self):
+        ops, _ = self.make([
+            {'vpcs': [self.vpc('v1')]},
+            {'subnets': [self.subnet('s1', 1, 'v1')]},
+        ])
+        result = await ops.discover()
+        self.assertEqual(result['preference'], 'fallback')
+        self.assertEqual(result['available_ip_count'], 1)
+
+    async def test_walks_vpcs_until_match(self):
+        ops, _ = self.make([
+            {'vpcs': [self.vpc('v1', 'empty'), self.vpc('v2', 'good')]},
+            {'subnets': [self.subnet('s0', 0, 'v1')]},          # v1: exhausted
+            {'subnets': [self.subnet('s1', 5, 'v2')]},            # v2: sufficient
+        ])
+        result = await ops.discover()
+        self.assertEqual(result['vpc_id'], 'v2')
+        self.assertEqual(result['subnet_id'], 's1')
+        self.assertEqual(len(result['inspected_vpcs']), 1)  # v1 recorded, v2 matched
+
+    async def test_skips_non_active_and_unknown_availability(self):
+        ops, _ = self.make([
+            {'vpcs': [self.vpc('v1')]},
+            {'subnets': [self.subnet('s1', 251, 'v1', status='ERROR'), self.subnet('s2', None, 'v1')]},
+        ])
+        result = await ops.discover()
+        self.assertEqual(result['subnet_id'], 's2')          # unknown availability used as fallback
+        self.assertEqual(result['preference'], 'fallback')
+
+    async def test_subnet_error_records_and_continues(self):
+        from huaweicloud_mcp_core.errors import McpToolError as Err
+        ops, _ = self.make([
+            {'vpcs': [self.vpc('v1'), self.vpc('v2')]},
+            Err('MCP_CLI_ERROR', 'boom'),                      # v1 subnet query fails
+            {'subnets': [self.subnet('s2', 3, 'v2')]},
+        ])
+        result = await ops.discover()
+        self.assertEqual(result['vpc_id'], 'v2')
+        self.assertTrue(any('boom' in str(item.get('error', '')) for item in result['inspected_vpcs']))
+
+    async def test_no_match_raises_not_found(self):
+        from huaweicloud_mcp_core.errors import McpToolError as Err
+        ops, _ = self.make([
+            {'vpcs': [self.vpc('v1')]},
+            {'subnets': [self.subnet('s1', 0, 'v1')]},
+        ])
+        with self.assertRaises(Err) as ctx:
+            await ops.discover()
+        self.assertEqual(ctx.exception.code, 'MCP_NOT_FOUND')
+
+    async def test_invalid_thresholds_rejected(self):
+        ops, _ = self.make([])
+        for bad in ((0, 1), (255, 1), (2, 3), ('2', 1)):
+            with self.assertRaises(Exception):
+                await ops.discover(*bad)

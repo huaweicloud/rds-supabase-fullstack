@@ -184,3 +184,69 @@ class InstanceCatalog:
             raise McpToolError('MCP_SDK_ERROR','Catalog response is missing the '+key+' list',
                                hint='Verify the RDS response contract with `hcloud RDS <Operation> --help` before continuing.')
         return rows
+
+
+class NetworkDiscovery:
+    """Auto-discover a VPC and subnet with sufficient free IPs for the create-with-new-instance scenario.
+
+    The Supabase creation request carries vpc_id/subnet_id in basic_config; this picker
+    walks the VPC inventory and each VPC's subnets through KooCLI, preferring subnets
+    with at least two free IPv4 addresses (the managed instance reserves more than one),
+    falling back to at least one, and stops at the first match.
+    """
+
+    def __init__(self,koocli=None):
+        self.koocli=koocli or KoocliClient()
+
+    async def discover(self,minimum_ips=2,fallback_minimum=1):
+        if type(minimum_ips) is not int or not 1<=minimum_ips<=254 or type(fallback_minimum) is not int or not 1<=fallback_minimum<=minimum_ips:
+            raise McpToolError('MCP_INVALID_ARGS','minimum_ips must be an integer 1-254 and fallback_minimum must not exceed it')
+        vpcs_data=await self.koocli.call('VPC','ListVpcs/v3',{'limit':100})
+        vpcs=vpcs_data.get('vpcs') if isinstance(vpcs_data,dict) else None
+        if not isinstance(vpcs,list):
+            raise McpToolError('MCP_SDK_ERROR','VPC inventory unreadable')
+        inspected=[]
+        for vpc in vpcs:
+            if not isinstance(vpc,dict) or not vpc.get('id'):continue
+            vpc_id=vpc['id']
+            try:
+                sub_data=await self.koocli.call('VPC','ListSubnets',{'limit':100,'vpc_id':vpc_id})
+            except McpToolError as error:
+                inspected.append({'vpc_id':vpc_id,'vpc_name':vpc.get('name'),'error':error.message})
+                continue
+            subnets=sub_data.get('subnets') if isinstance(sub_data,dict) else None
+            candidates=[]
+            fallback=None
+            for subnet in subnets if isinstance(subnets,list) else []:
+                if not isinstance(subnet,dict) or not subnet.get('id'):continue
+                if subnet.get('status') not in (None,'ACTIVE'):continue
+                free=subnet.get('available_ip_address_count')
+                free=free if type(free) is int else None
+                entry={'vpc_id':vpc_id,'vpc_name':vpc.get('name'),'vpc_cidr':vpc.get('cidr'),
+                       'subnet_id':subnet['id'],'subnet_name':subnet.get('name'),
+                       'subnet_cidr':subnet.get('cidr'),'availability_zone':subnet.get('availability_zone'),
+                       'available_ip_count':free}
+                if free is not None and free>=minimum_ips:
+                    candidates.append(entry)
+                elif free is not None and free>=fallback_minimum and fallback is None:
+                    fallback=entry
+                elif free is None:
+                    # Availability unknown: treat as fallback candidate only when nothing better is known.
+                    if fallback is None:fallback={**entry,'available_ip_count':None}
+            if candidates:
+                return self._result(candidates[0],minimum_ips,fallback_minimum,inspected,preference='sufficient')
+            if fallback is not None:
+                return self._result(fallback,minimum_ips,fallback_minimum,inspected,preference='fallback')
+            inspected.append({'vpc_id':vpc_id,'vpc_name':vpc.get('name'),'error':'no eligible subnet'})
+        raise McpToolError('MCP_NOT_FOUND',
+                           'No VPC/subnet with at least %d free IP addresses (%d as fallback) was found in this region'%(minimum_ips,fallback_minimum),
+                           hint='Create a subnet with free IPs first (console or KooCLI), then retry. The Supabase creation request requires vpc_id and subnet_id in basic_config.')
+
+    def _result(self,entry,minimum_ips,fallback_minimum,inspected,preference):
+        return {**entry,
+                'preference':preference,
+                'ip_requirement':{'preferred':minimum_ips,'fallback':fallback_minimum},
+                'basic_config_usage':{'vpc_id':entry['vpc_id'],'subnet_id':entry['subnet_id']},
+                'note':'Fill these values into the Supabase creation request basic_config (vpc_id, subnet_id). '
+                       'available_ip_count comes from the VPC service; a fallback pick means fewer free IPs than preferred - verify capacity before creating.',
+                'inspected_vpcs':inspected}

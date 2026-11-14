@@ -46,7 +46,8 @@ SKILL.md 是主文档；本文件是各场景的详细步骤、字段来源与�
 |---|---|
 | MCP 工具可查 | 应用规格与各规格支持的 AZ 列表（`list_supabase_flavors_with_azs`，需先有 AZ；返回的 AZ 信息兼作可用区选择依据）；路线 B 的数据库实例（`list_supabase_manageable_instances`）；安全组（可新建） |
 | 可查（优先 MCP 工具） | PG 引擎版本、数据库规格、磁盘类型、安全组（均有专用工具，内部走 KooCLI）；**新建实例场景可一次调 `discover_db_instance_create_options(mode)` 并发查全部依赖，返回逐字段推荐配置** |
-| KooCLI 可查（工具未覆盖，兜底） | 可用区（用 `list_supabase_flavors_with_azs` 的 AZ 信息或 ECS NovaListAvailabilityZones）、VPC/子网（含 IP 余量）、空闲 EIP |
+| KooCLI 可查（工具未覆盖，兜底） | 可用区（用 `list_supabase_flavors_with_azs` 的 AZ 信息或 ECS NovaListAvailabilityZones）、空闲 EIP |
+| 网络自动发现 | **`discover_available_network_for_create`**（一步锁定 IP 充足的 VPC+子网：优先 2 个空闲 IP、兜底 1 个；返回 vpc_id/subnet_id/subnet_cidr 直接填 basic_config；无可用时报 MCP_NOT_FOUND 并提示先建子网） |
 | 必须用户提供 | 应用名称、区域（环境里已有则免）、回调地址类 URL |
 | 本地请求文件（秘密） | 应用密码（本地生成）、路线 B 的 database_pwd、路线 A 的数据库密码、存储 AK/SK、OBS 桶名 |
 | 外部资源 | EIP（用户已有或 KooCLI 新购） |

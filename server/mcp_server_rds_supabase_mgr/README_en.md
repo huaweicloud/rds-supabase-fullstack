@@ -105,6 +105,8 @@ lifecycle, control plane).
   storage types — create-with-new-instance scenario
 - One-call discovery for the new-instance scenario: concurrent dependency
   queries with per-field recommended configuration
+- Network auto-discovery: walks VPCs and their subnets, locks a subnet
+  with sufficient free IPs, and yields the basic_config vpc_id/subnet_id
 - Database instance flavor query — create-with-new-instance scenario
   (via KooCLI)
 - Automatic dependency discovery: lists and detail configuration of
@@ -198,6 +200,7 @@ alias.
 | `list_db_instance_flavors_with_azs` | Query managed-instance flavors with per-AZ sale status | READ | [ListFlavors](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListFlavors) |
 | `list_db_instance_storage_types` | Query managed-instance storage types by engine version and deployment mode | READ | [ListStorageTypes](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListStorageTypes) |
 | `discover_db_instance_create_options` | One-call discovery for the new-instance scenario: engine versions, flavors, storage, VPC/subnet/security-group inventory, and per-field recommended configuration | READ | composite query (ListDatastores/ListFlavors/ListStorageTypes + VPC inventory) |
+| `discover_available_network_for_create` | Auto-discover a VPC and subnet with sufficient free IPs (prefer 2, fall back to 1), yielding the basic_config vpc_id/subnet_id directly | READ | [ListVpcs](https://console.huaweicloud.com/apiexplorer/#/openapi/VPC/doc?api=ListVpcs) + [ListSubnets](https://console.huaweicloud.com/apiexplorer/#/openapi/VPC/doc?api=ListSubnets) |
 | `create_supabase_application` | Create a Supabase application with a new or existing instance; each scenario returns its own job combination | DANGEROUS | [CreateSupabaseApplication](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=CreateSupabaseApplication) |
 | `delete_supabase_application` | Delete the application; on the user's choice also delete the managed database instance, two deletions with separate job ids | DANGEROUS | [DeleteSupabaseApplication](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=DeleteSupabaseApplication) |
 | `delete_supabase_managed_instance` | Delete the managed database instance - irreversible; verifies the managed binding and shared references layer by layer to prevent wrong deletion | DANGEROUS | [DeleteInstance](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=DeleteInstance) |

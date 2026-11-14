@@ -1,5 +1,5 @@
 from huaweicloud_mcp_core.security import ToolRisk, guard
-from mcp_server_supabase.service.instance_catalog import InstanceCatalog
+from mcp_server_supabase.service.instance_catalog import InstanceCatalog, NetworkDiscovery
 from mcp_server_supabase.service.operations import Operations
 
 
@@ -248,6 +248,20 @@ def register(server):
     async def list_db_instance_storage_types(version_name: str, ha_mode: str) -> dict:
         """Query storage types available for a managed PostgreSQL instance in the create-with-new-instance scenario, filtered by engine version and deployment mode (single/ha)."""
         return await catalog.list_storage_types(version_name, ha_mode)
+
+    @server.tool()
+    @guard(risk=ToolRisk.READ)
+    async def discover_available_network_for_create() -> dict:
+        """Auto-discover a VPC and an associated subnet with sufficient free IP addresses for the create-with-new-instance scenario.
+
+        Walks the VPC inventory and each VPC's subnets, preferring subnets with at least two
+        free IPv4 addresses and falling back to one, and stops at the first match. Returns the
+        VPC ID/name/CIDR and subnet ID/name/CIDR/availability zone with the free-IP count,
+        ready to fill into the Supabase creation request's basic_config (vpc_id, subnet_id).
+        Raises MCP_NOT_FOUND when no eligible subnet exists in the region.
+        """
+        network = NetworkDiscovery()
+        return await network.discover()
 
     @server.tool()
     @guard(risk=ToolRisk.READ)

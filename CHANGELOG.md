@@ -5,6 +5,13 @@ semantic versioning.
 
 ## [Unreleased]
 
+### Fixed
+
+- Skill `rds-supabase-mgr-mcp` INSTALL.md verification row claimed five
+  reference documents; the skill ships four (install/scenarios/
+  local-requests/acceptance). Caught by executing the documented install
+  flow live against a fresh project-level install.
+
 ### Changed
 
 - `mcp_server_rds_supabase_mgr` v0.4.0a15: the five security-group tools

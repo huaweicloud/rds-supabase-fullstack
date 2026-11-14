@@ -106,7 +106,7 @@ curl -sSL https://cn-north-4-hdn-koocli.obs.cn-north-4.myhuaweicloud.com/cli/lat
 
 ## 五、校验与完成报告
 
-- 校验：技能目录内含 `SKILL.md`、`README.md`、`INSTALL.md`、`references/` 五个参考文档、`scripts/skill-lint.py`；KooCLI `hcloud version` 可用（含隐私协议已处置）
+- 校验：技能目录内含 `SKILL.md`、`README.md`、`INSTALL.md`、`references/` 四个参考文档（安装手册/场景手册/本地请求与字段契约/验收手册）、`scripts/skill-lint.py`；KooCLI `hcloud version` 可用（含隐私协议已处置）
 - 向用户报告：安装位置（所选层级 + 完整路径，与交互选择一致）；KooCLI 状态（已装版本号 / 本次新装版本）；一句话触发语（如"帮我从零创建一个 RDS Supabase 应用"）；约定说明——MCP 与凭据不在安装阶段出现，首次使用时技能自动引导
 
 ## 六、更新与卸载

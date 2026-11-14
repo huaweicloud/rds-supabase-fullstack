@@ -177,6 +177,11 @@ class InstanceCatalogTests(unittest.IsolatedAsyncioTestCase):
                          ['availability_zone 必须与顶层一致（服务端强制校验）',
                           '数据库密码与应用密码同规则，可同值',
                           '本工具只服务新建实例场景；托管已有实例用 list_supabase_manageable_instances'])
+        plan=result['security_group_plan']
+        self.assertFalse(plan['ready'])
+        self.assertEqual(plan['ingress'],{'direction':'ingress','protocol':'tcp','port':5432,'source_cidr':None})
+        self.assertEqual(plan['egress'],{'direction':'egress','destination_cidr':'0.0.0.0/0','note':'默认放行，无需额外规则'})
+        self.assertIn('discover_available_network_for_create',plan['method'])
 
     async def test_discover_link_options_ha_mode_shapes_storage_query(self):
         self._push_sources()
@@ -200,8 +205,10 @@ class InstanceCatalogTests(unittest.IsolatedAsyncioTestCase):
     async def test_discover_link_options_has_no_network_or_group_sections(self):
         self._push_sources()
         result=await self.catalog.discover_link_create_options('Single')
-        # Network and security groups are out of scope: no probe, no section, guidance only.
+        # Network stays out (no probe, no section); groups are not discovered from the cloud -
+        # the plan stays a template until the caller passes the network selection.
         self.assertNotIn('network',result)
+        self.assertFalse(result['security_group_plan']['ready'])
         self.assertEqual(set(result['discovery_status']),{'engine_versions','flavors','storage_types'})
         sg=result['managed_instance_field_options']['security_group_id']
         self.assertEqual(sg['values'],[])
@@ -209,6 +216,42 @@ class InstanceCatalogTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn('discover_available_network_for_create',result['top_level_reminder'][-1])
         self.assertNotIn('network',result)
         self.assertEqual(result['managed_instance_field_options']['flavor_ref']['recommended'],'rds.pg.n1.medium.2')
+
+    async def test_discover_link_options_generates_group_plan_from_network(self):
+        self._push_sources()
+        result=await self.catalog.discover_link_create_options('Single',
+            {'scenario':'discovered','subnet_cidr':'10.0.1.0/24'})
+        plan=result['security_group_plan']
+        self.assertTrue(plan['ready'])
+        self.assertEqual(plan['scenario'],'discovered')
+        self.assertEqual(plan['ingress'],{'direction':'ingress','protocol':'tcp','port':5432,'source_cidr':'10.0.1.0/24'})
+        self.assertEqual(plan['egress']['destination_cidr'],'0.0.0.0/0')
+        self.assertTrue(any('add_supabase_security_group_rule' in step and '10.0.1.0/24' in step
+                            for step in plan['apply']))
+        self.assertNotIn('precondition',plan)
+        self.assertEqual(len(self.koocli.calls),3)  # plan generation adds no cloud call
+
+    async def test_discover_link_options_default_recommendation_adds_precondition(self):
+        self._push_sources()
+        result=await self.catalog.discover_link_create_options('Single',
+            {'scenario':'default_recommendation','subnet_cidr':'192.168.0.0/24'})
+        plan=result['security_group_plan']
+        self.assertTrue(plan['ready'])
+        self.assertEqual(plan['ingress']['source_cidr'],'192.168.0.0/24')
+        self.assertIn('default_create',plan['precondition'])
+
+    async def test_discover_link_options_rejects_invalid_network_before_any_call(self):
+        for bad in ({'scenario':'other','subnet_cidr':'10.0.0.0/24'},
+                    {'scenario':'discovered'},
+                    {'scenario':'discovered','subnet_cidr':'10.0.0.1/24'},
+                    {'scenario':'discovered','subnet_cidr':'0.0.0.0/0'},
+                    {'scenario':'discovered','subnet_cidr':'10.0.0.0/24','extra':1},
+                    'vpc-1',
+                    ['x']):
+            with self.assertRaises(McpToolError) as ctx:
+                await self.catalog.discover_link_create_options('Single',bad)
+            self.assertEqual(ctx.exception.code,'MCP_INVALID_ARGS')
+        self.assertEqual(self.koocli.calls,[])
 
     async def test_discover_link_options_rejects_invalid_mode_before_any_call(self):
         for bad in ('single','ha','',None,'Cluster'):
@@ -395,6 +438,12 @@ class BasicOptionsTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(any('8~32' in r for r in password['requirements']))
         self.assertTrue(any('三种' in r for r in password['requirements']))
         self.assertEqual(result['probe_status']['existing_application_names'], 'ok')
+        strategy=result['security_group_strategy']
+        self.assertFalse(strategy['determined'])
+        self.assertEqual(strategy['application_group']['ingress']['port'],8443)
+        self.assertIn('5432',strategy['application_group']['egress']['port'])
+        self.assertIn('discover_db_instance_create_options',strategy['database_group']['strategy'])
+        self.assertEqual(len(strategy['apply_method']),4)
 
     async def test_ha_probe_rejection_means_single_only(self):
         from huaweicloud_mcp_core.errors import McpToolError as Err

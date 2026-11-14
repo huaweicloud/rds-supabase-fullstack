@@ -7,6 +7,32 @@ semantic versioning.
 
 ### Changed
 
+- `mcp_server_rds_supabase_mgr` v0.4.0a37: both discovery tools now carry
+  the security-group knowledge their scenarios need, closing the gap left
+  when group discovery was removed in a35.
+  `discover_db_instance_create_options` gains an optional `network` input
+  ({"scenario": "discovered"|"default_recommendation", "subnet_cidr":
+  "..."}, taken from discover_available_network_for_create or its default
+  recommendation). With it, the dedicated database group's rules are
+  generated directly: 5432 ingress from that subnet (moves with the port
+  field), egress left at the default allow-all, plus the apply steps and -
+  for the default-recommendation scenario - the precondition to run the
+  default_create block first. Without it, the response keeps the rule
+  template and the method: the ingress source must be the selected
+  subnet CIDR. Groups are still never discovered from the cloud.
+  `discover_supabase_create_basic_options` gains a guidance-only
+  security_group_strategy: at this stage the instance does not exist yet,
+  so the subnet CIDR and the instance port cannot be pinned down. The
+  strategy states the application group's shape (8443 ingress from the
+  user CIDR; egress opening the managed instance's port, default 5432)
+  and points the database group to the instance tool's generated plan.
+  Verified live in cn-east-3 across all scenarios: template, discovered
+  (10.0.1.0/24), default recommendation (192.168.0.0/24 with
+  precondition), and invalid inputs rejected before any cloud call.
+  Skill v0.9.8; tool count unchanged (38).
+
+### Changed
+
 - `mcp_server_rds_supabase_mgr` v0.4.0a36: the name and password fields
   of `discover_supabase_create_basic_options` now carry their full
   contracts instead of one-line notes. name gains the complete rules

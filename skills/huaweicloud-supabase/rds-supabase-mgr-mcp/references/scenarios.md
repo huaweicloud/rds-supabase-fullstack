@@ -45,7 +45,7 @@ SKILL.md 是主文档；本文件是各场景的详细步骤、字段来源与�
 | 来源 | 字段 |
 |---|---|
 | MCP 工具可查 | 应用规格与各规格支持的 AZ 列表（`list_supabase_flavors_with_azs`，需先有 AZ；返回的 AZ 信息兼作可用区选择依据）；路线 B 的数据库实例（`list_supabase_manageable_instances`）；安全组（可新建） |
-| 可查（优先 MCP 工具） | **应用基础要素一次调 `discover_supabase_create_basic_options(az_code)`（版本/Single-Ha 探测/可售规格）**；PG 引擎版本、数据库规格、磁盘类型、安全组（均有专用工具，内部走 KooCLI）；**新建实例场景可一次调 `discover_db_instance_create_options(mode)` 并发查引擎版本/规格/磁盘并返回逐字段推荐配置（网络与安全组不在其范围：网络用 `discover_available_network_for_create`，安全组在网络就位后新建专用组再配 5432 入方向）** |
+| 可查（优先 MCP 工具） | **应用基础要素一次调 `discover_supabase_create_basic_options(az_code)`（版本/Single-Ha 探测/可售规格，附安全组推荐策略：应用组 8443 入/实例端口 5432 出，数据库组由实例工具生成）**；PG 引擎版本、数据库规格、磁盘类型（均有专用工具，内部走 KooCLI）；**新建实例场景可一次调 `discover_db_instance_create_options(mode)` 并发查引擎版本/规格/磁盘并返回逐字段推荐配置；网络用 `discover_available_network_for_create` 选定（无 VPC 时采纳其默认推荐）后，把子网网段经 `network` 参数传入，直接生成专用数据库组规则（5432 入方向，出方向默认放行）** |
 | KooCLI 可查（工具未覆盖，兜底） | 可用区（用 `list_supabase_flavors_with_azs` 的 AZ 信息或 ECS NovaListAvailabilityZones）、空闲 EIP |
 | 网络自动发现 | **`discover_available_network_for_create`**（一步锁定 IP 充足的 VPC+子网：优先 2 个空闲 IP、兜底 1 个；返回 vpc_id/subnet_id/subnet_cidr 直接填 basic_config；区域无可用网络时不报错，返回默认推荐 default_vpc 192.168.0.0/16 + default_subnet 192.168.0.0/24（建在实例所在 AZ、网关 192.168.0.1）——按 default_create 建好后再跑一次发现取真实 ID） |
 | 必须用户提供 | 应用名称、区域（环境里已有则免）、回调地址类 URL |

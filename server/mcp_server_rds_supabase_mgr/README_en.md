@@ -4,40 +4,87 @@
 
 ## Version
 
-0.3.8a2 (development prerelease; full six-scenario production acceptance is
-not yet complete)
+0.4.0a17 (development prerelease); Python `3.10+`; MCP Python SDK `2.x`;
+30 tools.
 
 ## Overview
 
-MCP Server for the **fully-managed lifecycle administration** of Huawei Cloud
-RDS Supabase (self-hosted Supabase on RDS PostgreSQL) — the control plane:
-application creation, configuration, secure access, and deletion. It operates
-Supabase applications through the native RDS management API. SQL and data
-operations belong to a separate data-plane capability, see
-`server/mcp_server_rds_supabase`; the two servers are delivered independently
-and do not replace each other.
+This server wraps the Huawei Cloud RDS Supabase (self-hosted Supabase on RDS
+PostgreSQL) management API as MCP tools, covering application creation,
+configuration, public access provisioning, change, and deletion. It is the
+control plane: Supabase applications are operated through the native RDS
+management API. SQL and data operations belong to a separate data-plane
+service, see `server/mcp_server_rds_supabase`; the two servers are delivered
+independently and do not replace each other.
+
+Security-group operations execute through the KooCLI channel
+(see [Security groups and the KooCLI channel](#security-groups-and-the-koocli-channel)).
 
 Companion skill: `skills/huaweicloud-supabase/rds-supabase-mgr-mcp` (intent
 understanding, information completion, impact presentation, and confirmation
-guidance). See the [user guide](docs/USER_GUIDE.md) for the full workflow.
+guidance).
+
+## Quick start
+
+Prepare Python 3.10+, [uv](https://docs.astral.sh/uv/), and Huawei Cloud
+credentials (AK/SK or a service token). Stay read-only on first contact:
+
+```bash
+export HUAWEICLOUD_MCP_READ_ONLY="true"
+uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr" \
+  mcp-huaweicloud-rds-supabase-mgr
+```
+
+Generic stdio client configuration (token mode; AK/SK mode see
+[examples/mcp-sdk.example.json](examples/mcp-sdk.example.json)):
+
+```json
+{
+  "mcpServers": {
+    "rds-supabase-mgr-mcp": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr",
+        "mcp-huaweicloud-rds-supabase-mgr"
+      ],
+      "env": {
+        "SUPABASE_RDS_ENDPOINT": "<native RDS HTTPS endpoint>",
+        "HUAWEICLOUD_PROJECT_ID": "<project ID>",
+        "HUAWEICLOUD_AUTH_TOKEN": "<service token>",
+        "HUAWEICLOUD_MCP_READ_ONLY": "true",
+        "SUPABASE_ENABLE_WRITES": "false"
+      }
+    }
+  }
+}
+```
+
+Once connected, call `list_supabase_applications` to verify the endpoint,
+permissions, and project. Full installation, credential modes, and the
+security-group prerequisites are covered below.
 
 ## Category
 
-Database / RDS Supabase fully-managed lifecycle (control plane)
+Database / cloud resource management / operations automation (RDS Supabase
+lifecycle, control plane).
 
 ## Features
 
 **Application query**
 
-- List and inspect Supabase applications in the current project
-- List the available capabilities of the RDS Supabase management MCP
-  (offline declaration; no cloud probing)
+- List and inspect Supabase applications in the current project (public IP,
+  port, flavor, mode, status)
+- List the available management capabilities (offline declaration; no cloud
+  probing)
 
 **Application creation**
 
 - Discover creation candidates: manageable PG instances, Supabase flavors
-- Single-mode creation submission (existing PG or on-demand new PG) with
-  two-phase confirmation
+- Intent-driven creation planning (staged preparation plan; no execution)
+- Single/Ha creation submission (existing PG or on-demand new PG) with
+  two-phase confirmation; pay-per-use or yearly/monthly (yearly/monthly
+  returns an order that must be paid in the console)
 
 **Application deletion**
 
@@ -51,88 +98,124 @@ Database / RDS Supabase fully-managed lifecycle (control plane)
 - Application password change (via protected local request references; no
   plaintext collection)
 
-**Security groups (shared native RDS origin)**
+**Security groups (KooCLI channel)**
 
-- Query security groups and rules, create groups, add/remove TCP port rules
+- Query groups and rules, create groups, add/remove single port rules
+  (ingress/egress, TCP/UDP), delete whole groups
 
 **ApiKey**
 
 - Metadata query (six-field whitelist, no plaintext)
-- Reset (with prominent downstream-invalidation warning)
-- Deliver a designated key to a protected local file (never echoed in chat)
+- Reset (with a strong downstream-invalidation warning)
+- Deliver a chosen key to a protected local file (never echoed in chat)
 
 **Business configuration**
 
-- Sign-up/anonymous flags, Auth providers (GitHub/SMTP), URLs and
+- Sign-up/anonymous toggles, Auth providers (GitHub/SMTP), URLs and
   confirmation mail templates, OBS storage configuration
 
-**Jobs and execution ledger**
+**Jobs and the local execution record**
 
-- Job status query and bounded read-only observation
+- Job status query and bounded read-only watching
 - Local plan inspection/cancellation/reconciliation; unknown outcomes are
-  persisted and never replayed
+  durably recorded and never replayed
 
-**Common capabilities**
+**Cross-cutting**
 
-- Two-phase confirmation (confirm + plan_id bound to parameters, target, and
-  credential digest)
-- Cloud-write opt-in off by default; shared-core read-only interception,
-  protection lists, structured audit, and output masking
+- Two-phase confirmation (confirm + plan_id binding parameters, target, and
+  a credential digest)
+- Cloud-write switch off by default; shared-core read-only interception,
+  protection lists, structured audit, and output redaction
 
 ## Tool list
 
-| Tool | Scenario | Risk | Notes |
-|---|---|---|---|
-| `get_supabase_capabilities` | List the available capabilities of the RDS Supabase management MCP | READ | Offline declaration, no cloud probing |
-| `list_supabase_applications` | Paginated list of all RDS Supabase applications (sortable, filterable) | READ | type fixed to supabase; returns total_count, mandatory fields (name/id/public IP/port/flavor/mode/created time; nullable remark) and bounded nested passthrough |
-| `show_supabase_application` | Query application details (status/SSL/IP; assembles the access address) | READ | Status is not proof of completion; direct_eip normalized to public_ip, RFC 3339 timestamps, bounded nested passthrough |
-| `list_supabase_api_keys` | API key list (id records for service_role/anon/publishable/secret; no values) | READ | Whitelisted output, no plaintext; RFC 3339 timestamps; values only via deliver |
-| `reset_supabase_api_key` | Reset ApiKey (confirm required) | DANGEROUS | Pre-submit exact-ID uniqueness check |
-| `deliver_supabase_api_key` | Deliver designated key to local file (confirm required) | DANGEROUS | Via delivery_ref alias |
-| `show_supabase_auth_config` | Query the Auth configuration (registration, access control, email/GitHub providers, email templates) | READ | Secrets excluded at any depth; empty string = not configured; baseline for update/reconcile |
-| `update_supabase_auth_flags` | Sign-up/anonymous flags (confirm required) | WRITE | Only explicitly provided booleans are updated |
-| `update_supabase_auth_config` | Auth providers/URL/templates (confirm required) | WRITE | Via local request_ref |
-| `update_supabase_storage` | OBS storage configuration (confirm required) | WRITE | Full credentials required on first enablement |
-| `plan_supabase_creation` | Creation planning (intent-driven) | READ | phase-structured plan by route/storage/public-access/SSL/login intents; planning_only, not an execution plan |
-| `list_supabase_flavors` | Supabase flavor candidates | READ | creation_ready=false, not a quote |
-| `list_supabase_manageable_instances` | Manageable PG query | READ | Same |
-| `create_supabase_application` | Single creation submission (confirm required) | DANGEROUS | Via local request_ref; Single/Ha; postPaid or prepaid (1-9 months/1-3 years, returns a console order); password 8-32 chars with 3 character classes; field-level and backend error pass-through |
-| `delete_supabase_application` | Delete application, retain PG (confirm required) | DANGEROUS | No PG cascade deletion |
-| `change_supabase_ssl` | SSL toggle (confirm required) | WRITE | Enable needs cert ID; disable passes null |
-| `plan_supabase_ssl` | SSL toggle planning | READ | Certificate steps and gaps, no submission |
-| `change_supabase_eip` | EIP bind/unbind (confirm required) | WRITE | Bind needs ID + IPv4; unbind must omit binding args |
-| `change_supabase_application_password` | Application password change (confirm required) | DANGEROUS | Via local request_ref, no plaintext |
-| `list_supabase_security_groups` | List security groups | READ | Shared native RDS origin |
-| `show_supabase_security_group` | Security group detail | READ | |
-| `create_supabase_security_group` | Create security group (confirm required) | WRITE | Creating a group does not make the app reachable |
-| `add_supabase_security_group_rule` | Add inbound rule (confirm required) | DANGEROUS | TCP port specified (default 8443) |
-| `delete_supabase_security_group_rule` | Delete rule (confirm required) | DANGEROUS | |
-| `show_supabase_job` | Job status query | READ | completion_verified=false |
-| `wait_supabase_job` | Bounded read-only observation | READ | Default 3, at most 10 attempts |
-| `inspect_supabase_plan` | Local plan inspection | READ | No cloud calls |
-| `cancel_supabase_plan` | Cancel an unsubmitted plan | WRITE | Local ledger only, idempotent |
-| `reconcile_supabase_auth_plan` | Auth plan reconciliation | WRITE | Cloud read + local write; Auth flags only |
+| Tool | Scenario | Risk |
+|---|---|---|
+| `get_supabase_capabilities` | List management capabilities | READ |
+| `list_supabase_applications` | List applications (pagination, filter, sort) | READ |
+| `show_supabase_application` | Application detail (status/SSL/IP) | READ |
+| `list_supabase_api_keys` | API Key metadata (no values) | READ |
+| `reset_supabase_api_key` | Reset an ApiKey (confirm) | DANGEROUS |
+| `deliver_supabase_api_key` | Deliver a key to a local file (confirm) | DANGEROUS |
+| `show_supabase_auth_config` | Query Auth configuration | READ |
+| `update_supabase_auth_flags` | Sign-up/anonymous toggles (confirm) | WRITE |
+| `update_supabase_auth_config` | Auth providers/URLs/templates (confirm, via request_ref) | WRITE |
+| `update_supabase_storage` | OBS storage configuration (confirm) | WRITE |
+| `plan_supabase_creation` | Creation planning (intent-driven, no execution) | READ |
+| `list_supabase_flavors` | Supabase flavor candidates | READ |
+| `list_supabase_manageable_instances` | Manageable PG instances | READ |
+| `create_supabase_application` | Creation submission (confirm, via request_ref) | DANGEROUS |
+| `delete_supabase_application` | Delete application, keep PG (confirm) | DANGEROUS |
+| `change_supabase_ssl` | SSL toggle (confirm) | WRITE |
+| `plan_supabase_ssl` | SSL switch planning | READ |
+| `change_supabase_eip` | EIP bind/unbind (confirm) | WRITE |
+| `change_supabase_application_password` | Application password change (confirm, via request_ref) | DANGEROUS |
+| `list_supabase_security_groups` | List security groups | READ |
+| `show_supabase_security_group` | Group detail with rules | READ |
+| `create_supabase_security_group` | Create group (confirm) | WRITE |
+| `add_supabase_security_group_rule` | Add one rule (confirm; ingress/egress, TCP/UDP) | DANGEROUS |
+| `delete_supabase_security_group_rule` | Remove one rule (confirm, ownership-checked) | DANGEROUS |
+| `delete_supabase_security_group` | Delete whole group (confirm, reference-checked) | DANGEROUS |
+| `show_supabase_job` | Job status query | READ |
+| `wait_supabase_job` | Bounded read-only watching | READ |
+| `inspect_supabase_plan` | Local plan inspection | READ |
+| `cancel_supabase_plan` | Cancel an unsubmitted plan | WRITE |
+| `reconcile_supabase_auth_plan` | Auth plan reconciliation | WRITE |
+
+READ tools are always available; WRITE/DANGEROUS tools are governed by
+two-phase confirmation and environment switches (see
+[Safety mechanisms](#safety-mechanisms)).
+
+## Security groups and the KooCLI channel
+
+The six security-group tools do not go through the RDS endpoint: the native
+RDS origin does not proxy the VPC API, so direct calls always fail. They
+execute via the local KooCLI (`hcloud`), calling VPC v3 operations
+(`CreateSecurityGroup/v3`, `CreateSecurityGroupRule/v3`, and so on).
+
+- **KooCLI prerequisite**: hcloud must be installed locally and its first-run
+  privacy agreement accepted. Installation: section 4 of the skill
+  [INSTALL.md](../../skills/huaweicloud-supabase/rds-supabase-mgr-mcp/INSTALL.md).
+- **Binary location**: `HCLOUD_BIN` environment variable → fixed install
+  directories → PATH, re-resolved on every call; no session restart needed
+  after installation.
+- **Credential injection**: credentials are injected per command only when
+  both `HUAWEICLOUD_ACCESS_KEY` and `HUAWEICLOUD_SECRET_KEY` are set;
+  otherwise the hcloud profile is used. **REST token mode requires a local
+  hcloud profile** (`hcloud configure init`), or these tools report missing
+  credentials.
+- **Region and project**: region comes from `HUAWEICLOUD_REGION`, falling
+  back to derivation from the `SUPABASE_RDS_ENDPOINT` hostname; the project
+  is resolved by KooCLI as the region default project — sub-project accounts
+  must configure `--cli-project-id` in the hcloud profile.
+- **Error passthrough**: VPC backend error_code/error_msg/request_id pass
+  through verbatim; an unaccepted privacy agreement, a missing binary, and
+  timeouts each map to a dedicated error code with remediation guidance.
 
 ## Usage guide
 
 ### Prerequisites
 
-- Python 3.10+
-- UV
-
-**Linux/macOS:**
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-**Windows:**
-
-```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
+1. Python 3.10+; [uv](https://docs.astral.sh/uv/) when using uvx.
+2. Huawei Cloud credentials with the minimal required permissions
+   (see [Permission recommendations](#permission-recommendations)).
+3. For security-group tools: KooCLI installed locally with the privacy
+   agreement accepted (see the previous section).
 
 ### Installation
+
+**uvx direct run (recommended; the git repository is the only canonical
+source):**
+
+```bash
+uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr" \
+  mcp-huaweicloud-rds-supabase-mgr
+```
+
+The server is not published to PyPI; same-named third-party packages on
+PyPI are not this server and must not be installed.
+
+**Clone for development:**
 
 ```bash
 git clone https://github.com/huaweicloud/rds-supabase-fullstack.git
@@ -142,94 +225,89 @@ uv run mcp-huaweicloud-rds-supabase-mgr          # stdio (default)
 uv run mcp-huaweicloud-rds-supabase-mgr -t streamable-http
 ```
 
-`mcp-huaweicloud-rds-supabase-mgr` is the canonical entry point; the legacy
-entry `mcp_server_supabase` is retained for transition and is equivalent.
-
-### Verification
-
-```bash
-uv run pytest                       # 80% coverage gate
-uv run python tests/smoke_stdio.py
-```
+`mcp-huaweicloud-rds-supabase-mgr` is the canonical entry; the legacy entry
+`mcp_server_supabase` is kept transitionally and is equivalent. For
+slow-network uvx startup timeouts, see the
+[skill install reference](../../skills/huaweicloud-supabase/rds-supabase-mgr-mcp/references/install.md).
 
 ### Diagnostics CLI
 
 ```bash
-uv run python -m mcp_server_supabase.diagnostics check       # config syntax and dependencies only
+uv run python -m mcp_server_supabase.diagnostics check       # config and dependency check only
 uv run python -m mcp_server_supabase.diagnostics offline     # offline stdio self-check
-# Auto-discover projects and candidate RDS origins from credentials (REST token or AK/SK):
+# Auto-discover project and candidate RDS endpoints from credentials (REST token or AK/SK):
 uv run python -m mcp_server_supabase.diagnostics discover
-uv run python -m mcp_server_supabase.diagnostics discover --probe   # add a read-only reachability probe
-# Real read-only checks only in an authorized test environment:
+uv run python -m mcp_server_supabase.diagnostics discover --probe   # add read-only reachability probing
+# Real read-only checks, only in an authorized test environment:
 uv run python -m mcp_server_supabase.diagnostics readonly --allow-cloud-read
 ```
 
-`discover` queries IAM for the project list (REST mode inspects the token's
-project scope; sdk_core mode lists the projects visible to the AK/SK), derives
-candidate origins per region and emits a `suggested_env` block for selection;
-an explicitly configured `SUPABASE_RDS_ENDPOINT` always wins. A reachable probe
-is not permission or production acceptance.
-
-The diagnostics CLI never submits cloud writes and reports summary checks
-only — no raw resource values or credentials.
+`discover` queries IAM for the project list and derives candidate endpoints
+per region, listing `suggested_env` for selection; an explicitly configured
+`SUPABASE_RDS_ENDPOINT` wins. Reachability does not imply permissions or
+production acceptance. The diagnostics CLI submits no cloud writes and its
+summaries contain no resource values or credentials.
 
 ## Configuration
 
 ### Environment variables
 
-Choose one credential mode: **REST token mode** (default,
-`HUAWEICLOUD_AUTH_TOKEN`) or **sdk_core mode**
-(`SUPABASE_TRANSPORT=sdk_core` + AK/SK). Credentials are injected by the
-trusted host environment and are never tool arguments.
+Pick one credential mode: **REST token mode** (default,
+`HUAWEICLOUD_AUTH_TOKEN`) or **sdk_core mode** (`SUPABASE_TRANSPORT=sdk_core`
++ AK/SK). Credentials are injected by a trusted host environment, never as
+tool parameters.
 
 | Variable | Required | Description | Default |
 |---|---|---|---|
-| `SUPABASE_RDS_ENDPOINT` | Yes | Native RDS HTTPS service origin (no path/query/userinfo; not the Console or a /rest proxy). Can be derived from credentials via `diagnostics discover` | - |
-| `HUAWEICLOUD_PROJECT_ID` | Yes | Target project ID (matching the site) | - |
-| `HUAWEICLOUD_AUTH_TOKEN` | REST mode | Externally provisioned service token, read per request | - |
-| `SUPABASE_TRANSPORT` | No | Set `sdk_core` to use Huawei SDK Core signing | REST token |
+| `SUPABASE_RDS_ENDPOINT` | yes | Native RDS HTTPS origin (no path/query/userinfo; not the Console or a /rest proxy). Derivable via `diagnostics discover` | - |
+| `HUAWEICLOUD_PROJECT_ID` | yes | Target project ID (region-consistent) | - |
+| `HUAWEICLOUD_AUTH_TOKEN` | REST mode | Pre-provisioned service token, read per request | - |
+| `SUPABASE_TRANSPORT` | no | Set `sdk_core` to enable Huawei SDK Core signing | REST token |
 | `HUAWEICLOUD_ACCESS_KEY` | sdk_core mode | Account AK | - |
 | `HUAWEICLOUD_SECRET_KEY` | sdk_core mode | Account SK | - |
-| `HUAWEICLOUD_SECURITY_TOKEN` | No | STS temporary credential token | - |
-| `SUPABASE_ENABLE_WRITES` | No | Cloud-write opt-in; cloud writes require `true` | `false` |
-| `HUAWEICLOUD_MCP_READ_ONLY` | No | `true` intercepts all WRITE/DANGEROUS tools | `false` |
-| `SUPABASE_STATE_FILE` | No | Local execution ledger (SQLite); keep one ledger across restarts | User-local state dir |
-| `SUPABASE_REQUESTS_FILE` | No | Sensitive-request local reference registry (operator-provisioned) | - |
-| `REQUESTS_CA_BUNDLE` | No | Custom trusted CA (PEM file) | - |
-| `HUAWEICLOUD_MCP_PROTECTED_IDS` | No | Guardrail: protected resource IDs (comma-separated, block on match) | empty |
-| `HUAWEICLOUD_MCP_PROTECTED_NAMES` | No | Guardrail: protected resource names (comma-separated, block on match) | empty |
-| `HUAWEICLOUD_MCP_PROTECTED_TAGS` | No | Guardrail: protected tags (comma-separated `k` or `k=v`) | empty |
-| `HUAWEICLOUD_MCP_GUARDRAILS_CONFIG` | No | Advanced rules file `guardrails.yaml` | empty |
-| `HUAWEICLOUD_MCP_AUDIT_FILE` | No | Audit JSONL file (audit always on, defaults to stderr) | empty |
-| `MCP_SERVER_PORT` | No | streamable-http port | `8000` |
-| `MCP_SERVER_HOST` | No | streamable-http bind address | `0.0.0.0` |
+| `HUAWEICLOUD_SECURITY_TOKEN` | no | STS temporary-credential token | - |
+| `HUAWEICLOUD_REGION` | no | Region for the security-group KooCLI channel; derived from the `SUPABASE_RDS_ENDPOINT` hostname when absent | derived |
+| `HCLOUD_BIN` | no | Explicit KooCLI binary path override | auto-located |
+| `SUPABASE_ENABLE_WRITES` | no | Cloud-write switch; must be `true` for cloud writes | `false` |
+| `HUAWEICLOUD_MCP_READ_ONLY` | no | `true` intercepts all WRITE/DANGEROUS tools | `false` |
+| `SUPABASE_STATE_FILE` | no | Local execution-record (SQLite) path; keep one record across restarts | user state dir |
+| `SUPABASE_REQUESTS_FILE` | no | Local sensitive-request reference registry (operator-provisioned) | - |
+| `REQUESTS_CA_BUNDLE` | no | Custom trusted CA bundle (PEM file) | - |
+| `HUAWEICLOUD_MCP_PROTECTED_IDS` | no | Guardrail: protected resource IDs (comma-separated, hit = block) | empty |
+| `HUAWEICLOUD_MCP_PROTECTED_NAMES` | no | Guardrail: protected resource names (comma-separated) | empty |
+| `HUAWEICLOUD_MCP_PROTECTED_TAGS` | no | Guardrail: protected tags (comma-separated `k` or `k=v`) | empty |
+| `HUAWEICLOUD_MCP_GUARDRAILS_CONFIG` | no | Path to a `guardrails.yaml` rules file | empty |
+| `HUAWEICLOUD_MCP_AUDIT_FILE` | no | Audit JSONL file path (audit always on; defaults to stderr) | empty |
+| `MCP_SERVER_PORT` | no | streamable-http port | `8000` |
+| `MCP_SERVER_HOST` | no | streamable-http bind address | `0.0.0.0` |
 
 ### Safety mechanisms
 
-- **Two-phase confirmation**: write tools default to `confirm=false`, persist
-  a ten-minute plan, and return a `plan_id`; submission requires the **same
-  parameters** with `confirm=true` + `plan_id`. Changed parameters, project,
-  service origin, or credentials require a fresh preview.
-- **Execution ledger**: a local SQLite ledger records plans, jobs, and
-  states. On timeout or unknown outcomes, run `inspect_supabase_plan` first;
-  `submitted`/`accepted`/`unknown` intents are never replayed, and the ledger
-  must not be deleted to bypass protection.
-- **Local sensitive-request references**: passwords, SMTP, GitHub, and OBS
-  credentials are provided via an operator-provisioned local registry
+- **Two-phase confirmation**: write tools default to `confirm=false`,
+  persisting a ten-minute plan and returning a `plan_id`; confirm by
+  resubmitting **identical parameters** with `confirm=true` + `plan_id`.
+  Any change to parameters, project, endpoint, or credentials requires a
+  fresh preview.
+- **Local execution record**: SQLite records plans, jobs, and states. On a
+  timeout or unknown outcome, inspect first (`inspect_supabase_plan`);
+  `submitted`/`accepted`/`unknown` must never be replayed, and deleting the
+  record to bypass protection is forbidden.
+- **Local sensitive-request references**: password, SMTP, GitHub, and OBS
+  credentials are supplied via an operator-provisioned local registry
   (`SUPABASE_REQUESTS_FILE`) by alias; tools accept no plaintext and never
   read delivered files.
-- **202 means accepted, not completed**: job `completed` is not business
-  verification; re-query the resource.
-- **Layered write permissions**: the cloud-write opt-in
-  (`SUPABASE_ENABLE_WRITES`, off by default) and the shared-core read-only
-  interception (`HUAWEICLOUD_MCP_READ_ONLY`) act independently; neither may
+- **202 means accepted only**: a `completed` job is not business
+  verification; re-read the resource.
+- **Layered write gating**: the cloud-write switch
+  (`SUPABASE_ENABLE_WRITES`, default off) and the shared-core read-only
+  interception (`HUAWEICLOUD_MCP_READ_ONLY`) act independently; neither can
   be modified by the agent itself.
 
-**Guardrail known limitation (parameter-level matching):** protection rules
-match resource IDs and name-like parameters in tool calls. Protection
-configured only on the cloud side but absent from call parameters cannot
-match; configure protection lists proactively via environment variables or
-`guardrails.yaml`.
+**Known guardrail limitation (parameter-level matching):** protection rules
+match resource IDs and name-like parameters in tool arguments. Protected
+attributes configured only on the cloud side but absent from arguments
+cannot match; configure protection lists via environment variables or
+`guardrails.yaml` proactively.
 
 Example `guardrails.yaml`:
 
@@ -246,60 +324,104 @@ rules:
     message: Production Supabase applications are protected; contact ops.
 ```
 
-### uvx (git repository version)
-
-```json
-{
-    "mcpServers": {
-        "rds-supabase-mgr-mcp": {
-            "command": "uvx",
-            "args": [
-                "--from",
-                "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr",
-                "mcp-huaweicloud-rds-supabase-mgr"
-            ],
-            "env": {
-                "SUPABASE_RDS_ENDPOINT": "",
-                "HUAWEICLOUD_PROJECT_ID": "",
-                "HUAWEICLOUD_AUTH_TOKEN": "",
-                "HUAWEICLOUD_MCP_READ_ONLY": "true",
-                "SUPABASE_ENABLE_WRITES": "false"
-            }
-        }
-    }
-}
-```
-
-For sdk_core mode (AK/SK) see [examples/mcp-sdk.example.json](examples/mcp-sdk.example.json).
-
 ## Examples
 
-### Cursor / Claude Desktop / Trae
+### Workflow 1: create a reachable application from scratch
 
-Fill the JSON config into your MCP client with credentials (stay read-only on
-first setup), then use natural language:
+1. Call `plan_supabase_creation` with the intent (database route / storage /
+   public access / SSL) to get the staged preparation plan and required
+   fields.
+2. Prepare per the plan: dedicated security groups
+   (`create_supabase_security_group`, then
+   `add_supabase_security_group_rule` for 8443 ingress and 5432 egress),
+   and the local request file (root password, storage credentials, and
+   other secrets).
+3. Preview with `create_supabase_application(request_ref, confirm=false)`,
+   show the redacted parameters to the user, then submit identical
+   parameters with `confirm=true` + `plan_id`.
+4. Track the returned `job_id` with `show_supabase_job` (or bounded
+   `wait_supabase_job`) to a terminal state.
+5. Re-read `show_supabase_application`; if no public IP, bind an EIP with
+   `change_supabase_eip`, then deliver access information via
+   `list_supabase_api_keys` + `deliver_supabase_api_key`.
 
-- "What Supabase scenarios does this MCP support?" → `get_supabase_capabilities()`
-- "List the Supabase applications in this project" → `list_supabase_applications()`
-- "Show the status of application app-123" → `show_supabase_application(application_id="app-123")`
-- "List the ApiKey types and statuses of app-123, without values" → `list_supabase_api_keys(application_id="app-123")`
-- "Preview disabling SSL for app-123, do not execute yet" → `change_supabase_ssl(application_id="app-123", enable_ssl=false)` (`confirm=false` returns a plan and `plan_id`)
-- "Confirm the SSL change I just previewed" → same parameters with `confirm=true` + `plan_id`
-- "List the manageable PG instances" → `list_supabase_manageable_instances()`
-- "Delete application app-123, explain the impact first" → `delete_supabase_application(...)` (preview first; deletes the app, retains the PG)
-- "Check the status of job job-456" → `show_supabase_job(job_id="job-456")`
+### Workflow 2: open security-group ports for an application
+
+1. Preview and confirm `create_supabase_security_group` — a dedicated group
+   with a purpose description.
+2. Add the 8443 ingress rule (source CIDR) and the 5432 egress rule
+   (`direction='egress'`) with `add_supabase_security_group_rule`, each
+   previewed then confirmed.
+3. Re-read with `show_supabase_security_group` and verify direction and
+   port.
+4. To revoke, use `delete_supabase_security_group_rule` (after verifying
+   the group is not shared); retire the whole group with
+   `delete_supabase_security_group` (after verifying no instance/NIC
+   references).
+
+Every write may execute asynchronously. A successful MCP call means the
+cloud API accepted the request, not that the change has completed.
+
+## Client compatibility
+
+| Client | Transport | Notes |
+|---|---|---|
+| opencode | stdio | Project-level `opencode.json`, `mcp.servers.*` structure; connects automatically on save |
+| Claude Code | stdio | Project-level `.mcp.json`; approve once in-session |
+| Claude Desktop / Cursor / Trae | stdio | `command`/`args`/`env` configuration |
+| CodeArts | stdio | Project-level `mcp_settings.json` (Settings → MCP tools); editing an entry needs a manual restart |
+| Remote mode | Streamable HTTP | `mcp-huaweicloud-rds-supabase-mgr -t streamable-http`, endpoint `/mcp`; front it with HTTPS and authentication in production |
+
+No legacy SSE transport is provided.
+
+## Permission recommendations
+
+- **Read-only discovery**: RDS application/flavor/instance queries plus IAM
+  project listing; VPC, subnet, AZ, and EIP queries for creation planning
+  run through KooCLI and follow the hcloud profile permissions.
+- **Write operations**: grant only the RDS application create/change
+  permissions and VPC security-group write permissions matching the tools
+  actually enabled.
+- **Dangerous operations**: deletions, password changes, and key resets
+  should use a separate identity or temporary authorization, combined with
+  `HUAWEICLOUD_MCP_PROTECTED_*` lists and confirmation rules.
+- Never configure long-lived administrator credentials to an MCP client for
+  convenience; prefer temporary security credentials in production.
+
+## Development, testing, and verification
+
+```bash
+uv sync --all-groups
+uv run ruff check src tests
+uv run pytest                       # no cloud access by default; 80% coverage gate
+uv run python tests/smoke_stdio.py  # offline stdio smoke test
+```
+
+Live validation must only run in a dedicated test account; when creating
+billable resources, always clean up on failure paths and confirm deletion
+jobs reach a terminal state. Before release, check wheel metadata, a fresh
+Python 3.10 installation, and the MCP tool list.
+
+## Contributing and support
+
+Contribution workflow, security reporting, and version history live in the
+repository-root `CONTRIBUTING.md`, `SECURITY.md`, and `CHANGELOG.md`. Use
+GitHub Issues for general questions; credential leaks and security issues
+must never be filed in public issues.
 
 ## Further documentation
 
 - [User guide](docs/USER_GUIDE.md) — installation, verification, and the
-  natural-language workflow
-- [Tool contracts](docs/TOOL_CONTRACTS.md) — authoritative input/output and
-  confirmation semantics
-- [Recovery rules](docs/RECOVERY.md), [reconciliation](docs/RECONCILIATION.md)
+  natural-language operation workflow
+- [Tool contracts](docs/TOOL_CONTRACTS.md) — the authoritative input/output
+  and confirmation semantics
+- [Recovery rules](docs/RECOVERY.md) and
+  [reconciliation contract](docs/RECONCILIATION.md) — failure routing and
+  Auth plan reconciliation
 - [Local secret I/O](docs/LOCAL_REQUESTS.md) — the sensitive-request
   reference mechanism
 - [SDK mode](docs/SDK.md), [migration notes](docs/MIGRATION.md)
-- [docs/legacy/](docs/legacy/) — archived Windows offline-bundle workflow
+- [docs/legacy/](docs/legacy/) — archived offline Windows delivery process
 
 ## License
 

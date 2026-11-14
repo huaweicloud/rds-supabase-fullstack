@@ -86,13 +86,16 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
 
 **访问控制**
 
-- SSL 开关（开启需已核验的证书 ID）
-- EIP 绑定/解绑
+- SSL 启用与关闭（启用需购买 CCM 证书）
+- 弹性公网 IP 绑定与解除（控制公网访问）
 - 应用改密（经本地受保护请求引用，不收集明文）
 
-**安全组（KooCLI 通道）**
+**安全组配置（KooCLI 通道）**
 
-- 组与规则查询、创建组、规则增删（入/出方向，TCP/UDP）、整组删除
+- 安全组列表与详情查询
+- 创建安全组，匹配应用要求
+- 删除应用安全组
+- 新增或删除出/入方向的访问规则
 
 **ApiKey**
 

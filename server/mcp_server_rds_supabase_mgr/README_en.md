@@ -103,15 +103,17 @@ lifecycle, control plane).
 
 **Access control**
 
-- SSL toggle (enabling requires a verified certificate ID)
-- EIP bind/unbind
+- SSL enable/disable (enabling requires a purchased CCM certificate)
+- Elastic public IP bind/unbind (controls public access)
 - Application password change (via protected local request references;
   no plaintext collection)
 
-**Security groups (KooCLI channel)**
+**Security group configuration (KooCLI channel)**
 
-- Group and rule queries, group creation, rule add/remove
-  (ingress/egress, TCP/UDP), whole-group deletion
+- Security group list and detail queries
+- Create security groups matching application requirements
+- Delete application security groups
+- Add or remove inbound/outbound access rules
 
 **ApiKey**
 

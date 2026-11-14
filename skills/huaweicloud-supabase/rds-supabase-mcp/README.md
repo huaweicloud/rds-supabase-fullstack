@@ -6,7 +6,7 @@
 
 在后端开发模式中，后端代码以 init.sql 迁移脚本形式组织，经 `execute_sql` 部署为数据库层定义（表结构、授权、RLS 策略、函数），前端经 REST API 直接消费，应用端无需自建后端服务。
 
-> 面向 AI Agent 的执行逻辑见 [SKILL.md](SKILL.md)；本文面向人类读者，提供能力总览与安装指导。
+执行逻辑见 [SKILL.md](SKILL.md)。
 
 ## 能力概览
 

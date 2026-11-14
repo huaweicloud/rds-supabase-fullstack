@@ -5,7 +5,7 @@ description: RDS Supabase 应用全生命周期管理技能：从零创建一个
 
 # RDS Supabase 应用全生命周期管理
 
-版本 0.6.1；配套服务端 mcp_server_supabase ≥ 0.4.0a14（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
+版本 0.6.2；配套服务端 mcp_server_supabase ≥ 0.4.0a14（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
 
 贯穿所有场景的四条铁律：
 1. **写操作两段式**：先预览（confirm=false），把参数、影响、费用展示给用户；用户确认后才提交（confirm=true + 预览返回的 plan_id）。预览 10 分钟有效，参数变了重新预览。
@@ -19,6 +19,8 @@ description: RDS Supabase 应用全生命周期管理技能：从零创建一个
 ## 开始之前：把环境和管理工具准备好
 
 不做这一步，后面的工具一个都调不通。
+
+**第零步：确认 KooCLI 可用**（安装阶段已探测安装，见 INSTALL.md 第四节；此处只复核）：`hcloud version` 能出版本号即通过——失败按 INSTALL.md 第四节处置（含首跑隐私协议）；CodeArts 沙箱模式会拦截 KooCLI，先关沙箱或沙箱外安装。
 
 **第一步：拿到五项环境信息**
 

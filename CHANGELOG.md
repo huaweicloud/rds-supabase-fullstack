@@ -7,6 +7,23 @@ semantic versioning.
 
 ### Changed
 
+- Skill `rds-supabase-mgr-mcp` v0.6.2: KooCLI is now provisioned at install
+  time. INSTALL.md gains a mandatory post-install step: immediately after the
+  skill files land, the agent probes `hcloud version`; if missing it installs
+  KooCLI on the spot using the official distribution (methods sourced from
+  Huawei Cloud's own huaweicloud-devkit CLI skill - the official one-line
+  install script as the main path, pinned-version downloads per platform as
+  the reproducible path, with per-platform PATH placement). The step also
+  handles the known first-run trap: a fresh KooCLI blocks on its privacy
+  agreement and fails non-interactive runs with [USE_ERROR], so the agent
+  detects those strings, asks the user, and feeds y via stdin once. The
+  scope table lists KooCLI as arriving at install time; the completion
+  report must state the KooCLI status (existing or newly installed version).
+  Boundaries unchanged: tools only, no credentials at install time (the
+  hcloud configure set command is explicitly forbidden - AK/SK would enter
+  shell history), no session restart needed, CodeArts sandbox guidance
+  included. SKILL.md adds a step-zero KooCLI recheck that points back at the
+  INSTALL step.
 - `mcp_server_rds_supabase_mgr` v0.4.0a14: auto-created resources are now
   marked for auditability. create_supabase_security_group accepts an optional
   description (VPC v3 contract: at most 255 characters, no angle brackets,

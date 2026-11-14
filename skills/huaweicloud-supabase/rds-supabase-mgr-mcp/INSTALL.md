@@ -11,6 +11,7 @@
 | 项 | 何时 | 来源 |
 |---|---|---|
 | **本技能（安装阶段的全部内容）** | 现在，一次性 | 本仓 `skills/huaweicloud-supabase/rds-supabase-mgr-mcp/` |
+| **KooCLI（hcloud）** | 技能装完后**立即探测，未装则当场安装**（第四节） | 华为云官方发行包（DevKit 同源） |
 | 管理面 MCP 服务器（29 工具） | 技能触发后环境检查通过时动态安装 | 本仓 `server/mcp_server_rds_supabase_mgr/`（不在技能包内，uvx 从 GitHub 直装） |
 | 凭据（AK/SK 或 Token）、Region、PROJECT_ID | 首次使用时 | 项目内受保护文件/用户提供 |
 
@@ -64,12 +65,51 @@ rm -rf "$TMP"
 
 浏览器直接下载该 ZIP URL 亦可（下载物同样落临时目录）。ZIP 归档属本仓官方源；**任何情况下禁止去 PyPI/npm/第三方镜像找同名包**——服务端未发布至此类渠道，同名第三方包是错误的服务器。
 
-## 四、校验与完成报告
+## 四、KooCLI 探测与安装（技能装完必须主动执行，确保可用）
 
-- 校验：技能目录内含 `SKILL.md`、`README.md`、`INSTALL.md`、`references/` 五个参考文档、`scripts/skill-lint.py`
-- 向用户报告：安装位置（所选层级 + 完整路径，与交互选择一致）；一句话触发语（如"帮我从零创建一个 RDS Supabase 应用"）；约定说明——MCP 与凭据不在安装阶段出现，首次使用时技能自动引导
+本技能的云资源协同（VPC/子网/AZ/规格查询、出方向安全组规则、EIP 创建、OBS 桶管理）全部经 KooCLI（`hcloud`）执行——**技能文件复制完成后，Agent 必须立即探测 KooCLI：已装则验证可用，未装则当场安装**，不让用户到使用时才踩坑。安装方法取自华为云官方 DevKit（[huaweicloud-devkit](https://github.com/huaweicloud/huaweicloud-devkit)）的 CLI 技能，官方指南 https://support.huaweicloud.com/qs-hcli/hcli_02_003.html 。
 
-## 五、更新与卸载
+### 1. 探测
+
+```bash
+hcloud version
+```
+
+有版本输出 → 已安装，记录版本号进完成报告，本节结束。命令不存在 → 按平台安装（方式 A/B 择一）。
+
+### 2. 安装（方式 A/B 择一）
+
+**方式 A：官方一键脚本**（装 latest，主路径）：
+
+```bash
+curl -sSL https://cn-north-4-hdn-koocli.obs.cn-north-4.myhuaweicloud.com/cli/latest/hcloud_install.sh -o ./hcloud_install.sh && bash ./hcloud_install.sh -y
+```
+
+**方式 B：固定版本下载**（可复现；版本号以官方指南最新为准，下例 7.3.12）：
+
+| 平台 | 下载 | 解压后落位（进 PATH） |
+|---|---|---|
+| Linux amd64/arm64 | `curl -LO "https://cn-north-4-hdn-koocli.obs.cn-north-4.myhuaweicloud.com/cli/7.3.12/huaweicloud-cli-linux-<amd64\|arm64>.tar.gz" && tar -zxvf huaweicloud-cli-linux-*.tar.gz` | `mv $(pwd)/hcloud ~/.local/bin/` |
+| macOS amd64/arm64 | `curl -LO "https://cn-north-4-hdn-koocli.obs.cn-north-4.myhuaweicloud.com/cli/7.3.12/huaweicloud-cli-mac-<amd64\|arm64>.tar.gz" && tar -zxvf huaweicloud-cli-mac-*.tar.gz` | `mv $(pwd)/hcloud /usr/local/bin/` |
+| Windows | 下载 `https://cn-north-4-hdn-koocli.obs.cn-north-4.myhuaweicloud.com/cli/7.3.12/huaweicloud-cli-windows-amd64.zip` | 解压到 `%USERPROFILE%\hcloud`，加入用户 PATH |
+
+### 3. 首跑隐私协议（必踩坑，主动处置）
+
+新装的 KooCLI **首次执行会阻塞在隐私协议**：`同意并继续使用(y)/不同意并退出(N)`；非交互模式下直接报 `[USE_ERROR]您输入的是无效字符`。处置：安装完成后跑 `hcloud version`，输出含上述任一字符串 → 先问用户"KooCLI 需要接受隐私协议，是否代为同意？"，用户同意后以 `y\n` 作为 stdin 重跑一次 `hcloud version` 即可，之后一切正常。
+
+### 4. 边界与红线
+
+- **本节只装工具，不配凭据**：AK/SK 与区域配置在技能首次使用时按 SKILL.md"开始之前"引导（凭据走项目内受保护文件，不进对话、不进 shell history——`hcloud configure set --cli-access-key=...` 会把密钥留在命令历史里，禁止）
+- 安装后**无需重启会话**：每次调用动态定位 hcloud（`HCLOUD_BIN` → 固定安装目录 → PATH）
+- CodeArts 沙箱模式会拦截 KooCLI：探测失败且宿主为 CodeArts 时，提示用户在沙箱外安装或关闭沙箱模式（设置 → Chats → Agents Terminal Command Running Mode → Auto Running）
+- 探测/安装失败不回滚技能安装：如实报告缺口与处置建议，KooCLI 装好后技能即完整可用
+
+## 五、校验与完成报告
+
+- 校验：技能目录内含 `SKILL.md`、`README.md`、`INSTALL.md`、`references/` 五个参考文档、`scripts/skill-lint.py`；KooCLI `hcloud version` 可用（含隐私协议已处置）
+- 向用户报告：安装位置（所选层级 + 完整路径，与交互选择一致）；KooCLI 状态（已装版本号 / 本次新装版本）；一句话触发语（如"帮我从零创建一个 RDS Supabase 应用"）；约定说明——MCP 与凭据不在安装阶段出现，首次使用时技能自动引导
+
+## 六、更新与卸载
 
 - **更新**：`git pull` 后重新复制（重复方式 A；版本 pin 等价形式 `.../archive/<commit>.zip`）；更新作用于所选安装位置，用户级/系统级安装时提醒影响面
 - **卸载**：删除所选安装位置中本技能目录；技能曾动态安装管理面 MCP 的，另移除项目级 MCP 配置中对应条目

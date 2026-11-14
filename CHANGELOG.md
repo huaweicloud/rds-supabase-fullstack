@@ -12,6 +12,19 @@ semantic versioning.
   local-requests/acceptance). Caught by executing the documented install
   flow live against a fresh project-level install.
 
+### Added
+
+- Skill `rds-supabase-mgr-mcp` deployment guidance from live install
+  testing: (1) INSTALL.md section 4 probe step now handles the
+  installed-but-not-on-PATH case (binary at ~/.local/bin/hcloud found by
+  ls, fix is one PATH export in the shell rc instead of reinstalling);
+  (2) references/install.md gains a slow-network fallback for the uvx
+  health-check timeout (symptom: MCP panel shows failed - Operation
+  timed out): pre-warm the uvx cache once (optionally via the Tsinghua
+  PyPI mirror with UV_DEFAULT_INDEX) or pin the server with
+  `uv tool install` and point the MCP command at the installed
+  executable for zero-resolution startup.
+
 ### Changed
 
 - `mcp_server_rds_supabase_mgr` v0.4.0a15: the five security-group tools

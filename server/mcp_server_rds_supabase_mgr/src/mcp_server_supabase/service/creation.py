@@ -54,13 +54,20 @@ def validate_creation(body):
             if charge['charge_mode']=='postPaid':
                 if set(charge)!={'charge_mode'}:raise ValueError('postPaid charge_info carries only charge_mode (period fields are prepaid-only)')
             else:
-                if charge.get('period_type') not in (2,3):raise ValueError('charge_info.period_type must be 2 (month) or 3 (year) for prepaid')
-                if type(charge.get('period_num')) is not int or not 1<=charge['period_num']<=(9 if charge['period_type']==2 else 3):raise ValueError('charge_info.period_num must be 1-9 months or 1-3 years for prepaid')
+                # Official CreateInstance contract (API reference, charge_info table):
+                # period_type is the STRING 'month' or 'year'; period_num is 1-9 for
+                # months and 1-3 for years (5 is a MySQL-only privileged exception).
+                if charge.get('period_type') not in ('month','year'):
+                    if charge.get('period_type') in (2,3):
+                        raise ValueError("charge_info.period_type must be the string 'month' or 'year' (not the numeric 2/3)")
+                    raise ValueError("charge_info.period_type must be 'month' or 'year' for prepaid")
+                if type(charge.get('period_num')) is not int or not 1<=charge['period_num']<=(9 if charge['period_type']=='month' else 3):
+                    raise ValueError("charge_info.period_num must be 1-9 months or 1-3 years for prepaid")
                 for key in ('is_auto_renew','is_auto_pay'):
                     if key in charge and type(charge[key]) is not bool:raise ValueError(f'charge_info.{key} must be a boolean')
             fields(managed['volume'],('type','size'),('type','size'))
             text(managed['volume']['type'],32)
-            if type(managed['volume']['size']) is not int or managed['volume']['size']<=0:raise ValueError('volume.size must be a positive integer (GB)')
+            if type(managed['volume']['size']) is not int or not 40<=managed['volume']['size']<=40000:raise ValueError('volume.size must be an integer in 40-40000 (GB)')
             if managed['availability_zone']!=az:raise ValueError('managed_instance.availability_zone must equal the top-level availability_zone')
             text(managed['flavor_ref'],128);password_rule(managed['password'],'managed_instance.password')
             segment(managed['enterprise_project_id']);identifier(managed['security_group_id'])

@@ -49,7 +49,7 @@
 
 ### 创建（create_supabase_application）
 
-公共必填与两分支字段见 [场景手册](scenarios.md)（含真实请求示例与**预览前逐项核对清单**）。秘密字段：顶层 password（应用密码，默认用户 supabase）、managed_instance.password（路线 A 数据库密码）、existing_instance.database_pwd（路线 B）、storage_component 的 ak/sk。**密码规则**（应用密码与数据库密码同规则）：8-32 位，至少含大写/小写/数字/特殊字符（`~!@#$%^*-_+=?,`）三类。**创建路径没有"省略 SK"——启用存储必须全凭据**。要点：version 取当前最高的应用版本（x.y.z，不是 PG 引擎版本）；mode 单机 Single 或主备 Ha（ha 对象跟着选）；charge_info 按需或包周期（period_type 2=月/3=年，period_num 1-9 个月或 1-3 年，包周期返回订单号需控制台支付）；managed_instance.volume.type 按环境查询结果选择（KooCLI ListStorageTypes）；port 传 5432 或省略；enterprise_project_id 默认 default 项目（"0"）；路线 B 的 database_name 固定 root。
+公共必填与两分支字段见 [场景手册](scenarios.md)（含真实请求示例与**预览前逐项核对清单**）。秘密字段：顶层 password（应用密码，默认用户 supabase）、managed_instance.password（路线 A 数据库密码）、existing_instance.database_pwd（路线 B）、storage_component 的 ak/sk。**密码规则**（应用密码与数据库密码同规则）：8-32 位，至少含大写/小写/数字/特殊字符（`~!@#$%^*-_+=?,`）三类。**创建路径没有"省略 SK"——启用存储必须全凭据**。要点：version 取当前最高的应用版本（x.y.z，不是 PG 引擎版本）；mode 单机 Single 或主备 Ha（ha 对象跟着选）；charge_info 按需或包周期（包周期：period_type 为字符串 "month"（月）/"year"（年），period_num 1-9 个月或 1-3 年——**period_type 是字符串不是数字**，传 2/3 会被本地拒绝；包周期返回订单号走订单工具支付）；managed_instance.volume.type 按环境查询结果选择（KooCLI ListStorageTypes）；port 传 5432 或省略；enterprise_project_id 默认 default 项目（"0"）；路线 B 的 database_name 固定 root。
 
 ### Key 交付（deliver_supabase_api_key）
 

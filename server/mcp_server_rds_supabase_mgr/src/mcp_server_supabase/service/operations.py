@@ -294,7 +294,7 @@ class Operations:
         path=ROOT+'/supabases';digest=self.intent_digest('POST',path,body)
         notices={'completion_verified':False,'warnings':[
             'Review application and PG credentials, network, ownership, quota and ongoing charges before confirming.',
-            'Single or Ha mode; postPaid or prepaid (1-9 months / 1-3 years). Prepaid returns an order the user must pay in the console - no automatic payment or cleanup.',
+            'Single or Ha mode; postPaid or prepaid (period_type is the string month/year, period_num 1-9 months or 1-3 years). Prepaid returns an order paid via the order tools - no automatic payment.',
             'Structural validation only: backend password, version, capacity and sale policies remain authoritative.'],
             'follow_up':'Observe application job and any PG job separately, query both resources and validate login. Partial success never authorizes automatic resource deletion.'}
         if not confirm:

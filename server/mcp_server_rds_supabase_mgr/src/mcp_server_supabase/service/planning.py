@@ -54,7 +54,7 @@ class PlanningService:
                     "choose the database flavor via KooCLI RDS ListFlavors (depends on version and AZ - not the same list as the application flavor)",
                     "choose the disk type from the environment's available storage types via KooCLI RDS ListStorageTypes (prefer a high-performance SSD) and the size",
                     "choose deployment mode with the user: Single (trial/internal) or Ha (high availability; the ha object mode follows, replication async or sync)",
-                    "choose billing with the user: postPaid, or prepaid (1-9 months / 1-3 years; prepaid returns an order the user must pay in the console - this MCP never pays)",
+                    "choose billing with the user: postPaid, or prepaid (period_type is the string month/year with period_num 1-9 months or 1-3 years; prepaid returns an order paid via the order tools get/pay/cancel_supabase_order)",
                     "pass port 5432 or omit it (backend default)"]
         elif manage_type == "existed_instance":
             pre += ["select a manageable PG via list_supabase_manageable_instances (status normal, no in-flight action)",

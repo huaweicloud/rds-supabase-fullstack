@@ -85,14 +85,15 @@ class CreationTests(unittest.IsolatedAsyncioTestCase):
     async def test_ha_mode_and_prepaid_are_selectable(self):
         body=copy.deepcopy(REAL_NEW_PG);body['mode']='Ha'
         body['managed_instance']['ha']={'mode':'Ha','replication_mode':'sync'}
-        body['managed_instance']['charge_info']={'charge_mode':'prePaid','period_type':2,'period_num':3,'is_auto_renew':False}
+        body['managed_instance']['charge_info']={'charge_mode':'prePaid','period_type':'year','period_num':3,'is_auto_renew':False}
         self.file.write_text(json.dumps({'create':body}))
         preview=await self.ops.create_reference('create');self.assertNotIn('Fixture-Secret1',str(preview))
-        for bad,needle in (({'charge_mode':'prePaid','period_type':2,'period_num':10},'period_num'),
-                           ({'charge_mode':'prePaid','period_type':3,'period_num':4},'period_num'),
+        for bad,needle in (({'charge_mode':'prePaid','period_type':'month','period_num':10},'period_num'),
+                           ({'charge_mode':'prePaid','period_type':'year','period_num':4},'period_num'),
+                           ({'charge_mode':'prePaid','period_type':2,'period_num':1},'not the numeric'),
                            ({'charge_mode':'prePaid'},'period_type'),
                            ({'charge_mode':'postPaid','period_num':3},'postPaid charge_info'),
-                           ({'charge_mode':'prePaid','period_type':2,'period_num':3,'is_auto_renew':'yes'},'is_auto_renew')):
+                           ({'charge_mode':'prePaid','period_type':'month','period_num':3,'is_auto_renew':'yes'},'is_auto_renew')):
             broken=copy.deepcopy(REAL_NEW_PG);broken['managed_instance']['charge_info']=bad
             self.file.write_text(json.dumps({'create':broken}))
             with self.assertRaises(McpToolError) as ctx:await self.ops.create_reference('create')
@@ -110,7 +111,7 @@ class CreationTests(unittest.IsolatedAsyncioTestCase):
         self.save()
         with self.assertRaises(McpToolError) as ctx:await self.ops.create_reference('create')
         self.assertIn('period_type',message(ctx.exception))
-        self.body['managed_instance']['charge_info']={'charge_mode':'prePaid','period_type':2,'period_num':6}
+        self.body['managed_instance']['charge_info']={'charge_mode':'prePaid','period_type':'month','period_num':6}
         self.save()
         await self.ops.create_reference('create')
     async def test_prepaid_order_flow_and_unexpected_shapes(self):
@@ -119,7 +120,7 @@ class CreationTests(unittest.IsolatedAsyncioTestCase):
         self.client.request.return_value=(202,{})
         with self.assertRaises(McpToolError):await self.ops.create_reference('create',True,preview['plan_id'])
         self.assertEqual(self.ops.plans.inspect(preview['plan_id'])['state'],'unknown')
-        prepaid=copy.deepcopy(REAL_NEW_PG);prepaid['managed_instance']['charge_info']={'charge_mode':'prePaid','period_type':3,'period_num':1}
+        prepaid=copy.deepcopy(REAL_NEW_PG);prepaid['managed_instance']['charge_info']={'charge_mode':'prePaid','period_type':'year','period_num':1}
         self.file.write_text(json.dumps({'create':prepaid}))
         order_preview=await self.ops.create_reference('create')
         self.client.request.return_value=(202,{'order_id':'order-1'})

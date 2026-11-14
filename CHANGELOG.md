@@ -5,6 +5,25 @@ semantic versioning.
 
 ## [Unreleased]
 
+### Fixed
+
+- `mcp_server_rds_supabase_mgr` v0.4.0a27: prepaid charge_info validation
+  matched an internal convention instead of the official CreateInstance
+  contract, so prepaid creations with the documented values were rejected
+  (or wrong values passed through) and live submissions failed. Per the
+  API reference charge_info table: period_type is the STRING 'month' or
+  'year' - not the numeric 2/3 the validator and the skill docs both
+  taught; period_num stays 1-9 months / 1-3 years (the 5-year option is
+  a MySQL-only privileged exception and stays out of scope for managed
+  PG). The validator now accepts the string values, rejects the numeric
+  2/3 with a message that names the correct type, and keeps the boolean
+  checks for is_auto_renew/is_auto_pay. volume.size gains the documented
+  40-40000 GB bounds in place of any-positive. The skill documentation
+  (scenarios.md route-A field guide, local-requests.md, and the
+  planning/create guidance strings) taught the same numeric mistake and
+  is corrected in lockstep - that documentation was the source agents
+  copied, which is why live prepaid attempts kept failing.
+
 ### Changed
 
 - `mcp_server_rds_supabase_mgr` v0.4.0a26: the README tool table (zh/en)

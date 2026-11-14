@@ -63,7 +63,7 @@ SKILL.md 是主文档；本文件是各场景的详细步骤、字段来源与�
 **公共必填**：name（4-64）、basic_config{region, vpc_id, subnet_id, 可选 time_zone 如 "UTC+08:00"}、version（**应用版本 x.y.z，取当前最高，不是 PG 引擎版本**）、mode（Single 或 Ha，和用户确认）、flavor_ref（应用规格，形如 rds.supabase.n1.large.2）、availability_zone（Single 一个 AZ；Ha 两个不同 AZ，此处为主 AZ）、password（按上述密码规则；默认用户 supabase 的密码）、storage_component（不用存储时写 `{enabled:false}`，不能整个省略）、manage_type。
 **公共可选**：data_vip、security_group_id（应用安全组；**必须新建专用组**，ID 进创建请求，漏传事后无法补——没有换组工具）。
 
-- **路线 A（newly_instance）**追加 managed_instance：datastore{type=PostgreSQL, version=引擎版本（KooCLI 查，如 17.11.260901）}、ha{mode 与顶层 mode 一致：Single 或 Ha；replication_mode: async 或 sync}、charge_info（按需 {charge_mode:"postPaid"}；包周期 {charge_mode:"prePaid", period_type: 2=月/3=年, period_num: 1-9 个月或 1-3 年, 可选 is_auto_renew/is_auto_pay 布尔}）、flavor_ref（数据库规格，形如 rds.pg.n1.medium.2，KooCLI ListFlavors 查，和应用规格是两回事，别混用）、volume{type: 按环境查询结果选择的盘型（ListStorageTypes 查，如 ESSD）, size: 正整数（如 40）}、availability_zone（与顶层主 AZ 一致，服务端强制）、security_group_id（数据库安全组，必填，**新建专用组**）、password（按密码规则，可以和应用密码用同一个值）、port（固定 5432：显式传或省略）、enterprise_project_id（**默认 default 项目**，ID 为 "0"；多企业项目时让用户选）。可选 configuration_id（参数模板，默认不传）。
+- **路线 A（newly_instance）**追加 managed_instance：datastore{type=PostgreSQL, version=引擎版本（KooCLI 查，如 17.11.260901）}、ha{mode 与顶层 mode 一致：Single 或 Ha；replication_mode: async 或 sync}、charge_info（按需 {charge_mode:"postPaid"}；包周期 {charge_mode:"prePaid", period_type: "month"（月）或 "year"（年）——**字符串，不是 2/3 数字**，官方契约如此，传数字会被本地拒绝, period_num: 1-9 个月或 1-3 年, 可选 is_auto_renew/is_auto_pay 布尔}）、flavor_ref（数据库规格，形如 rds.pg.n1.medium.2，KooCLI ListFlavors 查，和应用规格是两回事，别混用）、volume{type: 按环境查询结果选择的盘型（ListStorageTypes 查，如 ESSD）, size: 正整数（如 40）}、availability_zone（与顶层主 AZ 一致，服务端强制）、security_group_id（数据库安全组，必填，**新建专用组**）、password（按密码规则，可以和应用密码用同一个值）、port（固定 5432：显式传或省略）、enterprise_project_id（**默认 default 项目**，ID 为 "0"；多企业项目时让用户选）。可选 configuration_id（参数模板，默认不传）。
 - **路线 B（existed_instance）**追加 existing_instance：instance_id（工具查）、database_name（**固定 root，不能改**）、database_pwd（用户写本地文件；存量密码不受创建密码规则约束）。
 
 不支持：tags、未知字段——如实告知，不静默丢弃用户要求。主备/包周期是否可用以所选环境实际为准：后端拒绝时报错会带 error_code/error_msg，如实转述即可。
@@ -86,7 +86,7 @@ SKILL.md 是主文档；本文件是各场景的详细步骤、字段来源与�
 | 10 | security_group_id（顶层） | 应用安全组 | （自建专用组 ID） |
 | 11 | datastore | PostgreSQL + 引擎版本 | 17.11.260901 |
 | 12 | ha | mode 与顶层 mode 一致（Single/Ha） | {mode:"Single", replication_mode:"async"} |
-| 13 | charge_info | 按需 {charge_mode:"postPaid"}；包周期带 period_type/period_num | postPaid |
+| 13 | charge_info | 按需 {charge_mode:"postPaid"}；包周期带 period_type（字符串 "month"/"year"）/period_num | postPaid |
 | 14 | managed flavor_ref | **数据库规格（≠应用规格）** | rds.pg.n1.medium.2 |
 | 15 | volume | 环境支持的盘型 + 容量 | ESSD / 40 |
 | 16 | managed availability_zone | = 顶层值 | cn-east-3a |

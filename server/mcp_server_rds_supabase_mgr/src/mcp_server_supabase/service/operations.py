@@ -51,6 +51,98 @@ class Operations:
         from mcp_server_supabase.service.key_delivery import deliver
         return await deliver(self,application_id,key_id,delivery_ref,confirm,plan_id)
 
+    async def delete_application(self, application_id, delete_managed_instance=None, confirm=False, plan_id=None):
+        """Delete one Supabase application, optionally together with its managed PG instance.
+
+        The instance choice is mandatory: delete_managed_instance must be an explicit True
+        (both deletions are submitted together, two job ids) or False (application only,
+        the instance is retained and keeps billing). All managed-instance guardrails -
+        live binding verification, no-shared-reference sweep, pre-delete inventory read -
+        run BEFORE either deletion is submitted, while the application is still readable.
+        """
+        application_id = segment(application_id)
+        if type(delete_managed_instance) is not bool:
+            raise McpToolError('MCP_INVALID_ARGS',
+                               'delete_managed_instance is required: pass True to delete the managed PG instance together with the application, or False to keep it',
+                               hint='Ask the user which outcome they want; this choice cannot be defaulted.')
+        path = self.app(application_id)
+        digest = self.intent_digest('DELETE', path, {'delete_managed_instance': delete_managed_instance})
+        if delete_managed_instance:
+            notices = {'completion_verified': False,
+                       'warnings': ['The application and its managed PostgreSQL instance are deleted simultaneously; the instance deletion destroys all its data irreversibly - export first if anything must survive.',
+                                    'Both deletions run as separate cloud tasks with separate job ids; either may fail independently - track both.',
+                                    'Pay-per-use instances only: yearly/monthly instances are rejected here and must be unsubscribed in the console.'],
+                       'follow_up': 'Track both job ids with show_operation_job_status, then re-read the application list and the instance inventory to confirm removal.'}
+        else:
+            notices = {'completion_verified': False,
+                       'warnings': ['Deleting this application interrupts its services; the managed PostgreSQL instance is retained and may continue to incur charges.',
+                                    'Deletion is not automatically reversible.'],
+                       'follow_up': 'Track the job with show_operation_job_status and re-read the application list to confirm removal.'}
+        if not confirm:
+            return {'status': 'confirmation_required', 'execution': 'not_executed',
+                    'application_id': application_id, 'action': 'delete',
+                    'delete_managed_instance': delete_managed_instance,
+                    'resource_path': path, **notices, **self.plans.issue(digest)}
+        if os.getenv('SUPABASE_ENABLE_WRITES') != 'true' or os.getenv('HUAWEICLOUD_MCP_READ_ONLY', 'false').lower() == 'true':
+            raise McpToolError('MCP_READ_ONLY', 'Writes are disabled')
+        # Read the real target immediately before mutation. Unknown/active states fail closed.
+        _, target = await self.client.request('GET', path)
+        if target.get('id') != application_id or target.get('status') != 'normal' or target.get('current_actions'):
+            raise McpToolError('MCP_GUARDRAIL_BLOCKED', 'Target is not demonstrably ready for mutation')
+        from huaweicloud_mcp_core.guardrails import assert_not_protected
+        assert_not_protected(target)
+        instance_id = None
+        if delete_managed_instance:
+            managed = target.get('managed_instance')
+            if not isinstance(managed, dict) or not managed.get('id'):
+                raise McpToolError('MCP_GUARDRAIL_BLOCKED', 'This application has no verifiable managed instance',
+                                   hint='Delete the application alone (delete_managed_instance=False), or verify the instance in the console.')
+            instance_id = segment(managed['id'])
+            assert_not_protected({'id': instance_id, 'name': managed.get('name')})
+            await self._assert_instance_unshared(instance_id, application_id)
+            _, listing = await self.client.request('GET', '/v3/{project}/instances', query={'id': instance_id})
+            rows = listing.get('instances') if isinstance(listing, dict) else None
+            if not isinstance(rows, list) or len(rows) != 1 or not isinstance(rows[0], dict) or rows[0].get('id') != instance_id:
+                raise McpToolError('MCP_NOT_FOUND', 'Instance not found or not unique in the inventory',
+                                   hint='A missing instance does not prove deletion; inspect the console before any retry.')
+        self.plans.claim(plan_id, digest)
+        unknown = RecoveryError('MCP_SDK_ERROR', 'Deletion result unknown', 'submission_unknown',
+                                'Query the operation task and the target resources directly; do not resubmit - previews and the recorded intent are single-use.', plan_id)
+        try:
+            status, data = await self.client.request('DELETE', path)
+        except RecoveryError as error:
+            if error.recovery.get('category') in _DEFINITE_REJECTIONS:
+                self.plans.finish(plan_id, 'failed'); raise
+            self.plans.finish(plan_id, 'unknown'); raise unknown from None
+        except McpToolError:
+            self.plans.finish(plan_id, 'failed'); raise
+        except BaseException:
+            self.plans.finish(plan_id, 'unknown'); raise unknown from None
+        try:
+            result = accepted_job(status, data)
+            job_id = result['job_id']
+        except BaseException:
+            self.plans.finish(plan_id, 'unknown'); raise unknown from None
+        instance_job_id = None
+        if delete_managed_instance:
+            try:
+                _, payload = await self.client.request('DELETE', '/v3/{project}/instances/' + instance_id)
+                instance_job_id = payload.get('job_id') if isinstance(payload, dict) else None
+                if not isinstance(instance_job_id, str) or not 1 <= len(instance_job_id) <= 128:
+                    raise ValueError()
+            except BaseException:
+                # Application deletion was accepted; the instance submission is unknown.
+                self.plans.finish(plan_id, 'accepted', job_id)
+                raise RecoveryError('MCP_SDK_ERROR', 'Instance deletion result unknown', 'submission_unknown',
+                                    'The application deletion was accepted; the instance deletion result is unknown. '
+                                    'Re-verify the instance inventory before any retry - never resubmit blindly.', plan_id) from None
+        self.plans.finish(plan_id, 'accepted', job_id)
+        result = {**result, **notices, 'plan_id': plan_id}
+        if delete_managed_instance:
+            result['instance_id'] = instance_id
+            result['instance_job_id'] = instance_job_id
+        return result
+
     async def delete_managed_instance(self, application_id, instance_id, confirm=False, plan_id=None):
         # Native RDS instance deletion (DELETE /v3/{project}/instances/{id}). The live
         # application detail is the only authoritative binding source: the named

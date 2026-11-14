@@ -4,7 +4,7 @@
 
 ## Version
 
-0.4.0a21 (development prerelease); Python `3.10+`; MCP Python SDK `2.x`;
+0.4.0a22 (development prerelease); Python `3.10+`; MCP Python SDK `2.x`;
 31 tools.
 
 ## Overview
@@ -189,7 +189,7 @@ alias.
 | `list_supabase_flavors` | Query application performance flavors for creation sizing | READ |
 | `list_supabase_manageable_instances` | Query existing PostgreSQL instances available for attachment | READ |
 | `create_supabase_application` | Create a Supabase application, with a new or existing instance | DANGEROUS |
-| `delete_supabase_application` | Delete the application and keep the database instance | DANGEROUS |
+| `delete_supabase_application` | Delete the application; on the user's choice also delete the managed database instance, two deletions with separate job ids | DANGEROUS |
 | `delete_supabase_managed_instance` | Delete the managed database instance - irreversible; verifies the managed binding and shared references layer by layer to prevent wrong deletion | DANGEROUS |
 | `get_supabase_order` | Query a prepaid order's status, amounts, currency and line items | READ |
 | `pay_supabase_order` | Complete a balance payment for the approved order, amount and currency to start prepaid delivery | DANGEROUS |

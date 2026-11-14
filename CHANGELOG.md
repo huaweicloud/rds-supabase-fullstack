@@ -7,6 +7,25 @@ semantic versioning.
 
 ### Changed
 
+- `mcp_server_rds_supabase_mgr` v0.4.0a22: `delete_supabase_application`
+  now supports deleting the managed PostgreSQL instance together with the
+  application. A new mandatory `delete_managed_instance` boolean must be
+  set explicitly - the preview is rejected until the user has chosen;
+  defaulting this decision is an incident either way (silent data loss on
+  one side, silent continued billing on the other). False keeps today's
+  behavior: application-only deletion, instance retained. True runs every
+  managed-instance guardrail - live binding verification, the
+  no-shared-reference sweep, and the pre-delete inventory read - BEFORE
+  either deletion is submitted (while the application is still readable),
+  then submits both deletions together and returns both job ids
+  (`job_id` for the application, `instance_job_id` for the instance);
+  each deletion may fail independently and both must be tracked. If the
+  application deletion is accepted but the instance submission outcome is
+  unknown, the plan records accepted and a RecoveryError explains the
+  partial state, preventing blind resubmission. Skill
+  `rds-supabase-mgr-mcp` v0.8.3 makes the instance question a mandatory
+  pre-deletion check in the teardown scenario.
+
 - `mcp_server_rds_supabase_mgr` v0.4.0a21: security-group origin
   tagging and a tag-gated whole-group deletion. `create_supabase_
   security_group` now stamps every group with AUTO_CREATE=true and

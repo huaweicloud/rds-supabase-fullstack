@@ -121,9 +121,16 @@ def register(server):
 
     @server.tool()
     @guard(risk=ToolRisk.DANGEROUS)
-    async def delete_supabase_application(application_id: str, confirm: bool = False, plan_id: str | None = None) -> dict:
-        """Preview or delete only the Supabase application; keeps PG. Never performs cascade PG deletion."""
-        return await service.mutate(application_id, "delete", None, confirm, plan_id)
+    async def delete_supabase_application(application_id: str, delete_managed_instance: bool | None = None, confirm: bool = False, plan_id: str | None = None) -> dict:
+        """Delete one RDS Supabase application, and on the user's explicit choice its managed PostgreSQL instance too.
+
+        The instance choice is mandatory and cannot be defaulted: ask the user first.
+        False deletes only the application - the instance is retained and keeps billing.
+        True submits both deletions together and returns two job ids; the instance deletion
+        is irreversible (all data destroyed, pay-per-use only). All managed-instance
+        guardrails run before anything is submitted.
+        """
+        return await service.delete_application(application_id, delete_managed_instance, confirm, plan_id)
 
     @server.tool()
     @guard(risk=ToolRisk.DANGEROUS)

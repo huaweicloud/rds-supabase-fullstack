@@ -395,6 +395,10 @@ class ManagedInstanceDeleteTests(unittest.IsolatedAsyncioTestCase):
         detail = dict(REAL_DETAIL)
         detail['managed_instance'] = dict(REAL_DETAIL['managed_instance'])
         detail.update(overrides)
+        detail.setdefault('status', 'normal')
+        detail.setdefault('current_actions', [])
+        if detail['status'] == 'abnormal' and 'status' not in overrides:
+            detail['status'] = 'normal'
         return detail
 
     def sweep(self, rows):
@@ -537,3 +541,135 @@ class ManagedInstanceDeleteTests(unittest.IsolatedAsyncioTestCase):
                 await self.ops.delete_managed_instance(APP_ID, INSTANCE_ID, True, preview['plan_id'])
         self.assertEqual(ctx.exception.code, 'MCP_READ_ONLY')
         self.client.request.assert_not_awaited()
+
+
+class DeleteApplicationWithInstanceTests(unittest.IsolatedAsyncioTestCase):
+    APP = 'ad9079c304464c33a4f2fd516d4a3b16in32'
+    INSTANCE = 'ee36e15f94ed4432adb3ada163620d82in03'
+
+    def setUp(self):
+        import os, tempfile
+        from pathlib import Path
+        from unittest.mock import patch
+        from mcp_server_supabase.service.plans import PlanStore
+        self.tmp = tempfile.TemporaryDirectory(); self.addCleanup(self.tmp.cleanup)
+        self.env = patch.dict(os.environ, {'SUPABASE_ENABLE_WRITES': 'true',
+                                           'HUAWEICLOUD_MCP_READ_ONLY': 'false'})
+        self.env.start(); self.addCleanup(self.env.stop)
+        self.client = AsyncMock()
+        self.client.endpoint = 'https://example.invalid'; self.client.project = 'project'; self.client.token = 'fixture'
+        self.ops = Operations(self.client, PlanStore(Path(self.tmp.name) / 'state.db'))
+
+    def detail(self, **overrides):
+        detail = dict(REAL_DETAIL)
+        detail['managed_instance'] = dict(REAL_DETAIL['managed_instance'])
+        detail.update(overrides)
+        detail.setdefault('status', 'normal')
+        detail.setdefault('current_actions', [])
+        if detail['status'] == 'abnormal' and 'status' not in overrides:
+            detail['status'] = 'normal'
+        return detail
+
+    def apps_page(self, rows):
+        return {'total_count': len(rows), 'data': rows}
+
+    async def test_choice_is_mandatory(self):
+        with self.assertRaises(McpToolError) as ctx:
+            await self.ops.delete_application(self.APP, None)
+        self.assertEqual(ctx.exception.code, 'MCP_INVALID_ARGS')
+        self.assertIn('delete_managed_instance', ctx.exception.message)
+
+    async def test_preview_no_shows_both_paths(self):
+        preview = await self.ops.delete_application(self.APP, False)
+        self.assertEqual(preview['status'], 'confirmation_required')
+        self.assertEqual(preview['delete_managed_instance'], False)
+        self.assertTrue(any('retained' in w for w in preview['warnings']))
+        self.assertTrue(any('charges' in w for w in preview['warnings']))
+        self.assertEqual(self.client.request.await_count, 0)
+
+    async def test_preview_yes_warns_irreversible(self):
+        preview = await self.ops.delete_application(self.APP, True)
+        self.assertEqual(preview['delete_managed_instance'], True)
+        self.assertTrue(any('irreversibly' in w for w in preview['warnings']))
+        self.assertTrue(any('simultaneously' in w for w in preview['warnings']))
+        self.assertEqual(self.client.request.await_count, 0)
+
+    async def test_no_path_deletes_application_only(self):
+        preview = await self.ops.delete_application(self.APP, False)
+        self.client.request.side_effect = [
+            (200, self.detail()),                          # readiness read
+            (202, {'job_id': 'job-app'}),                  # application delete
+        ]
+        result = await self.ops.delete_application(self.APP, False, True, preview['plan_id'])
+        self.assertEqual(result['status'], 'accepted')
+        self.assertEqual(result['job_id'], 'job-app')
+        self.assertIsNone(result.get('instance_deletion'))
+        calls = [c.args for c in self.client.request.call_args_list]
+        self.assertEqual(len(calls), 2)                    # no instance reads at all
+
+    async def test_yes_path_deletes_application_and_instance_together(self):
+        preview = await self.ops.delete_application(self.APP, True)
+        self.client.request.side_effect = [
+            (200, self.detail()),                                                   # application readiness
+            # instance preflight (before submission, while the app is readable)
+            (200, self.apps_page([{'id': self.APP, 'managed_instance': {'id': self.INSTANCE}}])),
+            (200, {'total_count': 1, 'instances': [{'id': self.INSTANCE, 'name': 'pg-1'}]}),
+            (202, {'job_id': 'job-app'}),                                           # application delete
+            (200, {'job_id': 'job-inst'}),                                          # instance delete
+        ]
+        result = await self.ops.delete_application(self.APP, True, True, preview['plan_id'])
+        self.assertEqual(result['status'], 'accepted')
+        self.assertEqual(result['job_id'], 'job-app')
+        self.assertEqual(result['instance_job_id'], 'job-inst')
+        self.assertEqual(result['instance_id'], self.INSTANCE)
+        self.assertTrue(any('separate cloud tasks' in w for w in result['warnings']))
+
+    async def test_yes_path_missing_managed_instance_fails_closed_before_submission(self):
+        preview = await self.ops.delete_application(self.APP, True)
+        detail = self.detail(); detail.pop('managed_instance')
+        self.client.request.side_effect = [
+            (200, detail),
+        ]
+        with self.assertRaises(McpToolError) as ctx:
+            await self.ops.delete_application(self.APP, True, True, preview['plan_id'])
+        self.assertEqual(ctx.exception.code, 'MCP_GUARDRAIL_BLOCKED')
+        # no deletion submitted: only the readiness read happened
+        methods = [c.args[0] for c in self.client.request.call_args_list]
+        self.assertEqual(methods, ['GET'])
+
+    async def test_yes_path_unshared_check_blocks_before_submission(self):
+        preview = await self.ops.delete_application(self.APP, True)
+        self.client.request.side_effect = [
+            (200, self.detail()),
+            (200, self.apps_page([{'id': self.APP, 'managed_instance': {'id': self.INSTANCE}},
+                                  {'id': 'other', 'managed_instance': {'id': self.INSTANCE}}])),
+        ]
+        with self.assertRaises(McpToolError) as ctx:
+            await self.ops.delete_application(self.APP, True, True, preview['plan_id'])
+        self.assertEqual(ctx.exception.code, 'MCP_GUARDRAIL_BLOCKED')
+        methods = [c.args[0] for c in self.client.request.call_args_list]
+        self.assertEqual(methods, ['GET', 'GET'])
+
+    async def test_readonly_gate_blocks_before_any_write(self):
+        import os
+        from unittest.mock import patch
+        preview = await self.ops.delete_application(self.APP, False)
+        with patch.dict(os.environ, {'HUAWEICLOUD_MCP_READ_ONLY': 'true'}):
+            with self.assertRaises(McpToolError) as ctx:
+                await self.ops.delete_application(self.APP, False, True, preview['plan_id'])
+        self.assertEqual(ctx.exception.code, 'MCP_READ_ONLY')
+        self.assertEqual(self.client.request.await_count, 0)
+
+    async def test_replay_rejected(self):
+        preview = await self.ops.delete_application(self.APP, False)
+        self.client.request.side_effect = [
+            (200, self.detail()),
+            (202, {'job_id': 'job-app'}),
+        ]
+        await self.ops.delete_application(self.APP, False, True, preview['plan_id'])
+        self.client.request.side_effect = [
+            (200, self.detail()),
+        ]
+        with self.assertRaises(McpToolError) as ctx:
+            await self.ops.delete_application(self.APP, False, True, preview['plan_id'])
+        self.assertEqual(ctx.exception.code, 'MCP_GUARDRAIL_BLOCKED')

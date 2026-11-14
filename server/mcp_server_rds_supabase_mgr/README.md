@@ -4,7 +4,7 @@
 
 ## 版本
 
-0.4.0a21（开发预发行版）；Python `3.10+`；MCP Python SDK `2.x`；31 个工具。
+0.4.0a22（开发预发行版）；Python `3.10+`；MCP Python SDK `2.x`；31 个工具。
 
 ## 概述
 
@@ -154,7 +154,7 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
 | `list_supabase_flavors` | 查询应用可用性能规格，供创建选型 | READ |
 | `list_supabase_manageable_instances` | 查询可关联的已有 PostgreSQL 实例 | READ |
 | `create_supabase_application` | 创建 Supabase 应用，支持新建实例或关联已有实例 | DANGEROUS |
-| `delete_supabase_application` | 删除应用并保留数据库实例，停止应用服务 | DANGEROUS |
+| `delete_supabase_application` | 删除应用；经用户选择可同时删除托管数据库实例，两笔删除各自返回任务编号 | DANGEROUS |
 | `delete_supabase_managed_instance` | 删除应用所托管的数据库实例，数据不可恢复；逐层校验托管关系与共享引用，杜绝误删 | DANGEROUS |
 | `get_supabase_order` | 查询包周期订单的状态、金额、币种与订单明细 | READ |
 | `pay_supabase_order` | 按核准的订单号、金额、币种完成余额支付，开启包周期实例交付 | DANGEROUS |

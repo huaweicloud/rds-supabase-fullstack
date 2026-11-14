@@ -5,7 +5,7 @@ description: RDS Supabase 应用全生命周期管理技能：从零创建一个
 
 # RDS Supabase 应用全生命周期管理
 
-版本 0.8.2；配套服务端 mcp_server_supabase ≥ 0.4.0a21（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
+版本 0.8.3；配套服务端 mcp_server_supabase ≥ 0.4.0a22（uvx 规范入口 mcp-huaweicloud-rds-supabase-mgr）。工具存在不代表服务端已在真实环境联调。
 
 贯穿所有场景的四条铁律：
 1. **写操作两段式**：先预览（confirm=false），把参数、影响、费用展示给用户；用户确认后才提交（confirm=true + 预览返回的 plan_id）。预览 10 分钟有效，参数变了重新预览。
@@ -266,7 +266,7 @@ Key 值**永远不会出现在对话里**——这是红线，用户要也是本
 2. 把这些信息记下来（删完后核对残留用）：公网 IP、安全组 ID、数据库实例 ID、对接过的桶名
 3. 问用户：数据要不要导出？（要 → 先导出再删）
 
-**删除**：`delete_supabase_application` 预览（把"中断服务、不可自动恢复"说清楚）→ 确认 → 提交 → 按用户节奏查任务 → `list_supabase_applications` 确认已消失。
+**删除**：`delete_supabase_application` **必须先问用户"要不要连托管 PG 实例一起删"**（选择不能默认——不问就删是事故，不问就留是持续计费）：选**否**只删应用，实例保留并继续计费；选**是**两笔删除同时提交、返回两个任务编号（`job_id` + `instance_job_id`），实例数据不可恢复、仅限按需计费。预览（把后果说清楚）→ 确认 → 提交 → 按用户节奏用 `show_operation_job_status` 分别查两个任务 → `list_supabase_applications` 确认已消失。
 
 **删除后，给用户一张残留清单**（这些都不会随应用消失）：
 

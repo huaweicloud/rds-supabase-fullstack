@@ -148,7 +148,7 @@ SKILL.md 是主文档；本文件是各场景的详细步骤、字段来源与�
 
 ## 场景六：删除
 
-**删除前预检**：核验状态与进行中操作；记录 public_ip、安全组 ID、数据库实例 ID、桶名（残留核对用）；问数据要不要导出；可选先解绑 EIP（`change_supabase_eip` is_bind=false，不带任何绑定参数）。
+**删除前预检**：核验状态与进行中操作；记录 public_ip、安全组 ID、数据库实例 ID、桶名（残留核对用）；问数据要不要导出；可选先解绑 EIP（`change_supabase_eip` is_bind=false，不带任何绑定参数）。**必问**：要不要连托管 PG 实例一起删（`delete_managed_instance` 选 true/false，不能默认）——选是则应用与实例两笔删除同时提交，返回两个任务编号分别跟踪。
 
 **删除后确认**：按用户节奏查任务 → `list_supabase_applications` 确认消失 → 数据库回到可托管列表（`list_supabase_manageable_instances` 可复核）→ 输出残留清单（见 SKILL.md 六项表）。
 

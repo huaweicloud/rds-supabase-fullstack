@@ -198,7 +198,7 @@ class NetworkDiscovery:
     def __init__(self,koocli=None):
         self.koocli=koocli or KoocliClient()
 
-    async def discover(self,minimum_ips=2,fallback_minimum=1):
+    async def discover(self,minimum_ips=2,fallback_minimum=1,availability_zone=None):
         if type(minimum_ips) is not int or not 1<=minimum_ips<=254 or type(fallback_minimum) is not int or not 1<=fallback_minimum<=minimum_ips:
             raise McpToolError('MCP_INVALID_ARGS','minimum_ips must be an integer 1-254 and fallback_minimum must not exceed it')
         vpcs_data=await self.koocli.call('VPC','ListVpcs/v3',{'limit':100})
@@ -238,9 +238,31 @@ class NetworkDiscovery:
             if fallback is not None:
                 return self._result(fallback,minimum_ips,fallback_minimum,inspected,preference='fallback')
             inspected.append({'vpc_id':vpc_id,'vpc_name':vpc.get('name'),'error':'no eligible subnet'})
-        raise McpToolError('MCP_NOT_FOUND',
-                           'No VPC/subnet with at least %d free IP addresses (%d as fallback) was found in this region'%(minimum_ips,fallback_minimum),
-                           hint='Create a subnet with free IPs first (console or KooCLI), then retry. The Supabase creation request requires vpc_id and subnet_id in basic_config.')
+        # Nothing exists to reuse: recommend the standard defaults instead of failing.
+        # Huawei Cloud's default private range 192.168.0.0/16 is valid across all regions;
+        # the default subnet 192.168.0.0/24 should be placed in the target availability zone
+        # (the AZ the managed RDS instance will live in).
+        return self._default_recommendation(availability_zone,minimum_ips,fallback_minimum,inspected)
+
+    def _default_recommendation(self,availability_zone,minimum_ips,fallback_minimum,inspected):
+        create={'vpc':{'name':'default_vpc','cidr':'192.168.0.0/16'},
+                'subnet':{'name':'default_subnet','cidr':'192.168.0.0/24',
+                          'availability_zone':availability_zone,
+                          'gateway_ip':'192.168.0.1'}}
+        return {'preference':'default_recommendation',
+                'vpc_id':None,'vpc_name':'default_vpc','vpc_cidr':'192.168.0.0/16',
+                'subnet_id':None,'subnet_name':'default_subnet','subnet_cidr':'192.168.0.0/24',
+                'availability_zone':availability_zone,
+                'available_ip_count':None,
+                'ip_requirement':{'preferred':minimum_ips,'fallback':fallback_minimum},
+                'default_create':create,
+                'basic_config_usage':None,
+                'note':'No existing VPC/subnet is usable in this region. The recommended default is VPC default_vpc '
+                       '(192.168.0.0/16, the standard private range valid in all Huawei Cloud regions) with subnet '
+                       'default_subnet (192.168.0.0/24) placed in the target availability zone. Create them first '
+                       '(console or KooCLI: CreateVpc then CreateSubnet with the gateway 192.168.0.1), then re-run '
+                       'discovery - basic_config requires the created vpc_id and subnet_id.',
+                'inspected_vpcs':inspected}
 
     def _result(self,entry,minimum_ips,fallback_minimum,inspected,preference):
         return {**entry,

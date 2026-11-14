@@ -320,15 +320,29 @@ class NetworkDiscoveryTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result['vpc_id'], 'v2')
         self.assertTrue(any('boom' in str(item.get('error', '')) for item in result['inspected_vpcs']))
 
-    async def test_no_match_raises_not_found(self):
-        from huaweicloud_mcp_core.errors import McpToolError as Err
+    async def test_no_match_returns_default_recommendation(self):
         ops, _ = self.make([
             {'vpcs': [self.vpc('v1')]},
             {'subnets': [self.subnet('s1', 0, 'v1')]},
         ])
-        with self.assertRaises(Err) as ctx:
-            await ops.discover()
-        self.assertEqual(ctx.exception.code, 'MCP_NOT_FOUND')
+        result = await ops.discover(availability_zone='cn-east-3a')
+        self.assertEqual(result['preference'], 'default_recommendation')
+        self.assertIsNone(result['vpc_id'])
+        self.assertEqual(result['vpc_name'], 'default_vpc')
+        self.assertEqual(result['vpc_cidr'], '192.168.0.0/16')
+        self.assertEqual(result['subnet_name'], 'default_subnet')
+        self.assertEqual(result['subnet_cidr'], '192.168.0.0/24')
+        self.assertEqual(result['availability_zone'], 'cn-east-3a')
+        self.assertEqual(result['default_create']['subnet']['gateway_ip'], '192.168.0.1')
+        self.assertIsNone(result['basic_config_usage'])
+        self.assertTrue(any(item.get('error') == 'no eligible subnet' for item in result['inspected_vpcs']))
+
+    async def test_empty_region_returns_default_recommendation(self):
+        ops, _ = self.make([{'vpcs': []}])
+        result = await ops.discover()
+        self.assertEqual(result['preference'], 'default_recommendation')
+        self.assertEqual(result['vpc_name'], 'default_vpc')
+        self.assertIsNone(result['availability_zone'])
 
     async def test_invalid_thresholds_rejected(self):
         ops, _ = self.make([])

@@ -251,17 +251,19 @@ def register(server):
 
     @server.tool()
     @guard(risk=ToolRisk.READ)
-    async def discover_available_network_for_create() -> dict:
+    async def discover_available_network_for_create(availability_zone: str | None = None) -> dict:
         """Auto-discover a VPC and an associated subnet with sufficient free IP addresses for the create-with-new-instance scenario.
 
         Walks the VPC inventory and each VPC's subnets, preferring subnets with at least two
         free IPv4 addresses and falling back to one, and stops at the first match. Returns the
         VPC ID/name/CIDR and subnet ID/name/CIDR/availability zone with the free-IP count,
         ready to fill into the Supabase creation request's basic_config (vpc_id, subnet_id).
-        Raises MCP_NOT_FOUND when no eligible subnet exists in the region.
+        When the region has no usable VPC/subnet, returns a recommended default instead of
+        failing: VPC default_vpc (192.168.0.0/16) with subnet default_subnet (192.168.0.0/24)
+        placed in the given availability zone - create them, then re-run discovery.
         """
         network = NetworkDiscovery()
-        return await network.discover()
+        return await network.discover(availability_zone=availability_zone)
 
     @server.tool()
     @guard(risk=ToolRisk.READ)

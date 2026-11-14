@@ -21,24 +21,6 @@ def _failure(error):
     return '（查询失败：'+error+'）'
 
 
-def _flow_created(group):
-    """Same tag contract as the security-group flow: AUTO_CREATE=true + USE_FOR=Supabase."""
-    tags=group.get('tags') if isinstance(group,dict) else None
-    pairs={}
-    if isinstance(tags,dict):
-        pairs={str(k):str(v) for k,v in tags.items()}
-    elif isinstance(tags,list):
-        for item in tags:
-            if isinstance(item,dict) and 'key' in item:
-                pairs[str(item['key'])]=str(item.get('value'))
-    return pairs.get('AUTO_CREATE')=='true' and pairs.get('USE_FOR')=='Supabase'
-
-
-async def _skipped_probe():
-    """Placeholder for probes that cannot run (no engine version to query)."""
-    return None
-
-
 class InstanceCatalog:
     """Read-only RDS engine-level catalogs; the Supabase origin does not serve them, so they run through KooCLI."""
 
@@ -93,21 +75,19 @@ class InstanceCatalog:
                 seen.add(number);ordered.append(name)
         highest=ordered[-1] if ordered else None
         # The remaining sources run concurrently; a single failure degrades only its own section.
-        flavors_result,storage_result,vpcs_result,subnets_result,groups_result=await asyncio.gather(
+        # Network (VPC/subnet) belongs to discover_available_network_for_create; security groups
+        # are intentionally NOT discovered or recommended here - before the network exists no
+        # ingress source can be set meaningfully, and the creation flow provisions a dedicated
+        # group (create_supabase_security_group) after the network is in place.
+        flavors_result,storage_result=await asyncio.gather(
             self.list_flavors(),
             self.list_storage_types(highest,storage_mode) if highest is not None else _skipped_probe(),
-            self.koocli.call('VPC','ListVpcs/v3',{'limit':100}),
-            self.koocli.call('VPC','ListSubnets',{'limit':100}),
-            self.koocli.call('VPC','ListSecurityGroups/v3',{'limit':100}),
             return_exceptions=True)
         flavor_rows,flavor_error=self._rows_of(flavors_result,'data')
         if storage_result is None:
             storage_rows,storage_error=[],STORAGE_SKIPPED
         else:
             storage_rows,storage_error=self._rows_of(storage_result,'data')
-        vpc_rows,vpc_error=self._rows_of(vpcs_result,'vpcs')
-        subnet_rows,subnet_error=self._rows_of(subnets_result,'subnets')
-        group_rows,group_error=self._rows_of(groups_result,'security_groups')
         saleable=[]
         normal_azs=set()
         for row in flavor_rows:
@@ -119,8 +99,6 @@ class InstanceCatalog:
         volume_names=[row['name'] for row in storage_rows if isinstance(row,dict) and row.get('name')]
         volume_recommended=next((name for name in volume_names if 'ESSD' in name),
                                 volume_names[0] if volume_names else None)
-        group_values=[{'id':row['id'],'name':row.get('name'),'flow_created':_flow_created(row)}
-                      for row in group_rows if isinstance(row,dict) and row.get('id')]
         def option_note(base,error):
             return base+_failure(error) if error else base
         options={
@@ -143,26 +121,21 @@ class InstanceCatalog:
             'port':{'recommended':5432,'note':'默认端口，可省略'},
             'enterprise_project_id':{'recommended':'0','note':'默认项目；多企业项目时让用户确认'},
             'password':{'note':'8-32 位三类字符，用户经本地请求文件提供，工具不生成'},
-            'security_group_id':{'values':group_values,'recommended':None,
-                                 'note':option_note('推荐新建专用数据库组（create_supabase_security_group，描述用 数据库接入（自动创建）），别复用共享组',group_error)},
+            'security_group_id':{'values':[],'recommended':None,
+                                 'note':'网络配置（VPC/子网）就位后再新建专用数据库组（create_supabase_security_group，描述用 数据库接入（自动创建）），'
+                                        '随后按入方向来源网段配置 5432 规则——网络未定时无法有效设置入方向，本工具不推荐既有组，也别复用共享组'},
             'configuration_id':{'note':'参数模板，可选，默认不传'},
         }
-        network_note='子网需与所选 VPC 匹配且 IP 充足；在创建请求 basic_config 里给出 vpc_id/subnet_id'
-        if vpc_error:network_note+='（vpcs 查询失败：'+vpc_error+'）'
-        if subnet_error:network_note+='（subnets 查询失败：'+subnet_error+'）'
         status=lambda error:'error: '+error if error else 'ok'
         return {'mode':mode,
                 'managed_instance_field_options':options,
-                'network':{'vpcs':safe(vpc_rows),'subnets':safe(subnet_rows),'note':network_note},
                 'top_level_reminder':['availability_zone 必须与顶层一致（服务端强制校验）',
                                       '数据库密码与应用密码同规则，可同值',
-                                      '本工具只服务新建实例场景；托管已有实例用 list_supabase_manageable_instances'],
+                                      '本工具只服务新建实例场景；托管已有实例用 list_supabase_manageable_instances',
+                                      '网络与安全组不在本工具范围：先用 discover_available_network_for_create 选定 VPC/子网，再新建专用数据库组并配 5432 入方向规则'],
                 'discovery_status':{'engine_versions':status(version_error),
                                     'flavors':status(flavor_error),
-                                    'storage_types':status(storage_error),
-                                    'vpcs':status(vpc_error),
-                                    'subnets':status(subnet_error),
-                                    'security_groups':status(group_error)}}
+                                    'storage_types':status(storage_error)}}
 
     def _rows_of(self,result,key):
         """Tolerant extraction for gathered probes: exceptions report, missing response keys stay empty."""

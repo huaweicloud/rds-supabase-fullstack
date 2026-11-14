@@ -141,12 +141,10 @@ class InstanceCatalogTests(unittest.IsolatedAsyncioTestCase):
         self._push_sources()
         result=await self.catalog.discover_link_create_options('Single')
         self.assertEqual([c[1] for c in self.koocli.calls],
-                         ['ListDatastores','ListFlavors','ListStorageTypes','ListVpcs/v3','ListSubnets','ListSecurityGroups/v3'])
+                         ['ListDatastores','ListFlavors','ListStorageTypes'])
         self.assertEqual(self.koocli.calls[2],('RDS','ListStorageTypes',
                                                {'database_name':'PostgreSQL','version_name':'17','ha_mode':'single'}))
-        self.assertEqual(self.koocli.calls[3],('VPC','ListVpcs/v3',{'limit':100}))
-        self.assertEqual(self.koocli.calls[4],('VPC','ListSubnets',{'limit':100}))
-        self.assertEqual(self.koocli.calls[5],('VPC','ListSecurityGroups/v3',{'limit':100}))
+        self.assertEqual(len(self.koocli.calls),3)  # network/group probes removed
         self.assertEqual(result['mode'],'Single')
         options=result['managed_instance_field_options']
         self.assertEqual(options['datastore.type'],{'fixed':'PostgreSQL'})
@@ -169,14 +167,13 @@ class InstanceCatalogTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(options['enterprise_project_id'],{'recommended':'0','note':'默认项目；多企业项目时让用户确认'})
         self.assertEqual(options['password'],{'note':'8-32 位三类字符，用户经本地请求文件提供，工具不生成'})
         self.assertEqual(options['configuration_id'],{'note':'参数模板，可选，默认不传'})
-        self.assertEqual(options['security_group_id']['values'],
-                         [{'id':'sg-1','name':'db-dedicated','flow_created':True},{'id':'sg-2','name':'shared','flow_created':False}])
+        self.assertEqual(options['security_group_id']['values'],[])
         self.assertIsNone(options['security_group_id']['recommended'])
-        self.assertEqual(result['network']['vpcs'],[{'id':'vpc-1','name':'net-a'}])
-        self.assertEqual(result['network']['subnets'],[{'id':'subnet-1','name':'sub-a','vpc_id':'vpc-1'}])
-        self.assertEqual(set(result['discovery_status']),{'engine_versions','flavors','storage_types','vpcs','subnets','security_groups'})
+        self.assertIn('新建专用数据库组',options['security_group_id']['note'])
+        self.assertNotIn('network',result)  # network scope moved to discover_available_network_for_create
+        self.assertEqual(set(result['discovery_status']),{'engine_versions','flavors','storage_types'})
         self.assertTrue(all(value=='ok' for value in result['discovery_status'].values()))
-        self.assertEqual(result['top_level_reminder'],
+        self.assertEqual(result['top_level_reminder'][:3],
                          ['availability_zone 必须与顶层一致（服务端强制校验）',
                           '数据库密码与应用密码同规则，可同值',
                           '本工具只服务新建实例场景；托管已有实例用 list_supabase_manageable_instances'])
@@ -200,16 +197,18 @@ class InstanceCatalogTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(options['availability_zone']['values'],[])
         self.assertTrue(all(value=='ok' for value in result['discovery_status'].values()))
 
-    async def test_discover_link_options_isolates_vpc_failure(self):
-        self._push_sources(vpcs=McpToolError('MCP_CLI_ERROR','vpc inventory unavailable'))
+    async def test_discover_link_options_has_no_network_or_group_sections(self):
+        self._push_sources()
         result=await self.catalog.discover_link_create_options('Single')
-        self.assertEqual(result['discovery_status']['vpcs'],'error: vpc inventory unavailable')
-        self.assertEqual(result['network']['vpcs'],[])
-        self.assertEqual(result['discovery_status']['subnets'],'ok')
-        self.assertEqual(result['discovery_status']['security_groups'],'ok')
-        self.assertIn('vpcs 查询失败',result['network']['note'])
+        # Network and security groups are out of scope: no probe, no section, guidance only.
+        self.assertNotIn('network',result)
+        self.assertEqual(set(result['discovery_status']),{'engine_versions','flavors','storage_types'})
+        sg=result['managed_instance_field_options']['security_group_id']
+        self.assertEqual(sg['values'],[])
+        self.assertIsNone(sg['recommended'])
+        self.assertIn('discover_available_network_for_create',result['top_level_reminder'][-1])
+        self.assertNotIn('network',result)
         self.assertEqual(result['managed_instance_field_options']['flavor_ref']['recommended'],'rds.pg.n1.medium.2')
-        self.assertEqual(result['network']['subnets'],[{'id':'subnet-1','name':'sub-a','vpc_id':'vpc-1'}])
 
     async def test_discover_link_options_rejects_invalid_mode_before_any_call(self):
         for bad in ('single','ha','',None,'Cluster'):

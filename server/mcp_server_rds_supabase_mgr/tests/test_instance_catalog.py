@@ -239,7 +239,7 @@ class InstanceCatalogTests(unittest.IsolatedAsyncioTestCase):
         server=RecordingServer()
         operations.register(server)
         for name in ('list_db_instance_engine_versions','list_db_instance_flavors_with_azs',
-                     'list_db_instance_storage_types','discover_supabase_link_create_options'):
+                     'list_db_instance_storage_types','discover_db_instance_create_options'):
             self.assertIn(name,server.names)
         for old in ('list_supabase_engine_versions','list_supabase_instance_flavors',
                     'list_supabase_instance_storage_types'):

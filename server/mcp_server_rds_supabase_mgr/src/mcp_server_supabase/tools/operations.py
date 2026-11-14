@@ -251,6 +251,6 @@ def register(server):
 
     @server.tool()
     @guard(risk=ToolRisk.READ)
-    async def discover_supabase_link_create_options(mode: str) -> dict:
+    async def discover_db_instance_create_options(mode: str) -> dict:
         """Discover and pre-fill the managed-instance creation options for the create-with-new-instance scenario: engine versions, instance flavors with per-AZ sale status, storage types, VPC/subnet/security-group inventory, and a recommended value for every managed_instance field. Single/Ha mode shapes the storage and AZ guidance. Not for the attach-existing-instance scenario (use list_supabase_manageable_instances)."""
         return await catalog.discover_link_create_options(mode)

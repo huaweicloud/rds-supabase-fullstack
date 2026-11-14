@@ -5,7 +5,7 @@
 | 级别 | 项 | v1 存放位置 | 说明 |
 |---|---|---|---|
 | 高敏 | `FGS_JWT_SECRET`（GoTrue JWT Secret） | 函数环境变量 | 函数内验签唯一凭据；用户从控制台获取后写入受保护文件 |
-| 高敏 | `SUPABASE_SERVICE_ROLE_KEY` | 函数环境变量 | usage 技能先例：只允许存在于服务端凭据存储（MCP 服务器环境、FunctionGraph 函数环境变量） |
+| 高敏 | `SUPABASE_SERVICE_ROLE_KEY` | 函数环境变量 | 安全边界：只允许存在于服务端凭据存储（MCP 服务器环境、FunctionGraph 函数环境变量），禁止进入前端代码或客户端环境变量 |
 | 高敏 | 外部系统签名密钥（如 `PARTNER_SIGN_KEY`） | 函数环境变量 | 对接外部系统场景 |
 | 低敏 | `SUPABASE_URL`、`FGS_ALLOWED_ORIGINS` | 函数环境变量 | 非秘密（域名/origin 白名单） |
 
@@ -33,7 +33,7 @@ agent **永不接触任何密钥值**。步骤四 env 配置流程：
 | 密钥 | 获取方式 |
 |---|---|
 | `FGS_JWT_SECRET` | 华为云 RDS Supabase 控制台 → 实例 → 认证设置（GoTrue JWT Secret）；复制写入项目内受保护文件 `.hwsupabase/secrets/`（0600），agent 不读内容 |
-| `SUPABASE_SERVICE_ROLE_KEY` | web-build 步骤三已交付的项目内受保护文件复用（`.hwsupabase/secrets/`，deliver_supabase_api_key 产物） |
+| `SUPABASE_SERVICE_ROLE_KEY` | 从 RDS Supabase 控制台实例的 API Key 页获取，写入项目内受保护文件 `.hwsupabase/secrets/`（0600、排除 Git） |
 | `PARTNER_SIGN_KEY` 等 | 用户从对应外部系统获取后写入项目内受保护文件 `.hwsupabase/secrets/` |
 
 ## v2 升级路径（文档化，v1 不实施）

@@ -4,7 +4,7 @@
 
 技能的运行载体为配套的数据面 MCP 服务器 `mcp-server-huaweicloud-rds-supabase`（38 个工具，Apache-2.0，基于 HenkDz/selfhosted-supabase-mcp 的 Python 改进实现）。相对原版本的核心整改：`execute_sql` 采用数据库内加固函数（仅 service_role 可调用、只读白名单）；移除数据库直连通道，SQL 经 PostgREST RPC 执行、用户管理经 GoTrue 管理 API 完成；工具按风险分级并支持只读模式、操作拦截与二次确认规则、调用审计、敏感信息脱敏。
 
-在 Web 全栈开发流程（`rds-supabase-web-build` 技能）中，本技能承担后端环节：后端代码以 init.sql 迁移脚本形式组织，经 `execute_sql` 部署为数据库层定义（表结构、授权、RLS 策略、函数），前端经 REST API 直接消费，应用端无需自建后端服务。
+在后端开发模式中，后端代码以 init.sql 迁移脚本形式组织，经 `execute_sql` 部署为数据库层定义（表结构、授权、RLS 策略、函数），前端经 REST API 直接消费，应用端无需自建后端服务。
 
 > 面向 AI Agent 的执行逻辑见 [SKILL.md](SKILL.md)；本文面向人类读者，提供能力总览与安装指导。
 
@@ -51,26 +51,22 @@
 
 将下面这句话发送给你的 AI Agent（适用于 Claude Code、CodeArts、opencode 等支持 Agent Skills 标准的宿主）：
 
-> 从 https://github.com/huaweicloud/rds-supabase-fullstack 克隆仓库，把 `skills/huaweicloud-supabase/` 下全部技能复制到本项目的项目级技能目录（禁止装入个人级或系统级目录），安装完成后列出已安装的技能清单。
+> 从 https://github.com/huaweicloud/rds-supabase-fullstack 克隆仓库，把 `skills/huaweicloud-supabase/rds-supabase-mcp/` 复制到本项目的项目级技能目录（禁止装入个人级或系统级目录），安装完成后报告安装路径。
 
-说明：
-
-- 整套安装为推荐方式。本技能与 `rds-supabase-usage`、`rds-supabase-postgres-best-practices`、`rds-supabase-web-build` 之间存在任务路由引用，整套安装后路由完整可用。
-- 各宿主的项目级技能目录：Claude Code 为 `<项目根>/.claude/skills/`，opencode 为 `<项目根>/.opencode/skills/`，CodeArts 为 `<项目根>/.codeartsdoer/skills/`；其余宿主使用其项目级技能机制。安装范围与目录约束的完整说明见 [web-build INSTALL.md](../rds-supabase-web-build/INSTALL.md)。
-- 仅需本技能时，可将安装语句中的范围替换为 `skills/huaweicloud-supabase/rds-supabase-mcp/` 单目录复制；跨技能路由将不可用，核心内容不受影响。
+各宿主的项目级技能目录：Claude Code 为 `<项目根>/.claude/skills/`，opencode 为 `<项目根>/.opencode/skills/`，CodeArts 为 `<项目根>/.codeartsdoer/skills/`；其余宿主使用其项目级技能机制。
 
 #### 方式二：手动安装
 
 ```bash
 TMP=$(mktemp -d)
 git clone https://github.com/huaweicloud/rds-supabase-fullstack "$TMP/repo"
-cp -r "$TMP/repo/skills/huaweicloud-supabase/"* <项目技能目录>/
+cp -r "$TMP/repo/skills/huaweicloud-supabase/rds-supabase-mcp" <项目技能目录>/
 rm -rf "$TMP"
 ```
 
-网络不可达时改用 ZIP 归档下载（命令见 [web-build INSTALL.md](../rds-supabase-web-build/INSTALL.md) 方式 B）。禁止使用 `npx skills add` 等包管理器安装——技能包未发布至此类渠道。
+网络不可达时改用 ZIP 归档下载：把上述 git clone 替换为下载 `https://github.com/huaweicloud/rds-supabase-fullstack/archive/refs/heads/main.zip` 并解压，复制解压目录下 `skills/huaweicloud-supabase/rds-supabase-mcp`。禁止使用 `npx skills add` 等包管理器安装——技能包未发布至此类渠道。
 
-安装校验：技能目录内含 `SKILL.md` 与 `references/` 五个参考文档；克隆了仓库的可运行 `uv run --directory server/mcp_server_rds_supabase python ../../scripts/validate_skills.py`，期望输出 `validate-skills: OK (8 skills)`。
+安装校验：技能目录内含 `SKILL.md` 与 `references/` 五个参考文档。
 
 ### 第二步：接入 MCP 服务器（实例创建或选定后执行一次）
 
@@ -112,7 +108,7 @@ Agent 按 [references/install.md](references/install.md) 执行：收集三项�
 }
 ```
 
-注册位置强约束：**只允许写入当前项目的项目级 MCP 配置**（Claude Code `.mcp.json`、opencode `opencode.json`、CodeArts `.codeartsdoer/` 下项目级配置），禁止一切用户级与系统级注册；含凭据的配置文件必须列入项目 `.gitignore`。前置条件：客户端环境已安装 uv；数据库侧部署一次[加固函数](https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase/sql/mcp-execute-sql.sql)（未部署仅影响 execute_sql）。首次接入建议在 env 中叠加 `"HUAWEICLOUD_MCP_READ_ONLY": "true"` 先行只读验证；远程部署（Docker + streamable-http）与环境变量全表见 [references/mcp-installation-guide.md](references/mcp-installation-guide.md)。服务器文档见 [server/mcp_server_rds_supabase/README.md](https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase/README.md)。
+注册位置强约束：**只允许写入当前项目的项目级 MCP 配置**（Claude Code `.mcp.json`、opencode `opencode.json`、CodeArts `mcp_settings.json`），禁止一切用户级与系统级注册；含凭据的配置文件必须列入项目 `.gitignore`。前置条件：客户端环境已安装 uv；数据库侧部署一次[加固函数](https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase/sql/mcp-execute-sql.sql)（未部署仅影响 execute_sql）。首次接入建议在 env 中叠加 `"HUAWEICLOUD_MCP_READ_ONLY": "true"` 先行只读验证；远程部署（Docker + streamable-http）与环境变量全表见 [references/mcp-installation-guide.md](references/mcp-installation-guide.md)。服务器文档见 https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase/README.md 。
 
 ## 使用
 
@@ -123,19 +119,6 @@ Agent 按 [references/install.md](references/install.md) 执行：收集三项�
 > 检查一下当前数据库的安全建议，对外表 RLS 覆盖是否完整。
 
 > 帮我创建一个测试登录用户，邮箱 test@example.com。
-
-## 与其他技能的分工
-
-| 任务 | 技能 |
-|---|---|
-| MCP 服务器操作、init.sql 五步部署规程、用户与存储管理 | `rds-supabase-mcp`（本技能） |
-| 客户端集成、认证排查、Data API 行为、平台调试 | `rds-supabase-usage` |
-| SQL 编写与 schema 设计质量、慢查询/索引/锁优化 | `rds-supabase-postgres-best-practices` |
-| 从需求到上线的全流程编排（含实例创建与本技能的动态接入） | `rds-supabase-web-build` |
-| 管理面 MCP（实例、EIP、SSL、安全组）操作 | `rds-supabase-mgr-mcp` |
-| FunctionGraph 云函数 | `rds-supabase-function-graph` |
-
-边界：实例开通、续费、规格变更、备份策略属云平台控制台，本技能不涉及；`public.migrations` 为平台内部对象，不读、不写、不依赖。
 
 ## 许可
 

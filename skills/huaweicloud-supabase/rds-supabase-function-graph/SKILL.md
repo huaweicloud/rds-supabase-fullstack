@@ -40,9 +40,9 @@ v1 负向边界（不得擅自引入）：专享版 APIG（升级路径见 refer
 
 ## 前置条件
 
-1. 本技能包已按 [README](README.md) 安装；KooCLI（hcloud）已安装——步骤一核对，缺失则提醒安装并停止
-2. RDS Supabase 应用已上线（web-build 步骤八 `launched`）或已有可复用实例；`.hwsupabase/webapp.json` 存在（本技能经 `webapp_ref` 关联）
-3. 凭据：KooCLI 认证（devkit AK/SK 同源，`hcloud configure test` 连通性确认）+ **项目内**受保护文件 `.hwsupabase/secrets/` 中的 `FGS_JWT_SECRET`（用户从控制台获取 GoTrue JWT Secret 后放入，agent 不读内容）——**项目级隔离**：不入全局/系统变量与个人级配置，不污染其他项目（红线见 references/secret-management.md）
+1. 本技能包已按 [README](README.md) 独立安装；KooCLI（hcloud）已安装——步骤一核对，缺失则提醒安装并停止
+2. 已有可用的 RDS Supabase 应用（用户提供接入地址，或项目内已有记录）；`.hwsupabase/webapp.json` 存在时经 `webapp_ref` 关联，不存在则独立使用（允许 null，自建 `.hwsupabase/functions.json` 即可）
+3. 凭据：KooCLI 认证（`hcloud configure test` 连通性确认）+ **项目内**受保护文件 `.hwsupabase/secrets/` 中的 `FGS_JWT_SECRET`（用户从控制台获取 GoTrue JWT Secret 后放入，agent 不读内容）——**项目级隔离**：不入全局/系统变量与个人级配置，不污染其他项目（红线见 references/secret-management.md）
 4. OBS：已有桶可用（artifacts 前缀私有路径，不设公开读）
 
 ## 工作流
@@ -55,14 +55,14 @@ fgs_env_ready → functions_confirmed → code_built → deployed → released �
 ### 步骤一 · 环境检查与配置 → 断点 `fgs_env_ready`
 
 1. 声明步骤一（格式见执行纪律）
-2. 核对：`hcloud --version` / `hcloud configure test`（不通 → 对接卡片给出 AK/SK 配置方式，与 web-build 步骤一凭据同源）、region、`HUAWEICLOUD_PROJECT_ID`
+2. 核对：`hcloud --version` / `hcloud configure test`（不通 → 对接卡片给出 AK/SK 配置方式：devkit 或项目内受保护文件）、region、`HUAWEICLOUD_PROJECT_ID`
 3. **命令面自校准**：执行 `hcloud FGS CreateFunction --help`、`hcloud FGS CreateTrigger --help` 记录实际参数名——本技能文档中的命令均为"知识推断"，**实测前不得假设 schema，一切以 --help 输出为准**
 4. 写 `.hwsupabase/functions.json` 初稿（schema_version、webapp_ref、空 functions）→ history 追加 passed
 
 ### 步骤二 · 需求澄清与逻辑分解 → 断点 `functions_confirmed`
 
 1. 声明步骤二
-2. 判定矩阵逐项分类（适用范围表）：凡"Postgres RPC 可承载"项明确回退 web-build 步骤五，不重复实现
+2. 判定矩阵逐项分类（适用范围表）：凡"Postgres RPC 可承载"项（纯数据变换、单事务一致性）明确回退——已接入数据面 MCP 的经其 `execute_sql` 以 RPC 实现，未接入的告知用户用 SQL 实现，本技能不重复实现
 3. 函数清单表格（对接卡片）：函数名 | 运行时 | 触发类型（apig/timer）| 密钥需求（env 名单）| 幂等需求 | 用户逐项确认
 4. 对外（apig 触发）函数**必须**含 `FGS_JWT_SECRET` 与 `FGS_ALLOWED_ORIGINS` 两个 env 名——红线，缺失即校验失败
 5. 更新 functions.json（functions[].env_names/triggers/idempotency）→ history 追加 passed
@@ -94,9 +94,35 @@ fgs_env_ready → functions_confirmed → code_built → deployed → released �
 ### 步骤六 · 前端联调 → 断点 `integrated`
 
 1. 声明步骤六
-2. 前端 fetch 封装（引用 rds-supabase-usage 技能 SDK 契约）：Authorization 头、request_id 生成、错误码映射
+2. 前端 fetch 封装（要点见下方"fetch 封装契约"）：Authorization 头、request_id 生成、错误码映射
 3. E2E：真实 GoTrue JWT 调用 → 200；重复提交同一幂等键 → 单次生效
 4. `fgs-gate.py check-stage --stage integrated --verify` → history 追加 passed → 步骤总览表全绿收尾
+
+### fetch 封装契约（自包含）
+
+```js
+// supabaseFgs.js —— 调用 APIG 触发函数的唯一封装，业务代码只 import 这个
+export async function callFgs(path, { method = 'POST', body, idempotencyKey }) {
+  const { data: { session } } = await window.supabase.auth.getSession();
+  const requestId = crypto.randomUUID();
+  const res = await fetch(`${FGS_BASE_URL}${path}`, {
+    method,
+    headers: {
+      'Authorization': `Bearer ${session.access_token}`,   // GoTrue JWT，必带
+      'Content-Type': 'application/json',
+      'X-Request-Id': requestId,                            // 每次调用新生成，用于追踪
+      ...(idempotencyKey ? { 'X-Idempotency-Key': idempotencyKey } : {}), // 重试复用同值，服务端去重
+    },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  if (res.status === 401) throw new Error('登录已过期，请重新登录');      // 验签失败
+  if (res.status === 409) throw new Error('重复提交，已忽略');           // 幂等命中
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || `请求失败 ${res.status}`);
+  return res.json();
+}
+```
+
+要点：Authorization 携带 GoTrue JWT（函数侧验签）；X-Request-Id 每次新生成；幂等键在**业务重试时复用同一值**；错误码映射只认函数的统一错误契约（401 过期 / 409 重复 / 其余按 message 展示）。
 
 ## 执行纪律
 
@@ -178,7 +204,7 @@ fgs_env_ready → functions_confirmed → code_built → deployed → released �
 
 - [references/workflow-stages.md](references/workflow-stages.md)：六步三段式 playbook（输入/动作/输出断言 + 白名单 + 黄金路径 + 横向操作）
 - [references/project-state.md](references/project-state.md)：functions.json 契约与 trace 格式
-- [references/routing-matrix.md](references/routing-matrix.md)：与 web-build/usage/pg_cron/pg_net 的分工判定
+- [references/routing-matrix.md](references/routing-matrix.md)：逻辑分工判定矩阵（Postgres RPC / pg_cron / pg_net / FunctionGraph / 边界外）
 - [references/cli-commands.md](references/cli-commands.md)：KooCLI 命令链与自校准纪律
 - [references/secret-management.md](references/secret-management.md)：密钥纪律、cli-json-file 隔离、CSMS v2 升级路径
 - [template/](template/)：零依赖 Node.js 样板（handler/lib/config/test-events）

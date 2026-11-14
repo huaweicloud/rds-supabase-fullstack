@@ -39,7 +39,7 @@ Postgres 规则库技能，源自 Supabase 维护的通用规则集（"for Postg
 说明：
 
 - 各宿主的项目级技能目录：Claude Code 为 `<项目根>/.claude/skills/`，opencode 为 `<项目根>/.opencode/skills/`，CodeArts 为 `<项目根>/.codeartsdoer/skills/`；其余宿主使用其项目级技能机制。
-- 需要完整工作链路（平台操作、客户端集成、全流程编排）时改为整套安装：将安装语句中的范围替换为 `skills/huaweicloud-supabase/` 全目录。安装范围与目录约束的完整说明见 [web-build INSTALL.md](../rds-supabase-web-build/INSTALL.md)。
+- 需要完整技能包（平台操作、客户端集成等）时改为整套安装：将安装语句中的范围替换为 `skills/huaweicloud-supabase/` 全目录。
 
 ### 方式二：手动安装
 
@@ -50,7 +50,7 @@ cp -r "$TMP/repo/skills/huaweicloud-supabase/rds-supabase-postgres-best-practice
 rm -rf "$TMP"
 ```
 
-网络不可达时改用 ZIP 归档下载（命令见 [web-build INSTALL.md](../rds-supabase-web-build/INSTALL.md) 方式 B）。禁止使用 `npx skills add` 等包管理器安装——技能包未发布至此类渠道。
+网络不可达时改用 ZIP 归档下载：把上述 git clone 替换为下载 `https://github.com/huaweicloud/rds-supabase-fullstack/archive/refs/heads/main.zip` 并解压，复制解压目录下 `skills/huaweicloud-supabase/rds-supabase-postgres-best-practices`。禁止使用 `npx skills add` 等包管理器安装——技能包未发布至此类渠道。
 
 安装校验：技能目录内含 `SKILL.md` 且 `references/` 下有 35 个规则文件；克隆了仓库的可运行 `uv run --directory server/mcp_server_rds_supabase python ../../scripts/validate_skills.py`，期望输出 `validate-skills: OK (8 skills)`。
 
@@ -64,7 +64,7 @@ rm -rf "$TMP"
 
 > 给多租户表写 RLS 策略，用户只能访问自己租户的数据。
 
-规则库不限定数据库操作通道：SQL 可经 MCP `execute_sql`、psql 或 RDS 控制台执行；华为云 RDS Supabase 部署的操作规程见 `rds-supabase-mcp` 与 `rds-supabase-usage` 技能。
+规则库不限定数据库操作通道：SQL 可经 MCP `execute_sql`、psql 或 RDS 控制台执行；规则本身适用于任何 Postgres 通道。
 
 ## 许可
 

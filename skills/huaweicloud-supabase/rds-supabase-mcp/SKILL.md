@@ -1,6 +1,6 @@
 ---
 name: rds-supabase-mcp
-description: '华为云 RDS Supabase 管理技能：服务 Web 全栈开发流程，管理部署在华为云 RDS PostgreSQL 上的自建 Supabase 平台（Kong 网关、PostgREST、GoTrue、Storage、Realtime）。Web 应用开发中，后端代码以 init.sql 迁移脚本（DDL、GRANT 等初始化 SQL）形式存在，经本技能部署为数据库层定义，前端经 REST API 直接消费。Use when：RDS Supabase 实例创建完成或选定后，动态安装本 MCP 服务器（凭网关 URL 与 API Key，见 references/install.md）；开发中执行后端代码 init.sql 迁移脚本（建表、授权、RLS、函数）；查询数据库结构与数据；管理登录用户；配置存储桶；检查行级安全（RLS）与安全建议；排查连接与执行计划。本 MCP 服务器基于 HenkDz/selfhosted-supabase-mcp 改进。平台客户端集成见 rds-supabase-usage 技能；SQL 与 schema 质量规则见 rds-supabase-postgres-best-practices 技能。'
+description: '华为云 RDS Supabase 管理技能：管理部署在华为云 RDS PostgreSQL 上的自建 Supabase 平台（Kong 网关、PostgREST、GoTrue、Storage、Realtime）。Web 应用开发中，后端代码以 init.sql 迁移脚本（DDL、GRANT 等初始化 SQL）形式存在，经本技能部署为数据库层定义，前端经 REST API 直接消费。Use when：RDS Supabase 实例创建完成或选定后，动态安装本 MCP 服务器（凭网关 URL 与 API Key，见 references/install.md）；开发中执行后端代码 init.sql 迁移脚本（建表、授权、RLS、函数）；查询数据库结构与数据；管理登录用户；配置存储桶；检查行级安全（RLS）与安全建议；排查连接与执行计划。本 MCP 服务器基于 HenkDz/selfhosted-supabase-mcp 改进。'
 license: MIT
 metadata:
   tags: [huawei-cloud, rds, supabase, postgresql, mcp, database, baas]

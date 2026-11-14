@@ -59,7 +59,7 @@
 
 ## trace.jsonl
 
-共用 `<project>/.hwsupabase/trace.jsonl`（与 web-build 共文件、各查各的阶段枚举）。每个 KooCLI/CLI 调用后追加一行：
+共用 `<project>/.hwsupabase/trace.jsonl`（与其他流程共文件时各查各的阶段枚举）。每个 KooCLI/CLI 调用后追加一行：
 
 ```json
 {"at": "2026-11-11T08:00:00Z", "stage": "deployed", "tool": "hcloud FGS CreateTrigger", "intent": "创建 APIG 触发器", "status": "ok", "note": null}

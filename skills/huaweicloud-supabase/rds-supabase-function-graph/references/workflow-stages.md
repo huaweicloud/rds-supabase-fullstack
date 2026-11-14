@@ -7,7 +7,7 @@
 - **输入**：本技能已触发；`.hwsupabase/` 目录存在或可创建；webapp.json 存在（或用户确认独立使用）
 - **动作**：
   1. 🤖 `hcloud --version`；缺失 → 👤 对接卡片给出安装方式后停止
-  2. 🤖 `hcloud configure test`；不通 → 👤 AK/SK 配置（与 web-build 步骤一凭据同源：devkit 或受保护文件）
+  2. 🤖 `hcloud configure test`；不通 → 👤 AK/SK 配置（devkit 或项目内受保护文件）
   3. 🤖 核对 region 与 `HUAWEICLOUD_PROJECT_ID`
   4. 🤖 **命令面自校准**：`hcloud FGS CreateFunction --help`、`hcloud FGS CreateTrigger --help`、`hcloud FGS UpdateFunctionConfig --help`——记录实际参数名与枚举值（文档命令为知识推断，实测前不得假设）
   5. 🤖 写 functions.json 初稿（schema_version=1、webapp_ref、functions=[]、stages.history 追加 passed）
@@ -18,7 +18,7 @@
 
 - **输入**：`fgs_env_ready`
 - **动作**：
-  1. 🤖 判定矩阵逐项分类（SKILL.md 适用范围表）：Postgres RPC 可承载项 → 明确回退 web-build 步骤五并从清单剔除
+  1. 🤖 判定矩阵逐项分类（SKILL.md 适用范围表）：Postgres RPC 可承载项 → 明确回退数据库 SQL/RPC 实现并从清单剔除
   2. 🤖 函数清单对接卡片：函数名 | 运行时（Node.js18）| 触发类型（apig/timer）| env 名单 | 幂等需求 | → 👤 逐项确认
   3. 🔍 对外（apig）函数 env 名单必含 `FGS_JWT_SECRET` + `FGS_ALLOWED_ORIGINS`；交易类必含 idempotency 配置
   4. 🤖 更新 functions.json（functions[].env_names/triggers/idempotency 草案）
@@ -65,7 +65,7 @@
 
 - **输入**：`released`
 - **动作**：
-  1. 🤖 前端 fetch 封装（引用 rds-supabase-usage 技能 SDK 契约节）：Authorization 头、request_id 生成、错误码映射
+  1. 🤖 前端 fetch 封装（契约见 SKILL.md"fetch 封装契约"）：Authorization 头、request_id 生成、错误码映射
   2. 🤖 E2E：真实 GoTrue JWT 调用 → 200；同幂等键重复提交 → 单次生效
   3. 🔍 `fgs-gate.py check-stage --stage integrated --verify`
 - **输出断言**：`integrated` passed；E2E 结果在案；步骤总览表全绿

@@ -1,6 +1,6 @@
 ---
 name: rds-supabase-mgr-mcp
-description: RDS Supabase 应用全生命周期管理技能：从零创建一个能访问的应用（创建、公网开通 EIP 与安全组配置、接入信息交付）、使用已有应用、按需增强（存储对接、邮箱登录、GitHub 登录）、日常变更（改密码、重置 Key、SSL、EIP）、查询接入信息、删除收尾。管理面 MCP 29 个工具 + KooCLI 协同。Use when：管理 RDS Supabase 应用的创建、配置、网络开通、认证对接、变更与删除。不用于 SQL 与数据操作（数据面另有机能）。
+description: RDS Supabase 应用全生命周期管理技能：从零创建一个能访问的应用（创建、公网开通 EIP 与安全组配置、接入信息交付）、使用已有应用、按需增强（存储对接、邮箱登录、GitHub 登录）、日常变更（改密码、重置 Key、SSL、EIP）、查询接入信息、删除收尾。管理面 MCP 29 个工具 + KooCLI 协同。Use when：管理 RDS Supabase 应用的创建、配置、网络开通、认证对接、变更与删除。不用于 SQL 与数据操作。
 ---
 
 # RDS Supabase 应用全生命周期管理

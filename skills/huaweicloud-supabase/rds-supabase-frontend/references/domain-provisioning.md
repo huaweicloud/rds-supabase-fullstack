@@ -27,9 +27,9 @@
 1. **域名固定**：`<应用名英文化>.huaweicloud-rds.com`（slug：小写字母/数字/连字符；为空或冲突追加短 uuid）——可复现，不随机不询问。
 2. **桶绑定自定义域名**：在 OBS 域名管理为公开读托管桶新增该域名（命令经 `hcloud obs --help` 或官方帮助核实，不猜测字段；先查后建，冲突即停）。
 3. **本机 hosts 映射**：解析 OBS endpoint 的 A 记录 IP → 向 hosts（Linux/macOS `/etc/hosts`；Windows `%SystemRoot%\System32\drivers\etc\hosts`）**追加** `IP → 域名` 行：
-   - **只追加带标记行、禁止破坏已有映射**：行前加标记注释 `# rds-supabase-web-build:<项目名>`；目标域名已存在且 IP 相同 → 幂等跳过；IP 不同 → 仅替换本流程标记行，其余行一律不动
+   - **只追加带标记行、禁止破坏已有映射**：行前加标记注释 `# rds-supabase-frontend:<项目名>`；目标域名已存在且 IP 相同 → 幂等跳过；IP 不同 → 仅替换本流程标记行，其余行一律不动
    - 修改前备份；系统文件须 root/管理员权限——展示精确变更经用户确认后执行
-   - Linux/macOS：`printf '\n# rds-supabase-web-build:<项目名>\n<IP> <域名>\n' | sudo tee -a /etc/hosts`；Windows 管理员 PowerShell：`Add-Content -Path "$env:SystemRoot\System32\drivers\etc\hosts" -Value '# rds-supabase-web-build:<项目名>','<IP> <域名>'`
+   - Linux/macOS：`printf '\n# rds-supabase-frontend:<项目名>\n<IP> <域名>\n' | sudo tee -a /etc/hosts`；Windows 管理员 PowerShell：`Add-Content -Path "$env:SystemRoot\System32\drivers\etc\hosts" -Value '# rds-supabase-frontend:<项目名>','<IP> <域名>'`
 4. **验证**：`GET http://<域名>/` 返回托管内容；OBS endpoint IP 变更时仅更新标记行。
 
 局限：映射仅本机生效；非正式商用入口。转正式模式时按上文正式链路重走，下线时清理标记行并解绑自定义域名。

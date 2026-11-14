@@ -83,6 +83,7 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
   默认查单机模式可用规格，主备 Ha 版以局点实时查询为准
 - 可托管 PostgreSQL 实例查询——关联已有实例场景
 - 托管实例目录查询：引擎版本、实例规格、磁盘类型——同时新建实例场景
+- 应用创建要素一站式探索：版本、部署模式（Single/Ha 实时探测）与所选 AZ 可售应用规格
 - 新建实例场景一站式探索：并发查询全部周边依赖，按请求体逐字段给出推荐配置
 - 网络自动发现：遍历 VPC 与其子网，锁定 IP 资源充足的子网，直接产出 basic_config 的 vpc_id/subnet_id
 - 数据库实例规格查询——同时新建实例场景（经 KooCLI）
@@ -154,6 +155,7 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
 | `update_supabase_auth_flags` | 开关用户注册与匿名访问 | WRITE | [ModifySupabaseApplicationAuthConfig](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ModifySupabaseApplicationAuthConfig) |
 | `update_supabase_auth_config` | 配置 GitHub、SMTP 登录方式与回调地址、邮件模板 | WRITE | [ModifySupabaseApplicationAuthConfig](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ModifySupabaseApplicationAuthConfig) |
 | `update_supabase_storage` | 对接或变更 OBS 存储桶 | WRITE | [ModifySupabaseApplicationStorage](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ModifySupabaseApplicationStorage) |
+| `discover_supabase_create_basic_options` | 应用自身创建要素一站式探索：版本、Single/Ha 支持（实时探测）、所选 AZ 可售应用规格与默认值 | READ | [ListSupabaseApplicationFlavors](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListSupabaseApplicationFlavors) |
 | `plan_supabase_creation` | 创建前的场景规划：输出分阶段的资源准备清单与操作流程 | READ | - |
 | `list_supabase_flavors_with_azs` | 查询应用可用性能规格及各规格支持的可用区列表，供创建选型与可用区选择 | READ | [ListSupabaseApplicationFlavors](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListSupabaseApplicationFlavors) |
 | `list_supabase_manageable_instances` | 查询可关联的已有 PostgreSQL 实例 | READ | [ListSupabaseManageableInstances](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListSupabaseManageableInstances) |

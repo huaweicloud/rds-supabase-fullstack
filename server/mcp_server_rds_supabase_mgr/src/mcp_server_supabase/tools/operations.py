@@ -1,5 +1,5 @@
 from huaweicloud_mcp_core.security import ToolRisk, guard
-from mcp_server_supabase.service.instance_catalog import InstanceCatalog, NetworkDiscovery
+from mcp_server_supabase.service.instance_catalog import InstanceCatalog, NetworkDiscovery, BasicOptionsDiscovery
 from mcp_server_supabase.service.operations import Operations
 
 
@@ -248,6 +248,17 @@ def register(server):
     async def list_db_instance_storage_types(version_name: str, ha_mode: str) -> dict:
         """Query storage types available for a managed PostgreSQL instance in the create-with-new-instance scenario, filtered by engine version and deployment mode (single/ha)."""
         return await catalog.list_storage_types(version_name, ha_mode)
+
+    @server.tool()
+    @guard(risk=ToolRisk.READ)
+    async def discover_supabase_create_basic_options(az_code: str) -> dict:
+        """Discover and pre-fill the Supabase application's own creation basics for one availability zone: available versions, Single/Ha support (live-probed), saleable application flavors with per-AZ status, and defaults for name/password/storage.
+
+        Covers the top-level application fields only. Network (basic_config vpc/subnet) comes from
+        discover_available_network_for_create; managed-instance fields come from
+        discover_db_instance_create_options.
+        """
+        return await BasicOptionsDiscovery().discover(az_code)
 
     @server.tool()
     @guard(risk=ToolRisk.READ)

@@ -103,6 +103,8 @@ lifecycle, control plane).
   scenario
 - Managed-instance catalog queries: engine versions, instance flavors,
   storage types — create-with-new-instance scenario
+- One-call discovery of the application creation basics: versions,
+  deployment mode (Single/Ha live-probed), saleable application flavors
 - One-call discovery for the new-instance scenario: concurrent dependency
   queries with per-field recommended configuration
 - Network auto-discovery: walks VPCs and their subnets, locks a subnet
@@ -193,6 +195,7 @@ alias.
 | `update_supabase_auth_flags` | Toggle user sign-up and anonymous access | WRITE | [ModifySupabaseApplicationAuthConfig](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ModifySupabaseApplicationAuthConfig) |
 | `update_supabase_auth_config` | Configure GitHub and SMTP login, callback URLs and mail templates | WRITE | [ModifySupabaseApplicationAuthConfig](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ModifySupabaseApplicationAuthConfig) |
 | `update_supabase_storage` | Integrate or change the OBS storage bucket | WRITE | [ModifySupabaseApplicationStorage](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ModifySupabaseApplicationStorage) |
+| `discover_supabase_create_basic_options` | One-call discovery of the application creation basics: versions, Single/Ha support (live-probed), saleable application flavors in the chosen AZ | READ | [ListSupabaseApplicationFlavors](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListSupabaseApplicationFlavors) |
 | `plan_supabase_creation` | Pre-creation planning: staged resource preparation checklist and operation flow | READ | - |
 | `list_supabase_flavors_with_azs` | Query application flavors with the AZ list each flavor supports, for sizing and AZ selection | READ | [ListSupabaseApplicationFlavors](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListSupabaseApplicationFlavors) |
 | `list_supabase_manageable_instances` | Query existing PostgreSQL instances available for attachment | READ | [ListSupabaseManageableInstances](https://console.huaweicloud.com/apiexplorer/#/openapi/RDS/doc?api=ListSupabaseManageableInstances) |

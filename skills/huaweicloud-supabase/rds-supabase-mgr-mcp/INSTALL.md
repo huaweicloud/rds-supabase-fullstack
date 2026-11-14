@@ -12,7 +12,7 @@
 |---|---|---|
 | **本技能（安装阶段的全部内容）** | 现在，一次性 | 本仓 `skills/huaweicloud-supabase/rds-supabase-mgr-mcp/` |
 | **KooCLI（hcloud）** | 技能装完后**立即探测，未装则当场安装**（第四节） | 华为云官方发行包（DevKit 同源） |
-| 管理面 MCP 服务器（37 工具） | 技能触发后环境检查通过时动态安装 | 本仓 `server/mcp_server_rds_supabase_mgr/`（不在技能包内，uvx 从 GitHub 直装） |
+| 管理面 MCP 服务器（38 工具） | 技能触发后环境检查通过时动态安装 | 本仓 `server/mcp_server_rds_supabase_mgr/`（不在技能包内，uvx 从 GitHub 直装） |
 | 凭据（AK/SK 或 Token）、Region、PROJECT_ID | 首次使用时 | 项目内受保护文件/用户提供 |
 
 前置：Agent 支持 Agent Skills 标准；网络可达 GitHub（不可达见方式 B）。

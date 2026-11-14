@@ -1,6 +1,6 @@
 import unittest
 from huaweicloud_mcp_core.errors import McpToolError
-from mcp_server_supabase.service.instance_catalog import InstanceCatalog, NetworkDiscovery
+from mcp_server_supabase.service.instance_catalog import InstanceCatalog, NetworkDiscovery, BasicOptionsDiscovery
 
 
 class FakeKoocli:
@@ -349,3 +349,63 @@ class NetworkDiscoveryTests(unittest.IsolatedAsyncioTestCase):
         for bad in ((0, 1), (255, 1), (2, 3), ('2', 1)):
             with self.assertRaises(Exception):
                 await ops.discover(*bad)
+
+
+class BasicOptionsTests(unittest.IsolatedAsyncioTestCase):
+    def make(self, results):
+        ops = type('FakeOps', (), {})()
+        ops.calls = []
+        async def candidates(kind, az_code=None, mode=None):
+            ops.calls.append((kind, az_code, mode))
+            result = results.pop(0)
+            if isinstance(result, Exception):
+                raise result
+            return result
+        ops.creation_candidates = candidates
+        return BasicOptionsDiscovery(ops), ops
+
+    def flavor_page(self, specs):
+        return {'data': {'flavors': [{'mode': 'single', 'version': '1.0.0', 'vcpus': 2, 'ram': 4,
+                                      'spec_code': spec,
+                                      'availability_zones': [{'code': 'cn-east-3a', 'status': 'normal'},
+                                                             {'code': 'cn-east-3b', 'status': 'sellout'}]}
+                                     for spec in specs]}}
+
+    async def test_happy_path_single_and_ha(self):
+        ops, fake = self.make([
+            self.flavor_page(['rds.supabase.n1.large.2', 'rds.supabase.n1.large.4']),
+            self.flavor_page(['rds.supabase.n1.large.2.ha']),
+        ])
+        result = await ops.discover('cn-east-3a')
+        self.assertTrue(result['ha_supported'])
+        self.assertEqual(result['basic_options']['mode']['values'], ['Single', 'Ha'])
+        self.assertEqual(result['basic_options']['version']['recommended'], '1.0.0')
+        self.assertEqual(result['basic_options']['flavor_ref']['recommended'], 'rds.supabase.n1.large.2')
+        self.assertEqual(fake.calls, [('flavors', 'cn-east-3a', 'Single'), ('flavors', 'cn-east-3a', 'Ha')])
+        self.assertIn('discover_available_network_for_create', str(result['excluded_scopes']))
+
+    async def test_ha_probe_rejection_means_single_only(self):
+        from huaweicloud_mcp_core.errors import McpToolError as Err
+        ops, _ = self.make([
+            self.flavor_page(['rds.supabase.n1.large.2']),
+            Err('MCP_INVALID_ARGS', 'backend rejected'),
+        ])
+        result = await ops.discover('cn-east-3a')
+        self.assertFalse(result['ha_supported'])
+        self.assertEqual(result['basic_options']['mode']['values'], ['Single'])
+        self.assertIn('error:', result['probe_status']['application_flavors_ha'])
+
+    async def test_az_sale_filter(self):
+        page = self.flavor_page(['rds.supabase.a'])
+        page['data']['flavors'][0]['availability_zones'] = [{'code': 'cn-east-3a', 'status': 'sellout'},
+                                                            {'code': 'cn-east-3b', 'status': 'normal'}]
+        ops, _ = self.make([page, self.flavor_page([])])
+        result = await ops.discover('cn-east-3a')
+        # nothing saleable in cn-east-3a -> falls back to unfiltered spec list with the note
+        self.assertEqual(result['basic_options']['flavor_ref']['values'], ['rds.supabase.a'])
+
+    async def test_invalid_az_rejected(self):
+        ops, _ = self.make([])
+        for bad in ('', 'not-an-az', 'CN-EAST-3A'):
+            with self.assertRaises(Exception):
+                await ops.discover(bad)

@@ -272,3 +272,82 @@ class NetworkDiscovery:
                 'note':'Fill these values into the Supabase creation request basic_config (vpc_id, subnet_id). '
                        'available_ip_count comes from the VPC service; a fallback pick means fewer free IPs than preferred - verify capacity before creating.',
                 'inspected_vpcs':inspected}
+
+
+class BasicOptionsDiscovery:
+    """One-call discovery of the Supabase application's own creation basics.
+
+    Covers the top-level application fields only - name/version/mode/flavor/
+    availability_zone plus the deployment-mode probe. Network (basic_config
+    vpc/subnet) is owned by NetworkDiscovery; the managed PG instance fields
+    are owned by InstanceCatalog.discover_link_create_options.
+    """
+
+    def __init__(self,operations=None):
+        self.operations=operations
+
+    def _ops(self):
+        if self.operations is None:
+            from mcp_server_supabase.service.operations import Operations
+            self.operations=Operations()
+        return self.operations
+
+    async def discover(self,az_code):
+        az_code=az_code if isinstance(az_code,str) and re.fullmatch(r'[a-z]{2,}-[a-z]+-\d+[a-z]',az_code or '') else None
+        if not az_code:
+            raise McpToolError('MCP_INVALID_ARGS','az_code must be an availability-zone code like cn-east-3a (query it via list_supabase_flavors_with_azs)')
+        probes={}
+        flavors_single=flavors_ha=None
+        try:
+            result=await self._ops().creation_candidates('flavors',az_code=az_code,mode='Single')
+            flavors_single=result.get('data') if isinstance(result,dict) else None
+            flavors_single=flavors_single.get('flavors') if isinstance(flavors_single,dict) else flavors_single
+            if not isinstance(flavors_single,list):flavors_single=[]
+            probes['application_flavors_single']='ok'
+        except McpToolError as error:
+            probes['application_flavors_single']='error: '+_error_text(error)
+        try:
+            result=await self._ops().creation_candidates('flavors',az_code=az_code,mode='Ha')
+            flavors_ha=result.get('data') if isinstance(result,dict) else None
+            flavors_ha=flavors_ha.get('flavors') if isinstance(flavors_ha,dict) else flavors_ha
+            if not isinstance(flavors_ha,list):flavors_ha=[]
+            probes['application_flavors_ha']='ok'
+        except McpToolError as error:
+            probes['application_flavors_ha']='error: '+_error_text(error)
+            flavors_ha=None  # a 400 rejection is the documented signal that Ha is unsupported here
+        ha_supported=isinstance(flavors_ha,list) and bool(flavors_ha)
+        rows=flavors_single if isinstance(flavors_single,list) else []
+        versions=sorted({str(row.get('version')) for row in rows if isinstance(row,dict) and row.get('version')})
+        # Application flavors carry per-AZ sale status; keep only specs saleable in the requested AZ.
+        def saleable(row):
+            return any(isinstance(az,dict) and az.get('code')==az_code and az.get('status')=='normal'
+                       for az in row.get('availability_zones') or [])
+        specs=[row for row in rows if isinstance(row,dict) and row.get('spec_code')]
+        saleable_specs=[row for row in specs if saleable(row)]
+        preferred=saleable_specs or specs
+        options={
+            'name':{'note':'应用名称，4-64 字符；由用户起名，工具不生成'},
+            'version':{'values':versions,'recommended':versions[-1] if versions else None,
+                       'note':'Supabase 应用版本（x.y.z，非 PG 引擎版本）；取可用最高版'},
+            'mode':{'values':['Single','Ha'] if ha_supported else ['Single'],
+                    'recommended':'Single',
+                    'note':'Single 单机 / Ha 主备；Ha 是否可用按局点实时探测（本次探测：%s）'%('支持' if ha_supported else '不支持')},
+            'flavor_ref':{'values':[row['spec_code'] for row in preferred[:20]],
+                          'recommended':preferred[0]['spec_code'] if preferred else None,
+                          'note':'应用规格（rds.supabase.*，与托管实例规格 rds.pg.* 是两回事）；仅列在所选 AZ 可售的规格，默认勾选 2U4G 档'},
+            'availability_zone':{'values':[az_code],
+                                 'note':'本次查询的 AZ；Ha 模式需两个不同 AZ（主+备），用 list_supabase_flavors_with_azs 查全部可售 AZ'},
+            'password':{'note':'8-32 位三类字符；用户经本地请求文件提供，工具不生成'},
+            'storage_component':{'values':[{'enabled':False},{'enabled':True}],
+                                 'recommended':{'enabled':False},
+                                 'note':'OBS 存储对接：有图片/视频/大文件需求才启用；启用需桶名与 AK/SK（经本地请求文件）'},
+        }
+        return {'az_code':az_code,
+                'basic_options':options,
+                'ha_supported':ha_supported,
+                'excluded_scopes':['network (basic_config vpc/subnet) -> discover_available_network_for_create',
+                                   'managed instance fields -> discover_db_instance_create_options'],
+                'probe_status':probes,
+                'note':'Top-level application basics for create_supabase_application. '
+                       'Flavor sale status is per-AZ from the Supabase flavor API; the Ha probe uses the same API - '
+                       'a rejection means this environment supports Single only.'}

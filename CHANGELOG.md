@@ -5,6 +5,20 @@ semantic versioning.
 
 ## [Unreleased]
 
+### Changed
+
+- `mcp_server_rds_supabase_mgr` v0.4.0a24: endpoint resolution now follows
+  the GaussDB MCP convention. `SUPABASE_RDS_ENDPOINT` becomes an explicit
+  override rather than a hard requirement: when absent, the standard
+  regional RDS origin `https://rds.<region>.myhuaweicloud.com` is derived
+  from `HUAWEICLOUD_REGION` (the same variable the KooCLI channel already
+  uses). Resolution order: constructor argument, then SUPABASE_RDS_
+  ENDPOINT, then region derivation, then empty with an actionable error
+  naming both variables. Applies uniformly to the REST and sdk_core
+  transports via a shared resolve_endpoint helper; diagnostics discover
+  is unchanged. README (zh/en) environment table updated: the variable is
+  optional with region-derived default.
+
 ### Added
 
 - `mcp_server_rds_supabase_mgr` v0.4.0a23: new tool

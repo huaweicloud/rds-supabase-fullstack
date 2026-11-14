@@ -256,7 +256,7 @@ uv run python -m mcp_server_supabase.diagnostics readonly --allow-cloud-read
 
 | 变量 | 必填 | 说明 | 默认值 |
 |---|---|---|---|
-| `SUPABASE_RDS_ENDPOINT` | 是 | 原生 RDS HTTPS 服务入口（不含路径/查询/用户信息；非 Console 或 /rest 代理）。可由 `diagnostics discover` 从凭据推导生成 | - |
+| `SUPABASE_RDS_ENDPOINT` | 否 | 原生 RDS HTTPS 服务入口（不含路径/查询/用户信息；非 Console 或 /rest 代理）。缺省时由 `HUAWEICLOUD_REGION` 推导标准区域入口 `https://rds.<region>.myhuaweicloud.com`；也可由 `diagnostics discover` 从凭据推导生成 | 按区域推导 |
 | `HUAWEICLOUD_PROJECT_ID` | 是 | 目标项目 ID（与局点一致） | - |
 | `HUAWEICLOUD_AUTH_TOKEN` | REST 模式必填 | 外部预置的服务 Token，每次请求读取 | - |
 | `SUPABASE_TRANSPORT` | 否 | 设为 `sdk_core` 启用华为 SDK Core 签名模式 | REST token |

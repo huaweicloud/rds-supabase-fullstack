@@ -308,7 +308,7 @@ tool parameters.
 
 | Variable | Required | Description | Default |
 |---|---|---|---|
-| `SUPABASE_RDS_ENDPOINT` | yes | Native RDS HTTPS origin (no path/query/userinfo; not the Console or a /rest proxy). Derivable via `diagnostics discover` | - |
+| `SUPABASE_RDS_ENDPOINT` | no | Native RDS HTTPS origin (no path/query/userinfo; not the Console or a /rest proxy). When absent, derived from `HUAWEICLOUD_REGION` as `https://rds.<region>.myhuaweicloud.com`; also derivable via `diagnostics discover` | derived per region |
 | `HUAWEICLOUD_PROJECT_ID` | yes | Target project ID (region-consistent) | - |
 | `HUAWEICLOUD_AUTH_TOKEN` | REST mode | Pre-provisioned service token, read per request | - |
 | `SUPABASE_TRANSPORT` | no | Set `sdk_core` to enable Huawei SDK Core signing | REST token |

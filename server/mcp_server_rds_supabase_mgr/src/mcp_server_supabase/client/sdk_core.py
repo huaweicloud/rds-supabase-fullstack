@@ -12,7 +12,7 @@ from huaweicloudsdkcore.sdk_response import SdkResponse
 from huaweicloudsdkcore.exceptions.exceptions import ServiceResponseException
 from huaweicloud_mcp_core.errors import McpToolError
 from mcp_server_supabase.failures import http_failure, RecoveryError
-from mcp_server_supabase.client.rest import segment, error_detail
+from mcp_server_supabase.client.rest import segment, error_detail, resolve_endpoint
 
 
 class QuietSdkClient(Client):
@@ -33,7 +33,7 @@ class WireResponse(SdkResponse):
 
 class SdkCoreClient:
     def __init__(self, endpoint=None, project=None, ak=None, sk=None, security_token=None, allow_loopback=False):
-        self.endpoint=endpoint or os.getenv('SUPABASE_RDS_ENDPOINT','')
+        self.endpoint=resolve_endpoint(endpoint)
         self.project=project or os.getenv('HUAWEICLOUD_PROJECT_ID','')
         self._ak=ak if ak is not None else os.getenv('HUAWEICLOUD_ACCESS_KEY','')
         self._sk=sk if sk is not None else os.getenv('HUAWEICLOUD_SECRET_KEY','')
@@ -51,7 +51,8 @@ class SdkCoreClient:
             url=urlsplit(self.endpoint)
             local=self.allow_loopback and url.hostname in ('127.0.0.1','localhost')
             if not url.hostname or url.username or url.password or url.query or url.fragment or url.path not in ('','/') or not (url.scheme=='https' or local and url.scheme=='http'):
-                raise McpToolError('MCP_INVALID_ARGS','Configure a verified HTTPS service origin')
+                raise McpToolError('MCP_INVALID_ARGS','Configure a verified HTTPS service origin',
+                                   hint='Set SUPABASE_RDS_ENDPOINT explicitly, or set HUAWEICLOUD_REGION so the standard RDS origin can be derived.')
             if not self._ak or not self._sk or any(c in v for v in (self._ak,self._sk,self._security_token) for c in ('\r','\n')):
                 raise McpToolError('MCP_PERMISSION_DENIED','Missing or invalid SDK credentials')
             # Project-scoped signing only for service paths carrying the placeholder;

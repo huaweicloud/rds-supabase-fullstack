@@ -250,3 +250,23 @@ class HttpTests(unittest.IsolatedAsyncioTestCase):
         result=await self.service.mutate('app','eip',{'is_bind':False})
         self.assertIn('unbinding does not release',str(result['warnings']))
         self.assertEqual(Handler.calls,[])
+
+
+class ResolveEndpointTests(unittest.TestCase):
+    def test_resolution_order(self):
+        from mcp_server_supabase.client.rest import resolve_endpoint
+        saved = {k: os.environ.pop(k, None) for k in ('SUPABASE_RDS_ENDPOINT', 'HUAWEICLOUD_REGION')}
+        try:
+            self.assertEqual(resolve_endpoint(), '')
+            os.environ['HUAWEICLOUD_REGION'] = 'cn-east-3'
+            self.assertEqual(resolve_endpoint(), 'https://rds.cn-east-3.myhuaweicloud.com')
+            os.environ['SUPABASE_RDS_ENDPOINT'] = 'https://custom.example.com'
+            self.assertEqual(resolve_endpoint(), 'https://custom.example.com')
+            self.assertEqual(resolve_endpoint('https://ctor.example.com'), 'https://ctor.example.com')
+            os.environ.pop('HUAWEICLOUD_REGION')
+            os.environ['SUPABASE_RDS_ENDPOINT'] = '  https://padded.example.com  '
+            self.assertEqual(resolve_endpoint(), 'https://padded.example.com')
+        finally:
+            for key, value in saved.items():
+                if value is not None:
+                    os.environ[key] = value

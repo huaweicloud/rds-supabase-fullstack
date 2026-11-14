@@ -29,9 +29,24 @@ def error_detail(raw):
     return detail or None
 
 
+def resolve_endpoint(explicit=None):
+    """Endpoint resolution follows the GaussDB MCP convention: an explicit
+    SUPABASE_RDS_ENDPOINT override wins; otherwise the standard regional RDS
+    origin is derived from HUAWEICLOUD_REGION."""
+    if explicit:
+        return explicit
+    override = os.getenv("SUPABASE_RDS_ENDPOINT", "").strip()
+    if override:
+        return override
+    region = os.getenv("HUAWEICLOUD_REGION", "").strip()
+    if region:
+        return f"https://rds.{region}.myhuaweicloud.com"
+    return ""
+
+
 class RestClient:
     def __init__(self, endpoint=None, project=None, token=None, allow_loopback=False):
-        self.endpoint = endpoint or os.getenv("SUPABASE_RDS_ENDPOINT", "")
+        self.endpoint = resolve_endpoint(endpoint)
         self.project = project or os.getenv("HUAWEICLOUD_PROJECT_ID", "")
         self.token = token
         self.allow_loopback = allow_loopback

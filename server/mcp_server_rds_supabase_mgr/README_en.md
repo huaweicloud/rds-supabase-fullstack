@@ -74,17 +74,28 @@ lifecycle, control plane).
 **Application query**
 
 - Application list: pagination, filtering, sorting
-- Application detail: basic configuration (name, mode, status, port),
-  flavor configuration (flavor, volume, nodes), security configuration
-  (SSL), network configuration (public/private IPs, DNAT)
-- Management capability scope and boundary declaration (offline; no cloud
-  probing)
+- Application detail: basic configuration (name, mode, status), flavor
+  configuration (flavor, nodes), security configuration (SSL), network
+  configuration (public/private IPs, port), storage configuration (OBS
+  bucket integration)
+- Capability list: what this service manages, what it does not, and what
+  stays with the user
 
 **Application creation**
 
-- Scenario planning: staged preparation checklist and operation flow by
-  creation intent (database route, storage, public access, SSL)
-- Application flavor query
+- Analyze the business scenario and usage pattern before creating, then
+  break it down item by item - what to prepare for each scenario and
+  how:
+  - **Managed database instance**: create a new instance, or attach an
+    existing one
+  - **OBS storage integration**: for image, video, and large-file
+    storage needs
+  - **EIP binding**: for public-network access
+  - **SSL integration**: for high-security requirements; a CCM
+    certificate must be purchased first
+- Application flavor list query: defaults to Single-mode flavors; whether
+  Ha (primary/standby) flavors are available depends on real-time,
+  region-specific queries
 - Manageable PostgreSQL instance query — create-with-existing-instance
   scenario
 - Database instance flavor query — create-with-new-instance scenario

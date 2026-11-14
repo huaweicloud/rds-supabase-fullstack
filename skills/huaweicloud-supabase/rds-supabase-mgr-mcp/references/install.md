@@ -124,8 +124,8 @@ opencode 项目 `opencode.json` 等价写法（V2 结构：服务器条目位于
 ### 会话内使能（动态安装后免重启）
 
 **慢网络/健康检查超时**：uvx 每次启动都对 git+PyPI 做在线解析，弱网下可能超过宿主约 30 秒的健康检查窗口（症状：MCP 面板显示 failed: Operation timed out）。处置二选一：
-- **预热缓存**：用同一来源跑一次 `uvx --from "<上述 git 来源>" mcp-huaweicloud-rds-supabase-mgr --help`，装完依赖再回宿主重连；PyPI 慢可在命令前加 `UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple`
-- **固化安装**（启动零网络解析，最稳）：`uv tool install "mcp-server-supabase @ git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr"`（更新用 `uv tool update mcp-server-supabase`），然后把 MCP 配置的 command 改指 `~/.local/bin/mcp-huaweicloud-rds-supabase-mgr`，env 不变
+- **预热缓存**：用同一来源跑一次 `uvx --from "<上述 git 来源>" mcp-huaweicloud-rds-supabase-mgr --help`，装完依赖再回宿主重连；PyPI 慢可设 `UV_DEFAULT_INDEX` 指向网络可达的镜像（镜像任选，网络通就行）
+- **固化安装**（启动零网络解析，最稳）：`uv tool install "mcp-server-supabase @ git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr"`（更新用 `uv tool update mcp-server-supabase`），然后把 MCP 配置的 command 改指安装产物入口 `mcp-huaweicloud-rds-supabase-mgr`（路径以 `uv tool dir` / shell 提示的安装位置为准，勿凭记忆猜），env 不变
 
 配置写入项目级文件后，**当前会话**即可使能，不需要退出重进：
 

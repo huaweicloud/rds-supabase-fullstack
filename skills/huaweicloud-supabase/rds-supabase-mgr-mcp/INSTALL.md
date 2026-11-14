@@ -75,7 +75,7 @@ rm -rf "$TMP"
 hcloud version
 ```
 
-有版本输出 → 已安装，记录版本号进完成报告，本节结束。命令不存在但二进制已知在固定目录（如 `~/.local/bin/hcloud`，`ls` 可确认）→ 只是把该目录加入 shell 配置（`export PATH="$HOME/.local/bin:$PATH"` 写入 `~/.zshrc` 或对应文件）后重试，无需重装。命令确实不存在 → 按平台安装（方式 A/B 择一）。
+有版本输出 → 已安装，记录版本号进完成报告，本节结束。命令不存在但二进制已知在别处（KooCLI 官方安装脚本与固定版本包的默认落位、或用户自选目录）→ 先定位（如 `ls` 检查各默认落位目录、`find ~ -name hcloud -type f 2>/dev/null` 按需使用），确认存在后把所在目录加入 shell 配置（在 `~/.zshrc`/`~/.bashrc` 或对应文件加一行 `export PATH="<该目录>:$PATH"`）后重试 `hcloud version`，无需重装；或按第四节需要设 `HCLOUD_BIN` 指向该二进制。命令确实不存在 → 按平台安装（方式 A/B 择一）。
 
 ### 2. 安装（方式 A/B 择一）
 

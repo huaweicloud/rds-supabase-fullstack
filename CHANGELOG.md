@@ -16,14 +16,16 @@ semantic versioning.
 
 - Skill `rds-supabase-mgr-mcp` deployment guidance from live install
   testing: (1) INSTALL.md section 4 probe step now handles the
-  installed-but-not-on-PATH case (binary at ~/.local/bin/hcloud found by
-  ls, fix is one PATH export in the shell rc instead of reinstalling);
-  (2) references/install.md gains a slow-network fallback for the uvx
-  health-check timeout (symptom: MCP panel shows failed - Operation
-  timed out): pre-warm the uvx cache once (optionally via the Tsinghua
-  PyPI mirror with UV_DEFAULT_INDEX) or pin the server with
+  installed-but-not-on-PATH case (locate the binary in its install dir,
+  add that dir to the shell PATH, or point HCLOUD_BIN at it - no
+  reinstall); (2) references/install.md gains a slow-network fallback for
+  the uvx health-check timeout (symptom: MCP panel shows failed -
+  Operation timed out): pre-warm the uvx cache once (any reachable PyPI
+  mirror via UV_DEFAULT_INDEX if needed) or pin the server with
   `uv tool install` and point the MCP command at the installed
-  executable for zero-resolution startup.
+  executable (location per `uv tool dir`) for zero-resolution startup.
+  Guidance is location- and mirror-agnostic: it names the method and
+  leaves the concrete path/mirror to the user's environment.
 
 ### Changed
 

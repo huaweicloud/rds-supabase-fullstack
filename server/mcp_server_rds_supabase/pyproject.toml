@@ -21,6 +21,11 @@ classifiers = [
 dependencies = [
   "huaweicloud-mcp-core>=1.0,<2",
   "httpx>=0.27,<1",
+  # Supply-chain floor: huaweicloudsdkcore<=3.1.218 transitively pins
+  # pyasn1<=0.6.3 (3 DoS CVEs: CVE-2026-59884/59885/59886). The local
+  # tool.uv override cannot propagate into published metadata, so the
+  # floor is declared explicitly here for PyPI installs.
+  "pyasn1>=0.6.4",
 ]
 
 [project.scripts]
@@ -43,6 +48,9 @@ constraint-dependencies = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/mcp_server_rds_supabase"]
+
+[tool.hatch.build.targets.sdist]
+only-include = ["src/mcp_server_rds_supabase", "sql", "README.md", "README_zh.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

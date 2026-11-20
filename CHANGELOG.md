@@ -5,6 +5,30 @@ semantic versioning.
 
 ## [Unreleased]
 
+### Added
+
+- Data-plane MCP (`mcp_server_rds_supabase`) prepared for standalone PyPI
+  release as **mcp-server-huaweicloud-rds-supabase 0.4.1** (name verified
+  free; both mcp-server-* and mcp-huaweicloud-* spellings were unclaimed,
+  the mcp-server prefix chosen for MCP-ecosystem discoverability, entry
+  point identical to the package name):
+  - pyproject: explicit `pyasn1>=0.6.4` dependency - the local
+    tool.uv override cannot propagate into published metadata, and
+    huaweicloudsdkcore<=3.1.218 transitively pins pyasn1<=0.6.3 (3 DoS
+    CVEs); the floor keeps the fix on the PyPI install path
+  - pyproject: sdist converged via only-include (src + sql + READMEs;
+    tests/examples/Dockerfile/uv.lock excluded), wheel unchanged
+  - .github/workflows/publish-mcp-server-rds-supabase.yml: tag-triggered
+    (mcp-server-rds-supabase-v*) release pipeline - uv sync + 241-case
+    test gate, uv build, twine check, then `uv publish --trusted-publishing
+    automatic --check-url` (Trusted Publishing, zero tokens; idempotent
+    on re-runs). First release requires the PyPI pending publisher to be
+    configured by the account owner
+  - upstream core check: local libs/huaweicloud_mcp_core is byte-identical
+    to the upstream HEAD (src + pyproject; upstream "Bump dependency
+    versions" only refreshed dev uv.locks), version 1.0.0 on both sides
+    - no sync needed, PyPI dependency chain intact
+
 ### Changed
 
 - mgr-mcp INSTALL.md gains an installation-discipline block for the

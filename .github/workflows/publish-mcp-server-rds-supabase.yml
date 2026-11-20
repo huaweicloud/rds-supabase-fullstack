@@ -1,0 +1,36 @@
+name: publish-mcp-server-rds-supabase
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['mcp-server-rds-supabase-v*']
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Test
+        run: |
+          cd server/mcp_server_rds_supabase
+          uv sync --frozen
+          uv run pytest -q
+
+      - name: Build and check
+        run: |
+          cd server/mcp_server_rds_supabase
+          uv build
+          uvx twine check dist/*
+      - name: Publish (Trusted Publishing)
+        run: |
+          cd server/mcp_server_rds_supabase
+          uv publish --trusted-publishing automatic --check-url https://pypi.org/simple/

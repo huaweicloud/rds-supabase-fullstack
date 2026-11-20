@@ -19,7 +19,7 @@ jobs:
       contents: write        # commit the refreshed uv.lock back
       id-token: write        # Trusted Publishing
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: develop          # commit the refreshed lockfile back to develop
                                  # (a tag checkout is a detached HEAD with no branch to push)

@@ -3,9 +3,7 @@
 ## 安装服务器
 
 ```bash
-uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack \
-  --subdirectory server/mcp_server_rds_supabase \
-  mcp-server-huaweicloud-rds-supabase
+uvx mcp-server-huaweicloud-rds-supabase
 ```
 
 或本地已克隆仓库时等价运行：`uv run --directory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase`（虚拟环境只生成于仓内目录；生产建议 pin `@<commit>`）。禁止 `pip install` / `uv tool install` 装入用户级或系统级环境——入口与包将跨项目可见，违反项目级隔离约束。
@@ -18,8 +16,6 @@ uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack \
     "rds-supabase": {
       "command": "uvx",
       "args": [
-        "--from", "git+https://github.com/huaweicloud/rds-supabase-fullstack",
-        "--subdirectory", "server/mcp_server_rds_supabase",
         "mcp-server-huaweicloud-rds-supabase"
       ],
       "env": {

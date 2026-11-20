@@ -25,6 +25,29 @@ mode, protection lists, structured audit), and a hardened in-database
 shapes and error messages are kept identical to the upstream TypeScript
 server; the adaptation adds the platform guardrail layer on top.
 
+## Installation
+
+Published on PyPI — one command runs it (no checkout, no pip):
+
+```bash
+uvx mcp-server-huaweicloud-rds-supabase
+```
+
+Or install then run:
+
+```bash
+pip install mcp-server-huaweicloud-rds-supabase
+mcp-server-huaweicloud-rds-supabase
+```
+
+From the source workspace:
+
+```bash
+cd /absolute/path/to/rds-supabase-fullstack/server/mcp_server_rds_supabase
+uv sync --frozen
+uv run mcp-server-huaweicloud-rds-supabase
+```
+
 ## Quick start
 
 ```bash
@@ -33,9 +56,7 @@ HUAWEICLOUD_MCP_READ_ONLY=true \
 SUPABASE_URL=https://your-instance \
 SUPABASE_ANON_KEY=<anon-key> \
 SUPABASE_SERVICE_ROLE_KEY=<service-key> \
-uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack \
-  --subdirectory server/mcp_server_rds_supabase \
-  mcp-server-huaweicloud-rds-supabase
+uvx mcp-server-huaweicloud-rds-supabase
 ```
 
 Standard stdio client configuration:
@@ -46,8 +67,6 @@ Standard stdio client configuration:
     "rds-supabase": {
       "command": "uvx",
       "args": [
-        "--from", "git+https://github.com/huaweicloud/rds-supabase-fullstack",
-        "--subdirectory", "server/mcp_server_rds_supabase",
         "mcp-server-huaweicloud-rds-supabase"
       ],
       "env": {
@@ -159,9 +178,7 @@ deploy the definition via the management console to enable the channel.
 
 ```bash
 # uvx (no checkout)
-uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack \
-  --subdirectory server/mcp_server_rds_supabase \
-  mcp-server-huaweicloud-rds-supabase
+uvx mcp-server-huaweicloud-rds-supabase
 
 # pip from a checkout
 pip install ./server/mcp_server_rds_supabase
@@ -209,9 +226,7 @@ rules:
 
 ```bash
 MCP_SERVER_HOST=0.0.0.0 MCP_SERVER_PORT=8000 \
-uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack \
-  --subdirectory server/mcp_server_rds_supabase \
-  mcp-server-huaweicloud-rds-supabase -t streamable-http
+uvx mcp-server-huaweicloud-rds-supabase -t streamable-http
 ```
 
 The Streamable HTTP endpoint is `/mcp`. Protect it at the network layer: the

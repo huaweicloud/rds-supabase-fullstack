@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mcp-server-huaweicloud-rds-supabase"
-version = "0.4.1"
+version = "0.4.2"
 description = "Huawei Cloud RDS Supabase (self-hosted) management MCP Server"
 readme = "README.md"
 requires-python = ">=3.10"

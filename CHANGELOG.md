@@ -5,6 +5,19 @@ semantic versioning.
 
 ## [Unreleased]
 
+### Changed
+
+- uvx-first installation everywhere for the data-plane MCP (server 0.4.2,
+  skill `rds-supabase-mcp` 2.7.3), mirroring the upstream
+  mcp_huaweicloud_gaussdb README pattern now that the package is live on
+  PyPI: `uvx mcp-server-huaweicloud-rds-supabase` with no --from/--subdirectory
+  git scaffolding. Replaced across server README.md/README_zh.md (plus a
+  gaussdb-style Installation section: uvx / pip / source-workspace
+  channels), examples/mcp-client-stdio.json, and the skill's
+  references/install.md + references/mcp-installation-guide.md (PyPI source
+  note added; the source-workspace channel kept for development with the
+  project-level isolation rule intact).
+
 ### Added
 
 - Data-plane MCP (`mcp_server_rds_supabase`) prepared for standalone PyPI

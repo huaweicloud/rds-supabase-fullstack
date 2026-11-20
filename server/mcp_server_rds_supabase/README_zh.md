@@ -19,6 +19,29 @@ client）、三级风险护栏（READ / WRITE / DANGEROUS 车道、只读模式�
 与库内加固版 `execute_sql` RPC 函数。全部工具名、参数、默认值、返回结构与错误消息与
 上游 TypeScript 服务器保持一致；适配层在其上叠加平台护栏。
 
+## 安装
+
+已发布至 PyPI，一条命令直接运行（无需克隆仓库、无需 pip）：
+
+```bash
+uvx mcp-server-huaweicloud-rds-supabase
+```
+
+也可安装后运行：
+
+```bash
+pip install mcp-server-huaweicloud-rds-supabase
+mcp-server-huaweicloud-rds-supabase
+```
+
+从源码工作区运行：
+
+```bash
+cd /absolute/path/to/rds-supabase-fullstack/server/mcp_server_rds_supabase
+uv sync --frozen
+uv run mcp-server-huaweicloud-rds-supabase
+```
+
 ## 快速开始
 
 ```bash
@@ -27,9 +50,7 @@ HUAWEICLOUD_MCP_READ_ONLY=true \
 SUPABASE_URL=https://your-instance \
 SUPABASE_ANON_KEY=<anon-key> \
 SUPABASE_SERVICE_ROLE_KEY=<service-key> \
-uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack \
-  --subdirectory server/mcp_server_rds_supabase \
-  mcp-server-huaweicloud-rds-supabase
+uvx mcp-server-huaweicloud-rds-supabase
 ```
 
 标准 stdio 客户端配置：
@@ -40,8 +61,6 @@ uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack \
     "rds-supabase": {
       "command": "uvx",
       "args": [
-        "--from", "git+https://github.com/huaweicloud/rds-supabase-fullstack",
-        "--subdirectory", "server/mcp_server_rds_supabase",
         "mcp-server-huaweicloud-rds-supabase"
       ],
       "env": {
@@ -146,9 +165,7 @@ RPC 函数缺失时启动期仅告警提示；请经管理通道部署一次该�
 
 ```bash
 # uvx（无需检出）
-uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack \
-  --subdirectory server/mcp_server_rds_supabase \
-  mcp-server-huaweicloud-rds-supabase
+uvx mcp-server-huaweicloud-rds-supabase
 
 # 从检出目录 pip 安装
 pip install ./server/mcp_server_rds_supabase
@@ -199,9 +216,7 @@ rules:
 
 ```bash
 MCP_SERVER_HOST=0.0.0.0 MCP_SERVER_PORT=8000 \
-uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack \
-  --subdirectory server/mcp_server_rds_supabase \
-  mcp-server-huaweicloud-rds-supabase -t streamable-http
+uvx mcp-server-huaweicloud-rds-supabase -t streamable-http
 ```
 
 端点为 `/mcp`。上游 TypeScript 的 HTTP 鉴权中间件（JWT bearer、角色权限、CORS、限流）

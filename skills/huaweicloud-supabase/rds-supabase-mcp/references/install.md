@@ -19,6 +19,7 @@
 
 ## 前置条件
 
+- 服务端已发布 PyPI（`mcp-server-huaweicloud-rds-supabase`，认准该名；uvx 直接从 PyPI 解析安装，无需克隆仓库）；开发调试需从源码运行时见 mcp-installation-guide.md 的源码通道
 - 客户端环境已安装 uv（含 uvx）：`curl -LsSf https://astral.sh/uv/install.sh | sh`
 - 数据库侧已部署加固函数 [`sql/mcp-execute-sql.sql`](https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase/sql/mcp-execute-sql.sql)（仓库 `server/mcp_server_rds_supabase/sql/` 下，技能包内不含 `server/` 目录）；未部署时仅 execute_sql 不可用，不影响其余工具（见 mcp-installation-guide.md）
 
@@ -30,8 +31,6 @@
     "rds-supabase": {
       "command": "uvx",
       "args": [
-        "--from", "git+https://github.com/huaweicloud/rds-supabase-fullstack",
-        "--subdirectory", "server/mcp_server_rds_supabase",
         "mcp-server-huaweicloud-rds-supabase"
       ],
       "env": {
@@ -52,8 +51,6 @@
     "rds-supabase": {
       "command": "uvx",
       "args": [
-        "--from", "git+https://github.com/huaweicloud/rds-supabase-fullstack",
-        "--subdirectory", "server/mcp_server_rds_supabase",
         "mcp-server-huaweicloud-rds-supabase"
       ],
       "env": {

@@ -3,10 +3,6 @@
     "rds-supabase": {
       "command": "uvx",
       "args": [
-        "--from",
-        "git+https://github.com/huaweicloud/rds-supabase-fullstack",
-        "--subdirectory",
-        "server/mcp_server_rds_supabase",
         "mcp-server-huaweicloud-rds-supabase"
       ],
       "env": {

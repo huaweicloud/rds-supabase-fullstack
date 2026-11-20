@@ -20,7 +20,7 @@ jobs:
           ref: develop          # commit the refreshed lockfile back to develop
                                  # (a tag checkout is a detached HEAD with no branch to push)
 
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
 

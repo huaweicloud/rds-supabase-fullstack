@@ -7,13 +7,17 @@ on:
 
 permissions:
   contents: write        # job commits the refreshed uv.lock back
-  id-token: write        # Trusted Publishing
+  id-token: write        # Trusted Publishing (OIDC token exchange)
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: write          # commit the refreshed uv.lock back
+      # Job-level permissions REPLACE the workflow-level block entirely:
+      # both keys must be restated here, or the OIDC exchange dies with
+      # "missing ACTIONS_ID_TOKEN_REQUEST_URL".
+      contents: write        # commit the refreshed uv.lock back
+      id-token: write        # Trusted Publishing
     steps:
       - uses: actions/checkout@v4
         with:

@@ -16,6 +16,9 @@ jobs:
       contents: write          # commit the refreshed uv.lock back
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: develop          # commit the refreshed lockfile back to develop
+                                 # (a tag checkout is a detached HEAD with no branch to push)
 
       - uses: astral-sh/setup-uv@v5
         with:

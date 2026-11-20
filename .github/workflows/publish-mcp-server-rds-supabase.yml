@@ -6,18 +6,34 @@ on:
     tags: ['mcp-server-rds-supabase-v*']
 
 permissions:
-  contents: read
-  id-token: write
+  contents: write        # job commits the refreshed uv.lock back
+  id-token: write        # Trusted Publishing
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write          # commit the refreshed uv.lock back
     steps:
       - uses: actions/checkout@v4
 
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
+
+      - name: Relock (pyasn1 floor needs a fresh resolution)
+        run: |
+          cd server/mcp_server_rds_supabase
+          rm -f uv.lock
+          uv lock
+
+      - name: Commit refreshed lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add server/mcp_server_rds_supabase/uv.lock
+          git diff --cached --quiet || git commit -m "chore: refresh data-plane uv.lock (pyasn1 floor re-resolution)"
+          git push
 
       - name: Test
         run: |

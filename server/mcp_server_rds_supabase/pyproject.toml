@@ -40,11 +40,13 @@ dev = ["pytest>=8.0,<10", "pytest-asyncio>=0.23,<2", "pytest-cov>=5.0,<8",
 huaweicloud-mcp-core = { path = "../../libs/huaweicloud_mcp_core" }
 
 [tool.uv]
-constraint-dependencies = [
-  "huaweicloudsdkcore==3.1.220",
-  "huaweicloudsdkiam==3.1.220",
-  "typing-inspection==0.4.4",
-]
+# Historical pin note: huaweicloudsdkcore==3.1.220 was constrained here to dodge
+# its transitive pyasn1<=0.6.3 pin (3 DoS CVEs). The fix now lives in
+# [project].dependencies as an explicit pyasn1>=0.6.4 floor that propagates into
+# published metadata, so the exact-pin constraints are removed: the resolver is
+# free to pick sdkcore>=3.1.223 whose pyasn1 range (<0.7.0,>=0.5.0) accepts
+# the floor. typing-inspection pin dropped along (was only needed to keep the
+# 3.1.220 resolution stable).
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/mcp_server_rds_supabase"]

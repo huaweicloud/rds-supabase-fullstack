@@ -19,7 +19,7 @@ uvx mcp-server-huaweicloud-rds-supabase
         "mcp-server-huaweicloud-rds-supabase"
       ],
       "env": {
-        "SUPABASE_URL": "https://your-instance",
+        "SUPABASE_URL": "http://<rds-supabase-ip>:8443",
         "SUPABASE_ANON_KEY": "<anon-key>",
         "SUPABASE_SERVICE_ROLE_KEY": "<service-key>"
       }

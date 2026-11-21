@@ -3,11 +3,11 @@ name: rds-supabase-mcp
 description: '华为云 RDS Supabase 管理技能：管理部署在华为云 RDS PostgreSQL 上的自建 Supabase 平台（Kong 网关、PostgREST、GoTrue、Storage、Realtime）。Web 应用开发中，后端代码以 init.sql 迁移脚本（DDL、GRANT 等初始化 SQL）形式存在，经本技能部署为数据库层定义，前端经 REST API 直接消费。Use when：RDS Supabase 实例创建完成或选定后，动态安装本 MCP 服务器（凭网关 URL 与 API Key，见 references/install.md）；开发中执行后端代码 init.sql 迁移脚本（建表、授权、RLS、函数）；查询数据库结构与数据；管理登录用户；配置存储桶；检查行级安全（RLS）与安全建议；排查连接与执行计划。本 MCP 服务器基于 HenkDz/selfhosted-supabase-mcp 改进。
   English triggers: install supabase mcp server, run init.sql migration, execute_sql deployment, read_only query, manage auth users, rls advisors security check, storage bucket config, troubleshoot slow queries.'
 license: MIT
-version: "2.7.3"
+version: "2.7.4"
 tags: [huawei-cloud, rds, supabase, postgresql, mcp]
 metadata:
   tags: [huawei-cloud, rds, supabase, postgresql, mcp]
-  version: "2.7.3"
+  version: "2.7.4"
 ---
 
 # 华为云 RDS Supabase 管理
@@ -18,13 +18,11 @@ metadata:
 
 在 Web 全栈开发流程中，本技能承担后端环节，按两个阶段展开。**实例接入**：RDS Supabase 实例由流程动态创建或选定，实例就绪后配置信息（网关 URL 与 API Key）方可获得，此时按 references/install.md 以单条命令完成 MCP 服务器的动态安装。**后端开发**：Web 应用的后端代码以 init.sql 迁移脚本（DDL、GRANT 等初始化 SQL）形式组织，经 `execute_sql` 部署为数据库层的定义与配置（表结构、授权、行级安全策略、函数），前端经 REST API 直接消费。
 
-自建 Supabase 不提供云平台控制台，日常管理缺少工具支持。本 MCP 服务器（`mcp-server-huaweicloud-rds-supabase`）基于 HenkDz/selfhosted-supabase-mcp 改进，将数据库结构查询、SQL 执行、用户管理、存储配置、安全检查等管理能力封装为 MCP 工具，供 AI 助手调用。相对原版本的主要整改：
+自建 Supabase 不提供云平台控制台，日常管理缺少工具支持。本 MCP 服务器（`mcp-server-huaweicloud-rds-supabase`，衍生自 MIT 许可的 HenkDz/selfhosted-supabase-mcp，见仓库 NOTICE）将数据库结构查询、SQL 执行、用户管理、存储配置、安全检查等数据面能力封装为 MCP 工具，供 AI 助手调用。核心设计：
 
 - `execute_sql` 采用加固后的数据库函数：仅 service_role 可调用；`read_only` 模式在数据库层面强制只读白名单
-- 移除直连数据库通道：SQL 经由 PostgREST RPC 执行，用户管理经由 GoTrue 管理 API 完成
-- 用户管理改用官方管理 API：密码哈希与邮箱确认由 GoTrue 统一处理，不再直接写 `auth.users` 表
-- 引入安全管控：工具按读/写分级；支持只读模式、操作拦截与二次确认规则、调用审计日志、敏感信息脱敏
-- 移除不适配当前部署形态的工具（迁移记录、Edge Functions 等）
+- SQL 经由 PostgREST RPC 执行；用户管理经由 GoTrue 管理 API 完成（密码哈希与邮箱确认由 GoTrue 统一处理，不直接写 `auth.users` 表）
+- 安全管控：工具按读/写分级；支持只读模式、操作拦截与二次确认规则、调用审计日志、敏感信息脱敏
 
 完整链路：Web 全栈开发流程（实例创建 / 选定）→ 动态安装（references/install.md）→ AI 助手 → MCP 工具 → service 层 → client（PostgREST RPC / GoTrue 管理 API）。
 
@@ -156,7 +154,7 @@ NOTIFY pgrst, 'reload schema';            -- PostgREST 立即感知结构变更�
 | 扩展 | list_extensions, list_available_extensions | 已安装 / 可安装的扩展 |
 | 用户管理 | list/get/create/update/delete_auth_user | 登录用户的增删改查 |
 | 存储与平台 | get_storage_config, update_storage_config, rebuild_hooks, verify_jwt_secret, get_project_url, list_cron_jobs, get_cron_job_history, list_vector_indexes, get_index_stats, get_vector_index_stats | 存储配置、平台信息、定时任务、索引统计 |
-| 不可用工具（当前部署） | list_storage_buckets, list_storage_objects, list_realtime_publications, generate_typescript_types | 此部署形态已移除数据库直连通道，调用时返回明确的错误说明；详见 references/related-tools.md |
+| 不可用工具（当前部署） | list_storage_buckets, list_storage_objects, list_realtime_publications, generate_typescript_types | 数据库直连通道在本部署形态不可用，调用时返回明确的错误说明；详见 references/related-tools.md |
 
 ## 参数确认
 

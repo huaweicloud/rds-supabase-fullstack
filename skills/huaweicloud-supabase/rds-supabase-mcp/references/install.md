@@ -6,7 +6,7 @@
 
 | 环境变量 | 含义 | 形态 |
 |---|---|---|
-| SUPABASE_URL | 实例网关基础 URL（Kong 统一入口） | 协议 + 地址 + 端口 |
+| SUPABASE_URL | 实例网关基础 URL（Kong 统一入口） | 协议 + EIP + 端口，如 `http://123.60.101.251:8443`（端口固定 8443；协议跟随 SSL：开启用 https、未开用 http） |
 | SUPABASE_ANON_KEY | 匿名 API Key（anon 角色 JWT） | eyJ 开头的 JWT 字符串 |
 | SUPABASE_SERVICE_ROLE_KEY | service_role API Key | eyJ 开头的 JWT 字符串；SQL 执行与用户管理必需 |
 
@@ -54,7 +54,7 @@
         "mcp-server-huaweicloud-rds-supabase"
       ],
       "env": {
-        "SUPABASE_URL": "http://supabase.example.com:8443",
+        "SUPABASE_URL": "http://123.60.101.251:8443",
         "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.<anon 载荷>.<anon 签名>",
         "SUPABASE_SERVICE_ROLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.<service_role 载荷>.<service_role 签名>"
       }

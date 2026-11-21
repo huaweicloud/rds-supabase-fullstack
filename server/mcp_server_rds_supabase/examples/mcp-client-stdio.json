@@ -6,7 +6,7 @@
         "mcp-server-huaweicloud-rds-supabase"
       ],
       "env": {
-        "SUPABASE_URL": "https://REPLACE_WITH_INSTANCE_URL",
+        "SUPABASE_URL": "http://REPLACE_WITH_RDS_SUPABASE_IP:8443",
         "SUPABASE_ANON_KEY": "REPLACE_WITH_ANON_KEY",
         "SUPABASE_SERVICE_ROLE_KEY": "REPLACE_WITH_SERVICE_ROLE_KEY",
         "HUAWEICLOUD_MCP_READ_ONLY": "false"

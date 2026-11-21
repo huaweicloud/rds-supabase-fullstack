@@ -1,23 +1,23 @@
 # Huawei Cloud RDS Supabase MCP Server
 
-[中文说明](README_zh.md)
+[中文说明](https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase/README_zh.md)
 
-Management MCP server for Huawei Cloud RDS Supabase — a cloud-managed,
-self-hosted Supabase deployment where the database is an RDS PostgreSQL
-instance reachable through the Kong gateway (PostgREST RPC), with optional
-direct database access for privileged operations.
+Data-plane MCP server for Huawei Cloud RDS Supabase — a cloud-managed,
+self-hosted Supabase deployment whose database is an RDS PostgreSQL instance
+reached through the Kong gateway (PostgREST RPC). It gives AI assistants safe
+in-database operations: SQL execution via a hardened RPC function, schema
+inspection, auth-user management, storage configuration and security checks,
+behind three-tier risk guardrails.
 
 ## Version
 
-Current version: 0.4.0; Python 3.10+; MCP Python SDK 2.x; transports: stdio and
+Current version: 0.4.3; Python 3.10+; MCP Python SDK 2.x; transports: stdio and
 Streamable HTTP; license: Apache-2.0 (see repository NOTICE for the MIT
 derivation chain of the upstream TypeScript project).
 
 ## Overview
 
-This server is a Python re-implementation of the TypeScript `rds-supabase-mcp`
-tool surface (38 of the 43 upstream tools; five tools that can never work in
-this cloud deployment were removed in 0.2.0, see CHANGELOG) on the shared
+This server runs on the shared
 `huaweicloud_mcp_core` runtime: three-layer architecture (tools → service →
 client), three-tier risk guardrails (READ / WRITE / DANGEROUS lanes, read-only
 mode, protection lists, structured audit), and a hardened in-database
@@ -51,15 +51,17 @@ uv run mcp-server-huaweicloud-rds-supabase
 ## Quick start
 
 ```bash
-# Read-only mode against a running instance
+# Read-only mode against a running instance.
+# SUPABASE_URL is the Kong gateway address: <protocol>://<rds-supabase-ip>:8443
+# (protocol follows SSL: https when enabled, http when not; port 8443 is fixed)
 HUAWEICLOUD_MCP_READ_ONLY=true \
-SUPABASE_URL=https://your-instance \
+SUPABASE_URL=http://123.60.101.251:8443 \
 SUPABASE_ANON_KEY=<anon-key> \
 SUPABASE_SERVICE_ROLE_KEY=<service-key> \
 uvx mcp-server-huaweicloud-rds-supabase
 ```
 
-Standard stdio client configuration:
+Standard stdio client configuration (example: SSL disabled, gateway port 8443):
 
 ```json
 {
@@ -70,7 +72,7 @@ Standard stdio client configuration:
         "mcp-server-huaweicloud-rds-supabase"
       ],
       "env": {
-        "SUPABASE_URL": "https://your-instance",
+        "SUPABASE_URL": "http://123.60.101.251:8443",
         "SUPABASE_ANON_KEY": "<anon-key>",
         "SUPABASE_SERVICE_ROLE_KEY": "<service-key>"
       }
@@ -85,19 +87,18 @@ Database / self-hosted Supabase on managed PostgreSQL / operations automation.
 
 ## Features
 
-- 38 tools with identical names, parameters, defaults, return shapes and
-  error messages — verified tool-by-tool against the TypeScript server
-  (the five removed tools are documented in CHANGELOG 0.2.0).
+- 38 tools across six families — database, project, auth users, storage,
+  platform and inspection — with stable names, parameters, defaults, return
+  shapes and error messages.
 - SQL execution over the Kong gateway via the hardened `execute_sql` RPC
   (service-role key) with an in-database `read_only` statement whitelist;
-  direct database connections are not supported (removed in 0.4.0).
+  direct database connections are not supported.
 - Shared-core guardrails: risk lanes per tool, read-only mode, guardrail rules
   (block / confirm / warn), protected lists, JSONL audit, output masking.
 - Tools-config whitelist (`{"enabledTools": [...]}`) with upstream fallback
   semantics.
 - Startup probe of the `execute_sql` function (deploy `sql/mcp-execute-sql.sql`
-  via the management console once; auto-deploy was removed with direct
-  connections in 0.4.0).
+  once via the management console).
 - Dual transport (stdio and Streamable HTTP) with the standard runner.
 
 ## Available Tools
@@ -106,7 +107,7 @@ Database / self-hosted Supabase on managed PostgreSQL / operations automation.
 |---|---|---|
 | `list_tables` | List accessible tables grouped by schema | READ |
 | `list_extensions` | List installed PostgreSQL extensions | READ |
-| `execute_sql` | Run arbitrary SQL (service-role or direct connection); deploys init.sql migration batches and their companion cleanup scripts (deletion scenarios, on user request) | WRITE |
+| `execute_sql` | Run arbitrary SQL via the hardened RPC (service-role key); deploys init.sql migration batches and their companion cleanup scripts (deletion scenarios, on user request) | WRITE |
 | `get_database_connections` | Active client backends from pg_stat_activity | READ |
 | `get_database_stats` | pg_stat_database + pg_stat_bgwriter snapshot | READ |
 | `get_project_url` | Return the configured Supabase project URL | READ |
@@ -118,9 +119,9 @@ Database / self-hosted Supabase on managed PostgreSQL / operations automation.
 | `delete_auth_user` | Delete an auth user by ID (auth admin API) | WRITE |
 | `create_auth_user` | Create an auth user (auth admin API, hashing by GoTrue) | WRITE |
 | `update_auth_user` | Update auth user fields (auth admin API) | WRITE |
-| `list_storage_buckets` | List storage buckets (direct connection) | READ |
+| `list_storage_buckets` | List storage buckets (direct-connection channel, unavailable in this deployment) | READ |
 | `list_storage_objects` | List objects in a bucket with prefix filter | READ |
-| `list_realtime_publications` | List publications (direct connection) | READ |
+| `list_realtime_publications` | List publications (direct-connection channel, unavailable in this deployment) | READ |
 | `list_cron_jobs` | List pg_cron jobs (empty when not installed) | READ |
 | `list_vector_indexes` | List ivfflat / hnsw indexes | READ |
 | `get_logs` | Service logs (analytics → CSV → none cascade) | READ |
@@ -154,16 +155,12 @@ Configuration) without changing tool signatures.
 ### execute_sql channel and the hardened function
 
 `execute_sql` calls the `public.execute_sql(query, read_only)` RPC with the
-service-role key (the only supported channel since 0.4.0). The repo ships the hardened function definition at
-`sql/mcp-execute-sql.sql` (service_role-only access, in-database `read_only`
-statement whitelist, first-keyword dispatch, grants restricted to
-service_role). Deploy it once via psql or the management console:
-
-Deploy it once through the cloud management console (for example the
-postgres-meta `/pg/query` channel); the server probes for it at startup.
-
-When the RPC function is missing, the server logs a warning at startup;
-deploy the definition via the management console to enable the channel.
+service-role key — the only supported SQL channel. The repo ships the hardened
+function definition at `sql/mcp-execute-sql.sql` (service_role-only access,
+in-database `read_only` statement whitelist, first-keyword dispatch, grants
+restricted to service_role). Deploy it once through the cloud management
+console (for example the postgres-meta `/pg/query` channel); the server probes
+for it at startup and logs a warning until it is deployed.
 
 ## Usage Guide
 
@@ -172,7 +169,7 @@ deploy the definition via the management console to enable the channel.
 - Python 3.10+ and [uv](https://docs.astral.sh/uv/)
 - A running RDS Supabase (or self-hosted Supabase) instance
 - An anon key plus a service-role key (SQL channel + auth admin API);
-  direct database connections are not supported (removed in 0.4.0)
+  direct database connections are not supported
 
 ### Installation
 
@@ -188,7 +185,7 @@ pip install ./server/mcp_server_rds_supabase
 
 | Variable | Required | Description |
 |---|---|---|
-| `SUPABASE_URL` | Yes | Base URL of the Supabase gateway |
+| `SUPABASE_URL` | Yes | Kong gateway address: `<protocol>://<rds-supabase-ip>:8443` (protocol follows SSL; port 8443 fixed) |
 | `SUPABASE_ANON_KEY` | Yes | Anonymous key |
 | `SUPABASE_SERVICE_ROLE_KEY` | No | Service-role key; enables the RPC SQL channel |
 | `SUPABASE_AUTH_JWT_SECRET` | No | JWT secret (checked by `verify_jwt_secret`) |
@@ -252,8 +249,8 @@ Inspect schema, then verify RLS posture:
 ## Permissions
 
 - Read-only operations: anon key + service-role key for the RPC channel.
-- Write operations (9 WRITE tools): service-role key or direct connection;
-  consider `HUAWEICLOUD_MCP_READ_ONLY=true` for inspection-only agents.
+- Write operations (7 WRITE tools): service-role key, the only privileged
+  channel; consider `HUAWEICLOUD_MCP_READ_ONLY=true` for inspection-only agents.
 - Only the service-role key is required (RPC + auth admin API channels).
 
 ## Development, testing, and release

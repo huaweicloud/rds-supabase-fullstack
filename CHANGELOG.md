@@ -7,6 +7,31 @@ semantic versioning.
 
 ### Changed
 
+- Data-plane MCP metadata and docs accuracy pass (server **0.4.3**, skill
+  `rds-supabase-mcp` **2.7.4**):
+  - pyproject summary and both READMEs now say data-plane (not
+    "management"), distilled to the actual scenarios: SQL execution via the
+    hardened RPC, schema inspection, auth-user management, storage and
+    security checks behind three-tier guardrails
+  - removed internal-decision narratives from user-facing Overview/Features
+    ("38 of 43 upstream tools", "five tools removed in 0.2.0", "removed in
+    0.4.0", "auto-deploy was removed") - READMEs now describe current
+    behavior only; derivation credit stays in License/NOTICE
+  - fixed a stale zh claim that auto-deploy of the execute_sql function
+    still exists, and stale "service-role or direct connection" wording
+    (direct is not supported); unified the WRITE-tool count to 7 (was 8/9
+    in different places); deduplicated the doubled deploy paragraph
+  - the Chinese link on the PyPI landing page now points at the absolute
+    GitHub URL (relative README_zh.md links 404 on pypi.org)
+  - all SUPABASE_URL examples switched to the RDS Supabase gateway shape
+    `<protocol>://<rds-supabase-ip>:8443` with a filled example
+    (`http://123.60.101.251:8443`), protocol-follows-SSL notes and the fixed
+    8443 port, across READMEs, examples/mcp-client-stdio.json and the
+    skill's install references
+  - skill SKILL.md overview rewritten as current-capability statements
+    (no upstream-diff framing); unavailable-tools row reworded to present
+    tense
+
 - uvx-first installation everywhere for the data-plane MCP (server 0.4.2,
   skill `rds-supabase-mcp` 2.7.3), mirroring the upstream
   mcp_huaweicloud_gaussdb README pattern now that the package is live on

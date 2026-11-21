@@ -2,19 +2,18 @@
 
 [English](README.md)
 
-面向华为云 RDS Supabase（云端托管的自建 Supabase：数据库为 RDS PostgreSQL 实例，外部经
-Kong 网关以 PostgREST RPC 访问）的管理 MCP 服务器，可选直连数据库执行特权操作。
+华为云 RDS Supabase 数据面 MCP 服务器（云端托管的自建 Supabase：数据库为 RDS PostgreSQL
+实例，外部经 Kong 网关以 PostgREST RPC 访问）。面向 AI 助手提供安全的库内操作：加固版
+RPC SQL 执行、结构查询、用户管理、存储配置与安全检查，全程三级风险护栏。
 
 ## 版本
 
-当前版本：0.4.0；Python 3.10+；MCP Python SDK 2.x；传输：stdio 与 Streamable HTTP；
+当前版本：0.4.3；Python 3.10+；MCP Python SDK 2.x；传输：stdio 与 Streamable HTTP；
 许可证：Apache-2.0（上游 TypeScript 项目的 MIT 衍生链见仓库 NOTICE）。
 
 ## 概述
 
-本服务器是 TypeScript 版 `rds-supabase-mcp` 工具面（上游 43 个工具中保留 38 个；
-0.2.0 移除了在本云部署形态下无法工作的 5 个工具，见 CHANGELOG）在共享
-`huaweicloud_mcp_core` 运行时上的 1:1 Python 重建：三层架构（tools → service →
+本服务器运行在共享 `huaweicloud_mcp_core` 运行时上：三层架构（tools → service →
 client）、三级风险护栏（READ / WRITE / DANGEROUS 车道、只读模式、保护名单、结构化审计）
 与库内加固版 `execute_sql` RPC 函数。全部工具名、参数、默认值、返回结构与错误消息与
 上游 TypeScript 服务器保持一致；适配层在其上叠加平台护栏。
@@ -46,14 +45,16 @@ uv run mcp-server-huaweicloud-rds-supabase
 
 ```bash
 # 只读模式连接运行中的实例
+# SUPABASE_URL 即 Kong 网关地址：<protocol>://<rds-supabase-ip>:8443
+# 协议跟随 SSL：开启用 https、未开用 http；端口固定 8443
 HUAWEICLOUD_MCP_READ_ONLY=true \
-SUPABASE_URL=https://your-instance \
+SUPABASE_URL=http://123.60.101.251:8443 \
 SUPABASE_ANON_KEY=<anon-key> \
 SUPABASE_SERVICE_ROLE_KEY=<service-key> \
 uvx mcp-server-huaweicloud-rds-supabase
 ```
 
-标准 stdio 客户端配置：
+标准 stdio 客户端配置（示例为未开 SSL 形态，网关端口 8443）：
 
 ```json
 {
@@ -64,7 +65,7 @@ uvx mcp-server-huaweicloud-rds-supabase
         "mcp-server-huaweicloud-rds-supabase"
       ],
       "env": {
-        "SUPABASE_URL": "https://your-instance",
+        "SUPABASE_URL": "http://123.60.101.251:8443",
         "SUPABASE_ANON_KEY": "<anon-key>",
         "SUPABASE_SERVICE_ROLE_KEY": "<service-key>"
       }
@@ -79,15 +80,15 @@ uvx mcp-server-huaweicloud-rds-supabase
 
 ## 特性
 
-- 38 个工具：名称、参数、默认值、返回结构与错误消息逐一一致（与 TypeScript 服务器逐
-  工具端到端比对验证；移除的 5 个工具见 CHANGELOG 0.2.0）。
+- 38 个工具覆盖六大类——database / project / auth users / storage / platform /
+  inspection——名称、参数、默认值、返回结构与错误消息稳定一致。
 - 经 Kong 网关的 SQL 执行：加固版 `execute_sql` RPC（service-role 密钥）+ 库内
-  `read_only` 语句白名单；直连不支持（0.4.0 已移除）。
+  `read_only` 语句白名单；不支持直连数据库。
 - 共享核护栏：每工具风险车道、只读模式、guardrail 规则（block / confirm / warn）、
   保护名单、JSONL 审计、输出脱敏。
 - tools-config 白名单（`{"enabledTools": [...]}`），语义与上游回退行为一致。
-- RPC 函数缺失且同时具备 service-role 密钥与直连时，启动期自动部署加固版
-  `execute_sql` 并通知 PostgREST 重载 schema 缓存。
+- 启动期探测加固版 `execute_sql` 函数：经管理控制台部署一次（见 execute_sql 章节），
+  缺失时告警直至部署完成。
 - 双传输（stdio 与 Streamable HTTP），标准运行入口。
 
 ## 可用工具
@@ -96,7 +97,7 @@ uvx mcp-server-huaweicloud-rds-supabase
 |---|---|---|
 | `list_tables` | 按schema列出可访问的表 | READ |
 | `list_extensions` | 列出已安装的 PostgreSQL 扩展 | READ |
-| `execute_sql` | 执行任意 SQL（service-role 或直连）；部署 init.sql 迁移批与配套清理脚本（删除场景、按用户指定执行） | WRITE |
+| `execute_sql` | 经加固 RPC 执行任意 SQL（service-role 密钥）；部署 init.sql 迁移批与配套清理脚本（删除场景、按用户指定执行） | WRITE |
 | `get_database_connections` | pg_stat_activity 活跃客户端后端 | READ |
 | `get_database_stats` | pg_stat_database + pg_stat_bgwriter 快照 | READ |
 | `get_project_url` | 返回配置的 Supabase 项目 URL | READ |
@@ -108,9 +109,9 @@ uvx mcp-server-huaweicloud-rds-supabase
 | `delete_auth_user` | 按 ID 删除 auth 用户（auth admin API） | WRITE |
 | `create_auth_user` | 创建 auth 用户（auth admin API，GoTrue 负责哈希） | WRITE |
 | `update_auth_user` | 更新 auth 用户字段（auth admin API） | WRITE |
-| `list_storage_buckets` | 列出存储桶（需直连） | READ |
+| `list_storage_buckets` | 列出存储桶（直连通道，本部署形态不可用） | READ |
 | `list_storage_objects` | 按前缀列出桶内对象 | READ |
-| `list_realtime_publications` | 列出 publication（需直连） | READ |
+| `list_realtime_publications` | 列出 publication（直连通道，本部署形态不可用） | READ |
 | `list_cron_jobs` | 列出 pg_cron 任务（未装返回空） | READ |
 | `list_vector_indexes` | 列出 ivfflat / hnsw 索引 | READ |
 | `get_logs` | 服务日志（analytics → CSV → none 级联） | READ |
@@ -142,14 +143,10 @@ uvx mcp-server-huaweicloud-rds-supabase
 ### execute_sql 通道与加固函数
 
 `execute_sql` 以 service-role 密钥调用
-`public.execute_sql(query, read_only)` RPC。仓库附带加固版函数定义
+`public.execute_sql(query, read_only)` RPC——唯一支持的 SQL 通道。仓库附带加固版函数定义
 `sql/mcp-execute-sql.sql`（仅 service_role 可调用、库内 `read_only` 语句白名单、首关键词
-分发、授权收敛）。首次部署：
-
-经云管理通道（如 postgres-meta `/pg/query`）部署一次即可；服务器启动期会探测。
-
-RPC 函数缺失时启动期仅告警提示；请经管理通道部署一次该定义以启用 SQL 通道
-（0.4.0 已随直连移除自动建函数）。
+分发、授权收敛）。经云管理通道（如 postgres-meta `/pg/query`）部署一次即可；服务器启动期
+探测该函数，缺失时告警直至部署完成。
 
 ## 使用指南
 
@@ -157,8 +154,8 @@ RPC 函数缺失时启动期仅告警提示；请经管理通道部署一次该�
 
 - Python 3.10+ 与 [uv](https://docs.astral.sh/uv/)
 - 运行中的 RDS Supabase（或自建 Supabase）实例
-- anon 密钥；无直连时执行 SQL 需 service-role 密钥
-- 直连数据库不支持（0.4.0）；service-role 密钥是唯一特权通道
+- anon 密钥；执行 SQL 与 auth 管理需 service-role 密钥（唯一特权通道）
+- 不支持直连数据库
 - 可选：PATH 中的 Supabase CLI（`generate_typescript_types`）
 
 ### 安装
@@ -177,7 +174,7 @@ pip install ./server/mcp_server_rds_supabase
 
 | 变量 | 必需 | 说明 |
 |---|---|---|
-| `SUPABASE_URL` | 是 | Supabase 网关基础 URL |
+| `SUPABASE_URL` | 是 | Kong 网关地址：`<protocol>://<rds-supabase-ip>:8443`（协议跟随 SSL；端口固定 8443） |
 | `SUPABASE_ANON_KEY` | 是 | 匿名密钥 |
 | `SUPABASE_SERVICE_ROLE_KEY` | 否 | service-role 密钥；启用 RPC SQL 通道 |
 | `SUPABASE_AUTH_JWT_SECRET` | 否 | JWT secret（`verify_jwt_secret` 检查） |
@@ -241,7 +238,7 @@ uvx mcp-server-huaweicloud-rds-supabase -t streamable-http
 ## 权限
 
 - 只读操作：anon 密钥 + RPC 通道所需 service-role 密钥。
-- 写操作（8 个 WRITE 工具）：service-role 密钥或直连；巡检类 Agent 建议
+- 写操作（7 个 WRITE 工具）：service-role 密钥（唯一特权通道）；巡检类 Agent 建议
   `HUAWEICLOUD_MCP_READ_ONLY=true`。
 - 仅需 service-role 密钥（RPC + auth admin API 双通道）。
 

@@ -7,6 +7,18 @@ semantic versioning.
 
 ### Changed
 
+- Configuration template placeholders unified to the angle-bracket form and
+  the two keys documented (server **0.4.5**, skill `rds-supabase-mcp`
+  **2.7.6**): `{rds_supabase_eip}`/`{rds_supabase_port}` ->
+  `<rds_supabase_eip>`/`<rds_supabase_port>` (consistent with the existing
+  `<anon-key>` style), `<service-key>` -> `<service-role-key>` everywhere,
+  and the template parameter notes now also explain both keys (`<anon-key>`
+  = SUPABASE_ANON_KEY, an anon-role JWT starting with eyJ;
+  `<service-role-key>` = SUPABASE_SERVICE_ROLE_KEY, the service_role JWT
+  required for execute_sql and auth-user management, bypasses RLS).
+  Applied across README.md/README_zh.md, examples json and the skill's
+  install references.
+
 - SUPABASE_URL configuration normalized to the parameterized gateway form
   `http(s)://{rds_supabase_eip}:{rds_supabase_port}` (server **0.4.4**, skill
   `rds-supabase-mcp` **2.7.5**): every MCP client template now shows the

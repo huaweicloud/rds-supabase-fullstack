@@ -52,16 +52,16 @@ uv run mcp-server-huaweicloud-rds-supabase
 
 ```bash
 # Read-only mode against a running instance.
-# SUPABASE_URL is the Kong gateway address: http(s)://{rds_supabase_eip}:{rds_supabase_port}
-#   {rds_supabase_eip}   the elastic public IP bound to the RDS Supabase
+# SUPABASE_URL is the Kong gateway address: http(s)://<rds_supabase_eip>:<rds_supabase_port>
+#   <rds_supabase_eip>   the elastic public IP bound to the RDS Supabase
 #                          application (the "public_ip" in the application detail)
-#   {rds_supabase_port}  the Kong gateway entry port, fixed at 8443
+#   <rds_supabase_port>  the Kong gateway entry port, fixed at 8443
 #   http(s)                https with the SSL switch on, http otherwise
 # Filled example below: SSL disabled, EIP 123.60.101.251
 HUAWEICLOUD_MCP_READ_ONLY=true \
 SUPABASE_URL=http://123.60.101.251:8443 \
 SUPABASE_ANON_KEY=<anon-key> \
-SUPABASE_SERVICE_ROLE_KEY=<service-key> \
+SUPABASE_SERVICE_ROLE_KEY=<service-role-key> \
 uvx mcp-server-huaweicloud-rds-supabase
 ```
 
@@ -76,23 +76,28 @@ Standard stdio client configuration (template):
         "mcp-server-huaweicloud-rds-supabase"
       ],
       "env": {
-        "SUPABASE_URL": "http(s)://{rds_supabase_eip}:{rds_supabase_port}",
+        "SUPABASE_URL": "http(s)://<rds_supabase_eip>:<rds_supabase_port>",
         "SUPABASE_ANON_KEY": "<anon-key>",
-        "SUPABASE_SERVICE_ROLE_KEY": "<service-key>"
+        "SUPABASE_SERVICE_ROLE_KEY": "<service-role-key>"
       }
     }
   }
 }
 ```
 
-`SUPABASE_URL` parameters:
+Template parameters:
 
-- `{rds_supabase_eip}` — the elastic public IP bound to the RDS Supabase
+- `<rds_supabase_eip>` — the elastic public IP bound to the RDS Supabase
   application (the `public_ip` shown in the application detail; without a
   bound EIP the instance is reachable only from inside the VPC)
-- `{rds_supabase_port}` — the Kong gateway entry port, fixed at **8443**
+- `<rds_supabase_port>` — the Kong gateway entry port, fixed at **8443**
 - `http(s)` — protocol follows the application SSL switch: `https` when
   enabled, `http` when not
+- `<anon-key>` (`SUPABASE_ANON_KEY`) — the anonymous API key: an anon-role
+  JWT starting with `eyJ`
+- `<service-role-key>` (`SUPABASE_SERVICE_ROLE_KEY`) — the service_role API
+  key (JWT starting with `eyJ`); required for `execute_sql` and auth-user
+  management; it bypasses RLS — trusted environments only
 
 Filled example (SSL disabled, EIP `123.60.101.251`, port `8443`):
 
@@ -107,7 +112,7 @@ Filled example (SSL disabled, EIP `123.60.101.251`, port `8443`):
       "env": {
         "SUPABASE_URL": "http://123.60.101.251:8443",
         "SUPABASE_ANON_KEY": "<anon-key>",
-        "SUPABASE_SERVICE_ROLE_KEY": "<service-key>"
+        "SUPABASE_SERVICE_ROLE_KEY": "<service-role-key>"
       }
     }
   }
@@ -218,7 +223,7 @@ pip install ./server/mcp_server_rds_supabase
 
 | Variable | Required | Description |
 |---|---|---|
-| `SUPABASE_URL` | Yes | Kong gateway address: `http(s)://{rds_supabase_eip}:{rds_supabase_port}` — parameters explained under Quick start |
+| `SUPABASE_URL` | Yes | Kong gateway address: `http(s)://<rds_supabase_eip>:<rds_supabase_port>` — parameters explained under Quick start |
 | `SUPABASE_ANON_KEY` | Yes | Anonymous key |
 | `SUPABASE_SERVICE_ROLE_KEY` | No | Service-role key; enables the RPC SQL channel |
 | `SUPABASE_AUTH_JWT_SECRET` | No | JWT secret (checked by `verify_jwt_secret`) |

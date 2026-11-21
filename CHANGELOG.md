@@ -7,6 +7,18 @@ semantic versioning.
 
 ### Changed
 
+- SUPABASE_URL configuration normalized to the parameterized gateway form
+  `http(s)://{rds_supabase_eip}:{rds_supabase_port}` (server **0.4.4**, skill
+  `rds-supabase-mcp` **2.7.5**): every MCP client template now shows the
+  parameterized URL followed by an explanation of both parameters
+  ({rds_supabase_eip} = the EIP bound to the application, i.e. the
+  application detail's public_ip; {rds_supabase_port} = the fixed 8443 Kong
+  gateway port; http(s) follows the SSL switch) and a separate filled
+  example (http://123.60.101.251:8443). Applied across README.md /
+  README_zh.md quick start + client config + env tables,
+  examples/mcp-client-stdio.json, and the skill's install.md /
+  mcp-installation-guide.md.
+
 - Data-plane MCP metadata and docs accuracy pass (server **0.4.3**, skill
   `rds-supabase-mcp` **2.7.4**):
   - pyproject summary and both READMEs now say data-plane (not

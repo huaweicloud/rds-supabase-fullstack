@@ -6,14 +6,14 @@
 
 | 环境变量 | 含义 | 形态 |
 |---|---|---|
-| SUPABASE_URL | 实例网关基础 URL（Kong 统一入口） | 协议 + EIP + 端口，如 `http://123.60.101.251:8443`（端口固定 8443；协议跟随 SSL：开启用 https、未开用 http） |
+| SUPABASE_URL | 实例网关基础 URL（Kong 统一入口） | `http(s)://{rds_supabase_eip}:{rds_supabase_port}`——{rds_supabase_eip} 为应用绑定 EIP（应用详情 public_ip）；{rds_supabase_port} 为网关端口，固定 8443；http(s) 跟随 SSL 开关 |
 | SUPABASE_ANON_KEY | 匿名 API Key（anon 角色 JWT） | eyJ 开头的 JWT 字符串 |
 | SUPABASE_SERVICE_ROLE_KEY | service_role API Key | eyJ 开头的 JWT 字符串；SQL 执行与用户管理必需 |
 
 要点：
 
 - 三项信息由 Web 全栈开发流程注入或由用户提供，逐字核对，不做推断
-- SUPABASE_URL 是网关地址，不是数据库直连地址
+- SUPABASE_URL 是网关地址，不是数据库直连地址；形态为 `http(s)://{rds_supabase_eip}:{rds_supabase_port}`：`{rds_supabase_eip}` 即应用绑定 EIP（应用详情 `public_ip`），`{rds_supabase_port}` 为网关端口固定 8443，`http(s)` 跟随 SSL 开关
 - service_role key 绕过 RLS：仅安装到可信环境；首次接入可在 env 中叠加 `"HUAWEICLOUD_MCP_READ_ONLY": "true"` 先行只读验证
 - 密钥只写入**项目级**客户端配置（该文件必须列入项目 `.gitignore`，见「注册位置强约束」），不得提交到仓库或出现在日志中
 

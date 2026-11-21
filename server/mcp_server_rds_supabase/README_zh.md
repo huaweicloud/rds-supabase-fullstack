@@ -45,8 +45,11 @@ uv run mcp-server-huaweicloud-rds-supabase
 
 ```bash
 # 只读模式连接运行中的实例
-# SUPABASE_URL 即 Kong 网关地址：<protocol>://<rds-supabase-ip>:8443
-# 协议跟随 SSL：开启用 https、未开用 http；端口固定 8443
+# SUPABASE_URL 即 Kong 网关地址：http(s)://{rds_supabase_eip}:{rds_supabase_port}
+#   {rds_supabase_eip}   应用绑定的弹性公网 IP（应用详情 public_ip）
+#   {rds_supabase_port}  Kong 网关统一入口端口，固定 8443
+#   http(s)                协议跟随应用 SSL 开关：开启用 https，未开用 http
+# 下方为已填充案例：未开 SSL、EIP 123.60.101.251
 HUAWEICLOUD_MCP_READ_ONLY=true \
 SUPABASE_URL=http://123.60.101.251:8443 \
 SUPABASE_ANON_KEY=<anon-key> \
@@ -54,7 +57,33 @@ SUPABASE_SERVICE_ROLE_KEY=<service-key> \
 uvx mcp-server-huaweicloud-rds-supabase
 ```
 
-标准 stdio 客户端配置（示例为未开 SSL 形态，网关端口 8443）：
+标准 stdio 客户端配置（模板）：
+
+```json
+{
+  "mcpServers": {
+    "rds-supabase": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-huaweicloud-rds-supabase"
+      ],
+      "env": {
+        "SUPABASE_URL": "http(s)://{rds_supabase_eip}:{rds_supabase_port}",
+        "SUPABASE_ANON_KEY": "<anon-key>",
+        "SUPABASE_SERVICE_ROLE_KEY": "<service-key>"
+      }
+    }
+  }
+}
+```
+
+`SUPABASE_URL` 参数说明：
+
+- `{rds_supabase_eip}`：RDS Supabase 应用绑定的弹性公网 IP——应用详情 `public_ip` 的值；未绑 EIP 时仅内网可达
+- `{rds_supabase_port}`：Kong 网关统一入口端口，固定 **8443**
+- `http(s)`：协议跟随应用 SSL 开关——开启用 `https`，未开用 `http`
+
+配置样例（已填充：未开 SSL、EIP `123.60.101.251`、端口 `8443`）：
 
 ```json
 {
@@ -174,7 +203,7 @@ pip install ./server/mcp_server_rds_supabase
 
 | 变量 | 必需 | 说明 |
 |---|---|---|
-| `SUPABASE_URL` | 是 | Kong 网关地址：`<protocol>://<rds-supabase-ip>:8443`（协议跟随 SSL；端口固定 8443） |
+| `SUPABASE_URL` | 是 | Kong 网关地址：`http(s)://{rds_supabase_eip}:{rds_supabase_port}`——参数说明见「快速开始」下方 |
 | `SUPABASE_ANON_KEY` | 是 | 匿名密钥 |
 | `SUPABASE_SERVICE_ROLE_KEY` | 否 | service-role 密钥；启用 RPC SQL 通道 |
 | `SUPABASE_AUTH_JWT_SECRET` | 否 | JWT secret（`verify_jwt_secret` 检查） |

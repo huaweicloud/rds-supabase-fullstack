@@ -39,6 +39,11 @@ semantic versioning.
 - Removed a duplicated SUPABASE_SERVICE_ROLE_KEY row accidentally added to
   the data-plane skill install.md parameter table (skill
   `rds-supabase-mcp` **2.7.7**).
+- The mgr diagnostics `check` resolves the self distribution under both the
+  PyPI name (`mcp-server-huaweicloud-rds-supabase-mgr`) and the legacy
+  `mcp_server_supabase` name: fresh installs only carry the new name, which
+  made `dependencies_present` false and failed two check tests on CI
+  (CPython 3.14).
 
 - Configuration template placeholders unified to the angle-bracket form and
   the two keys documented (server **0.4.5**, skill `rds-supabase-mcp`

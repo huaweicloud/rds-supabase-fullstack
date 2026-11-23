@@ -17,11 +17,21 @@ from urllib.parse import urlsplit
 def configuration_report():
     checks = {'python_supported': sys.version_info >= (3, 10)}
     packages = {}
-    for package in ('mcp', 'huaweicloud-mcp-core', 'mcp_server_supabase', 'huaweicloudsdkcore'):
+    for package in ('mcp', 'huaweicloud-mcp-core', 'huaweicloudsdkcore'):
         try:
             packages[package] = version(package)
         except PackageNotFoundError:
             packages[package] = None
+    # The distribution was renamed for PyPI (canonical name first); installs
+    # predating the rename still carry the legacy name, so try both.
+    self_version = None
+    for dist_name in ('mcp-server-huaweicloud-rds-supabase-mgr', 'mcp_server_supabase'):
+        try:
+            self_version = version(dist_name)
+            break
+        except PackageNotFoundError:
+            continue
+    packages['mcp-server-huaweicloud-rds-supabase-mgr'] = self_version
     checks['dependencies_present'] = all(packages.values())
     try:
         url = urlsplit(os.getenv('SUPABASE_RDS_ENDPOINT', ''))

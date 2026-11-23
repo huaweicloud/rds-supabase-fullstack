@@ -1,15 +1,15 @@
 ---
 name: rds-supabase-mgr-mcp
 description: |
-  通过管理面 MCP（mcp-huaweicloud-rds-supabase-mgr，58 个工具）管理华为云 RDS Supabase 应用全生命周期：创建前置编排与参数基线、新建实例或挂载已有 PostgreSQL 实例创建应用、EIP 采购与绑定、SSL 证书查询与购买、OBS 存储对接、认证与登录配置（邮箱/GitHub）、API Key 查询与受控交付、包周期订单支付与取消、SSL/密码/安全组日常变更、安全组绑定修改（应用/托管实例/待挂载实例三目标，多组全量替换）、应用与托管实例启停与重启（托管实例详情查询，启停/重启目标强制解析自应用 managed_instance，不接受裸 instance_id）、应用删除与托管实例彻底收尾、删除后关联资源清理（EIP 释放、OBS 桶删除、应用数据目录清理）与资源清理保留场景（残留盘点、一键清理、资源记录全流程记录）。Use when：从零创建一个能公网访问的 RDS Supabase 应用；挂载已有 PG 实例创建应用；生成创建编排与参数基线；采购并绑定 EIP 开通公网；购买或复用 SSL 证书并开启 HTTPS；对接或轮换 OBS 存储桶；配置邮箱或 GitHub 登录；查询接入信息与交付 API Key；支付或取消包周期订单；修改应用密码、重置 Key、开关 SSL、调整安全组规则或换绑安全组；启动、停止或重启应用（低峰期执行，任务跟踪至终态）；查询托管实例状态、启停或重启托管实例（先启实例再启应用）；删除应用并清理托管实例与安全组；应用删除后清理关联 EIP、OBS 桶或应用数据目录（按需显式使用或随删除流程联动触发）；下线时盘点残留并一键/分项清理（资源记录圈定范围，含高危计费提醒与安全组保留约束）。NOT for: 库内 SQL 与数据操作（路由到数据面 MCP server/mcp_server_rds_supabase）；不经本 MCP 的直接 hcloud/KooCLI 云运维（仅 0.0.0.0/0 全网入方向例外与安装期使用）；SQL 查询、表结构变更与数据迁移本技能不做。
+  通过管理面 MCP（mcp-server-huaweicloud-rds-supabase-mgr，58 个工具）管理华为云 RDS Supabase 应用全生命周期：创建前置编排与参数基线、新建实例或挂载已有 PostgreSQL 实例创建应用、EIP 采购与绑定、SSL 证书查询与购买、OBS 存储对接、认证与登录配置（邮箱/GitHub）、API Key 查询与受控交付、包周期订单支付与取消、SSL/密码/安全组日常变更、安全组绑定修改（应用/托管实例/待挂载实例三目标，多组全量替换）、应用与托管实例启停与重启（托管实例详情查询，启停/重启目标强制解析自应用 managed_instance，不接受裸 instance_id）、应用删除与托管实例彻底收尾、删除后关联资源清理（EIP 释放、OBS 桶删除、应用数据目录清理）与资源清理保留场景（残留盘点、一键清理、资源记录全流程记录）。Use when：从零创建一个能公网访问的 RDS Supabase 应用；挂载已有 PG 实例创建应用；生成创建编排与参数基线；采购并绑定 EIP 开通公网；购买或复用 SSL 证书并开启 HTTPS；对接或轮换 OBS 存储桶；配置邮箱或 GitHub 登录；查询接入信息与交付 API Key；支付或取消包周期订单；修改应用密码、重置 Key、开关 SSL、调整安全组规则或换绑安全组；启动、停止或重启应用（低峰期执行，任务跟踪至终态）；查询托管实例状态、启停或重启托管实例（先启实例再启应用）；删除应用并清理托管实例与安全组；应用删除后清理关联 EIP、OBS 桶或应用数据目录（按需显式使用或随删除流程联动触发）；下线时盘点残留并一键/分项清理（资源记录圈定范围，含高危计费提醒与安全组保留约束）。NOT for: 库内 SQL 与数据操作（路由到数据面 MCP server/mcp_server_rds_supabase）；不经本 MCP 的直接 hcloud/KooCLI 云运维（仅 0.0.0.0/0 全网入方向例外与安装期使用）；SQL 查询、表结构变更与数据迁移本技能不做。
   Triggers: create supabase app, bind eip, ssl cert, obs bucket, api key delivery, supabase cleanup, 华为云 supabase 应用管理
-version: "2.16.1"
+version: "2.17.0"
 tags: [huawei-cloud, rds, supabase, mcp, lifecycle]
 ---
 
 # 华为云 RDS Supabase 应用管理（管理面）
 
-版本 2.16.1；配套服务端 `mcp_server_supabase ≥ 0.4.0a66`（uvx 规范入口 `mcp-huaweicloud-rds-supabase-mgr`，58 个工具）。工具存在不代表服务端已在真实环境联调；工具数量与能力以运行时 `tools/list` 与 `get_supabase_capabilities` 返回为准。
+版本 2.17.0；配套服务端 `mcp-server-huaweicloud-rds-supabase-mgr ≥ 0.4.0`（PyPI 包，uvx 直接运行；兼容别名入口 `mcp-huaweicloud-rds-supabase-mgr`，58 个工具）。工具存在不代表服务端已在真实环境联调；工具数量与能力以运行时 `tools/list` 与 `get_supabase_capabilities` 返回为准。
 
 ## 概述
 

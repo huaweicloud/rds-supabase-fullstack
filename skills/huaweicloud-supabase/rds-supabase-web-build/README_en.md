@@ -35,17 +35,17 @@ The two MCPs are absent at installation time; the skill's workflow installs them
 
 | MCP | Entry script | README (full URL) |
 |---|---|---|
-| Management plane (started at Step 3) | `mcp-huaweicloud-rds-supabase-mgr` | https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase_mgr/README.md |
+| Management plane (started at Step 3) | `mcp-server-huaweicloud-rds-supabase-mgr` | https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase_mgr/README.md |
 | Data plane (dynamically installed at Step 4) | `mcp-server-huaweicloud-rds-supabase` | https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase/README.md |
 
 ```bash
 # Management plane (started at Step 3)
-uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr
+uvx mcp-server-huaweicloud-rds-supabase-mgr
 # Data plane (dynamically installed at Step 4, once instance credentials are ready)
-uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack --subdirectory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase
+uvx mcp-server-huaweicloud-rds-supabase
 ```
 
-When the repository has been cloned locally, `uv run --directory server/<directory> <entry script>` is an equivalent alternative (for production, pinning `@<commit>` is recommended). **A missing `server/` subdirectory inside the skill directory is expected behavior** — the servers are not shipped in the skill package, and all in-repo path references should be resolved against the URLs in the table above; every source other than the two above (including same-named packages from PyPI or third-party repositories) is prohibited.
+When the repository has been cloned locally, `uv run --directory server/<directory> <entry script>` is an equivalent alternative; PyPI installs can pin a version when needed (e.g. `uvx mcp-server-huaweicloud-rds-supabase-mgr@0.4.0`). **A missing `server/` subdirectory inside the skill directory is expected behavior** — the servers are not shipped in the skill package, and all in-repo path references should be resolved against the URLs in the table above; near-named third-party packages other than the two canonical names are prohibited.
 
 ## Value Comparison
 

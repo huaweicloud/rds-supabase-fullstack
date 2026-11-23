@@ -7,6 +7,39 @@ semantic versioning.
 
 ### Changed
 
+- Management-plane MCP server published to PyPI as
+  `mcp-server-huaweicloud-rds-supabase-mgr` **0.4.0** — the first public
+  release (skill `rds-supabase-mgr-mcp` **2.17.0**). The distribution is
+  renamed from the local `mcp_server_supabase` name to the
+  huaweicloud-prefixed package, consistent with the data-plane naming; the
+  canonical entry `mcp-server-huaweicloud-rds-supabase-mgr` now matches the
+  package name for direct uvx runs, with the previous entry
+  `mcp-huaweicloud-rds-supabase-mgr` kept as an equivalent compatibility
+  alias. SDK constraint pins are removed in favor of the explicit
+  pyasn1>=0.6.4 supply-chain floor (mirrors the data-plane resolution); the
+  sdist is narrowed to the source tree and the two READMEs; the English
+  README becomes the PyPI landing page (repo-relative links absolutized);
+  the READMEs, example configs and the skill install reference are flipped
+  to the PyPI-first uvx channel with uv tool / pip / clone alternatives.
+
+- The web-build skill and the mgr USER_GUIDE install sections now pull both
+  servers from PyPI too (web-build **0.12.5**): management-plane
+  `uvx mcp-server-huaweicloud-rds-supabase-mgr`, data-plane
+  `uvx mcp-server-huaweicloud-rds-supabase`; near-named third-party packages
+  remain prohibited and the clone / ZIP fallback stays as the escape hatch.
+
+### Fixed
+
+- Loopback fixtures in the mgr test suite now bypass host proxies: the
+  requests-based SDK transport falls back to system/env proxies, and an
+  interception proxy 404s loopback fixture paths, breaking 20 sdk_core
+  transport tests on proxied hosts. NO_PROXY now covers 127.0.0.1/localhost
+  at the fixture module level and inside the one env-clearing discovery
+  test.
+- Removed a duplicated SUPABASE_SERVICE_ROLE_KEY row accidentally added to
+  the data-plane skill install.md parameter table (skill
+  `rds-supabase-mcp` **2.7.7**).
+
 - Configuration template placeholders unified to the angle-bracket form and
   the two keys documented (server **0.4.5**, skill `rds-supabase-mcp`
   **2.7.6**): `{rds_supabase_eip}`/`{rds_supabase_port}` ->

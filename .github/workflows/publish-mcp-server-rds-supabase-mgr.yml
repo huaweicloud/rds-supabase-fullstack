@@ -1,0 +1,59 @@
+name: publish-mcp-server-rds-supabase-mgr
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['mcp-server-rds-supabase-mgr-v*']
+
+permissions:
+  contents: write        # job commits the refreshed uv.lock back
+  id-token: write        # Trusted Publishing (OIDC token exchange)
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      # Job-level permissions REPLACE the workflow-level block entirely:
+      # both keys must be restated here, or the OIDC exchange dies with
+      # "missing ACTIONS_ID_TOKEN_REQUEST_URL".
+      contents: write        # commit the refreshed lockfile back
+      id-token: write        # Trusted Publishing
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop          # commit the refreshed lockfile back to develop
+                                  # (a tag checkout is a detached HEAD with no branch to push)
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Relock (pyasn1 floor needs a fresh resolution)
+        run: |
+          cd server/mcp_server_rds_supabase_mgr
+          rm -f uv.lock
+          uv lock
+
+      - name: Commit refreshed lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add server/mcp_server_rds_supabase_mgr/uv.lock
+          git diff --cached --quiet || git commit -m "chore: refresh mgr uv.lock (pyasn1 floor re-resolution)"
+          git push
+
+      - name: Test
+        run: |
+          cd server/mcp_server_rds_supabase_mgr
+          uv sync --frozen
+          uv run pytest -q
+
+      - name: Build and check
+        run: |
+          cd server/mcp_server_rds_supabase_mgr
+          uv build
+          uvx twine check dist/*
+      - name: Publish (Trusted Publishing)
+        run: |
+          cd server/mcp_server_rds_supabase_mgr
+          uv publish --trusted-publishing automatic --check-url https://pypi.org/simple/

@@ -4,7 +4,7 @@
 
 ## 版本
 
-当前版本：`0.4.0a62`（开发预发行版）；Python `3.10+`；MCP Python SDK `2.x`；58 个工具。
+当前版本：`0.4.0`；Python `3.10+`；MCP Python SDK `2.x`；58 个工具。
 
 ## 概述
 
@@ -20,8 +20,7 @@ export HUAWEICLOUD_SECRET_KEY="<SK>"
 export HUAWEICLOUD_REGION="<区域，例如 cn-north-4>"
 export SUPABASE_TRANSPORT="sdk_core"
 export HUAWEICLOUD_MCP_READ_ONLY="true"
-uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr" \
-  mcp-huaweicloud-rds-supabase-mgr
+uvx mcp-server-huaweicloud-rds-supabase-mgr
 ```
 
 通用 stdio 客户端配置（Token 模式；AK/SK 模式见
@@ -32,11 +31,7 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
   "mcpServers": {
     "rds-supabase-mgr-mcp": {
       "command": "uvx",
-      "args": [
-        "--from",
-        "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr",
-        "mcp-huaweicloud-rds-supabase-mgr"
-      ],
+      "args": ["mcp-server-huaweicloud-rds-supabase-mgr"],
       "env": {
         "HUAWEICLOUD_AUTH_TOKEN": "<服务 Token>",
         "HUAWEICLOUD_MCP_READ_ONLY": "true",
@@ -429,14 +424,16 @@ cleanup_obs_workspace, cleanup_security_groups, confirm, plan_id)`（DANGEROUS�
 
 ### 安装
 
-**uvx 直接运行（推荐，git 仓库为唯一规范来源）：**
+**uvx 直接运行（推荐）：**
 
 ```bash
-uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr" \
-  mcp-huaweicloud-rds-supabase-mgr
+uvx mcp-server-huaweicloud-rds-supabase-mgr
 ```
 
-服务未发布到 PyPI；PyPI 上的同名第三方包不是本服务，禁止安装。
+本服务已发布至 PyPI（`mcp-server-huaweicloud-rds-supabase-mgr`）；固化安装用
+`uv tool install mcp-server-huaweicloud-rds-supabase-mgr`（更新用
+`uv tool update mcp-server-huaweicloud-rds-supabase-mgr`）。PyPI 上的近名第三方包
+不是本服务，认准全名。
 
 **克隆开发：**
 
@@ -444,12 +441,12 @@ uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirecto
 git clone https://github.com/huaweicloud/rds-supabase-fullstack.git
 cd rds-supabase-fullstack/server/mcp_server_rds_supabase_mgr
 uv sync
-uv run mcp-huaweicloud-rds-supabase-mgr          # stdio（默认）
-uv run mcp-huaweicloud-rds-supabase-mgr -t streamable-http
+uv run mcp-server-huaweicloud-rds-supabase-mgr          # stdio（默认）
+uv run mcp-server-huaweicloud-rds-supabase-mgr -t streamable-http
 ```
 
-`mcp-huaweicloud-rds-supabase-mgr` 为规范入口；旧入口 `mcp_server_supabase` 保留
-过渡，两者等价。慢网络下 uvx 启动超时的处置见
+`mcp-server-huaweicloud-rds-supabase-mgr` 为规范入口（与包名一致，uvx 直呼）；
+兼容别名 `mcp-huaweicloud-rds-supabase-mgr` 等价可用。慢网络下 uvx 启动超时的处置见
 [技能安装手册](../../skills/huaweicloud-supabase/rds-supabase-mgr-mcp/references/install.md)。
 
 ### 诊断 CLI
@@ -574,11 +571,7 @@ AgentArts 及其他客户端的 UVX stdio 配置：
   "mcpServers": {
     "rds-supabase-mgr-mcp": {
       "command": "uvx",
-      "args": [
-        "--from",
-        "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr",
-        "mcp-huaweicloud-rds-supabase-mgr"
-      ],
+      "args": ["mcp-server-huaweicloud-rds-supabase-mgr"],
       "env": {
         "HUAWEICLOUD_AUTH_TOKEN": "<服务 Token>",
         "HUAWEICLOUD_MCP_READ_ONLY": "true",
@@ -592,11 +585,11 @@ AgentArts 及其他客户端的 UVX stdio 配置：
 AgentArts 支持 UVX stdio 与 Streamable HTTP。远程模式启动命令：
 
 ```bash
-mcp-huaweicloud-rds-supabase-mgr -t streamable-http
+mcp-server-huaweicloud-rds-supabase-mgr -t streamable-http
 ```
 
 默认监听 `0.0.0.0:8000`，端点为 `/mcp`；生产部署应在前置网关配置 HTTPS 与客户端
-鉴权。服务未发布到 PyPI，UVX 始终经 git 仓库拉取（见[安装](#安装)）。
+鉴权。本服务已发布至 PyPI，uvx 直接解析安装（见[安装](#安装)）。
 
 ## 示例
 
@@ -641,7 +634,7 @@ mcp-huaweicloud-rds-supabase-mgr -t streamable-http
 | Claude Code | stdio | 项目级 `.mcp.json`；会话内批准一次即连 |
 | Claude Desktop / Cursor / Trae | stdio | `command`/`args`/`env` 配置 |
 | CodeArts | stdio | 项目级 `mcp_settings.json`（设置 → MCP 工具）；改既有条目需手动重启 |
-| 远程模式 | Streamable HTTP | `mcp-huaweicloud-rds-supabase-mgr -t streamable-http`，端点 `/mcp`；生产部署应前置网关配置 HTTPS 与鉴权 |
+| 远程模式 | Streamable HTTP | `mcp-server-huaweicloud-rds-supabase-mgr -t streamable-http`，端点 `/mcp`；生产部署应前置网关配置 HTTPS 与鉴权 |
 
 不提供旧版 SSE 传输。
 

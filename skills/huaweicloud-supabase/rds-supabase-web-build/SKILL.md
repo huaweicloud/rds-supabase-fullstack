@@ -3,10 +3,10 @@ name: rds-supabase-web-build
 description: 'RDS Supabase 全栈开发编排技能：AI Agent 通过自然语言创建并托管 Web 应用网站的端到端工作流——需求澄清与设计、前端代码生成、后端声明式配置（DDL/GRANT/RLS/RPC）生成与部署、本地 L0 测试验证、前端静态资源 OBS+CDN 全托管、端到端上线与生命周期管理（更新/回滚/下线）。Use when：创建 Web 网站、搭建 AI 应用、全栈应用从零到上线、已有 RDS Supabase 应用的迭代更新与托管维护。编排管理面与数据面两台 MCP（均由工作流步骤动态安装：管理面→步骤三、数据面→步骤四）及 rds-supabase-mgr-mcp / rds-supabase-mcp / rds-supabase-usage / rds-supabase-frontend / rds-supabase-postgres-best-practices / rds-supabase-function-graph 六个专项技能。v1 后端边界为数据层；复杂业务逻辑由 function-graph 技能（云函数）承接，SSR 后端部署不支持。
   English triggers: build a website from scratch, fullstack web app, ai app hosting, deploy frontend and backend, obs cdn static site, update rollback teardown.'
 license: MIT
-version: "0.12.4"
+version: "0.12.5"
 tags: [huawei-cloud, rds, supabase, fullstack, orchestration]
 metadata:
-  version: "0.12.4"
+  version: "0.12.5"
 ---
 
 # RDS Supabase 全栈开发编排（web-build）
@@ -124,10 +124,10 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 2. **动态启动管理面 MCP**（已连接则跳过）。**安装时机硬门槛**：凭据（AK/SK 或 Token）、Endpoint、Region、PROJECT_ID 四项**全部正确获取并核验后才开始安装**——任一项缺失即返回步骤一补齐，不带着配置缺口反复尝试安装（否则将持续报凭据/接入点类故障）。安装方式唯一二选一，**不得另寻来源**：
 
    ```bash
-   # git 模板（推荐）
-   uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr
+   # PyPI 规范包（推荐）
+   uvx mcp-server-huaweicloud-rds-supabase-mgr
    # 本地克隆
-   uv run --directory server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr
+   uv run --directory server/mcp_server_rds_supabase_mgr mcp-server-huaweicloud-rds-supabase-mgr
    ```
 
    **网络逃生通道**：uvx git 拉取失败或停滞（含代理后仍不通；连续失败 2 次或 30 秒无进展即判失败）→ **立即切换** ZIP 归档 + 本地运行，不反复重试：
@@ -137,11 +137,11 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
    curl -L --fail --max-time 120 -o "$TMP/rds-supabase-fullstack.zip" \
      https://github.com/huaweicloud/rds-supabase-fullstack/archive/refs/heads/main.zip
    unzip -q "$TMP/rds-supabase-fullstack.zip" -d "$TMP"
-   uv run --directory "$TMP/rds-supabase-fullstack-main/server/mcp_server_rds_supabase_mgr" mcp-huaweicloud-rds-supabase-mgr
+   uv run --directory "$TMP/rds-supabase-fullstack-main/server/mcp_server_rds_supabase_mgr" mcp-server-huaweicloud-rds-supabase-mgr
    # 临时目录在 MCP 运行期间必须保留（uv run 指向它）；MCP 停止后 rm -rf "$TMP" 清理
    ```
 
-   ZIP 归档属本仓官方源（`.../archive/<commit>.zip` 为 pin 等价形式），不违反来源锁定；仍禁 PyPI/第三方源。
+   ZIP 归档属本仓官方源（`.../archive/<commit>.zip` 为 pin 等价形式），不违反来源锁定；PyPI 规范包之外的近名第三方包仍然禁止。
    env：`SUPABASE_RDS_ENDPOINT` / `HUAWEICLOUD_PROJECT_ID` / 凭据——**值一律由项目内配置注入进程**（步骤一 `environment` 段与 `secrets/`），不读取会话/全局环境。**凭据模式二选一**：REST token（`HUAWEICLOUD_AUTH_TOKEN`，`SUPABASE_TRANSPORT` 默认 rest）或 **AK/SK（必须设置 `SUPABASE_TRANSPORT=sdk_core`**，读取 `HUAWEICLOUD_ACCESS_KEY`/`HUAWEICLOUD_SECRET_KEY`/可选 `HUAWEICLOUD_SECURITY_TOKEN`）——用户已填 AK/SK 而未设 `sdk_core` 时管理面将按 REST 模式启动并因缺 Token 失败；devkit 优先；或 `diagnostics discover` 勾选；或半自动方案：配置模板含占位符，由用户填入实际值
 
    **网络与验证纪律**：**默认不经代理直连局点**（内网/专线环境经代理转发易引入链路故障；**禁止一开始就配置代理**——代理是备选项而非默认项）；安装完成后执行**连接验证**：MCP 连接 OK 且任一**查询类工具**（优先 `get_supabase_capabilities`，一个即可）正常返回，验证通过才算安装成功；直连验证失败 → 先核对网络可达性、凭据模式（AK/SK 须 `sdk_core`）与 Endpoint，**确认直连不可达后**再显式配置代理并复验
@@ -157,8 +157,8 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
 1. **动态安装数据面 MCP**（实例凭据就绪后）。安装方式唯一二选一，**不得另寻来源**：
 
    ```bash
-   # git 模板
-   uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack --subdirectory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase
+   # PyPI 规范包
+   uvx mcp-server-huaweicloud-rds-supabase
    # 本地克隆
    uv run --directory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase
    ```
@@ -174,7 +174,7 @@ environment_ready → requirements_confirmed → instance_ready → mcp_connecte
    # 临时目录在 MCP 运行期间必须保留（uv run 指向它）；MCP 停止后 rm -rf "$TMP" 清理
    ```
 
-   ZIP 归档属本仓官方源（`.../archive/<commit>.zip` 为 pin 等价形式），不违反来源锁定；仍禁 PyPI/第三方源。
+   ZIP 归档属本仓官方源（`.../archive/<commit>.zip` 为 pin 等价形式），不违反来源锁定；PyPI 规范包之外的近名第三方包仍然禁止。
    env：`SUPABASE_URL` / `SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY`（agent 生成含占位符的配置模板 → 用户从受保护文件复制实际值填入 → 客户端重载）
 
    **访问协议跟随实例 SSL 状态**：实例开启 SSL → `https://`；未开启 SSL → `http://`（**不强制 HTTPS 交互**）。步骤三将 `instance.ssl_enabled`（true/false）记入 webapp.json；gate `--verify` 据此放行 http——`ssl_enabled=false` 时 HTTP 即预期访问方式

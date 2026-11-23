@@ -9,7 +9,6 @@
 | SUPABASE_URL | 实例网关基础 URL（Kong 统一入口） | `http(s)://<rds_supabase_eip>:<rds_supabase_port>`——<rds_supabase_eip> 为应用绑定 EIP（应用详情 public_ip）；<rds_supabase_port> 为网关端口，固定 8443；http(s) 跟随 SSL 开关 |
 | SUPABASE_ANON_KEY | 匿名 API Key（anon 角色 JWT） | eyJ 开头的 JWT 字符串 |
 | SUPABASE_SERVICE_ROLE_KEY | service_role API Key | eyJ 开头的 JWT 字符串；SQL 执行与用户管理必需；绕过 RLS 仅入可信环境 |
-| SUPABASE_SERVICE_ROLE_KEY | service_role API Key | eyJ 开头的 JWT 字符串；SQL 执行与用户管理必需 |
 
 要点：
 

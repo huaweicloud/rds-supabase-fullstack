@@ -1,37 +1,60 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
 [project]
-name = "mcp_server_supabase"
-version = "0.4.0a66"
-license = "MIT"
-readme = "README.md"
-description = "Supabase management API adapters and scenario tools"
+name = "mcp-server-huaweicloud-rds-supabase-mgr"
+version = "0.4.0"
+description = "Management-plane MCP server for Huawei Cloud RDS Supabase: application lifecycle, managed PostgreSQL instances, EIP binding, SSL, OBS storage, auth, API keys, security groups, orders and residual resource cleanup"
+readme = "README_en.md"
 requires-python = ">=3.10"
+license = "MIT"
+keywords = ["mcp", "huaweicloud", "supabase", "rds", "postgresql", "management"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
 dependencies = [
   "huaweicloud-mcp-core>=1.0,<2",
   "mcp>=2.0",
   "huaweicloudsdkcore>=3.1.220,<4",
   "huaweicloudsdkbss>=3.1.218,<4",
   "huaweicloudsdkiam>=3.1.220,<4",
+  # Supply-chain floor: huaweicloudsdkcore<=3.1.218 transitively pins
+  # pyasn1<=0.6.3 (3 DoS CVEs: CVE-2026-59884/59885/59886). The local
+  # tool.uv override cannot propagate into published metadata, so the
+  # floor is declared explicitly here for PyPI installs.
+  "pyasn1>=0.6.4",
 ]
+
 [project.scripts]
-mcp_server_supabase = "mcp_server_supabase.main:main"
+mcp-server-huaweicloud-rds-supabase-mgr = "mcp_server_supabase.main:main"
+# Compatibility alias: existing entry-point configs keep working.
 mcp-huaweicloud-rds-supabase-mgr = "mcp_server_supabase.main:main"
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-[tool.hatch.build.targets.wheel]
-packages = ["src/mcp_server_supabase"]
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "pytest-cov>=7,<8", "coverage>=7.10,<8"]
+
 [tool.uv.sources]
 huaweicloud-mcp-core = { path = "../../libs/huaweicloud_mcp_core" }
 
 [tool.uv]
-constraint-dependencies = [
-  "huaweicloudsdkcore==3.1.220",
-  "huaweicloudsdkiam==3.1.220",
-  "typing-inspection==0.4.4",
-]
+# Historical pin note: huaweicloudsdkcore==3.1.220 / huaweicloudsdkiam==3.1.220
+# were exact-constrained here to dodge sdkcore's transitive pyasn1<=0.6.3 pin
+# (3 DoS CVEs). The fix now lives in [project].dependencies as an explicit
+# pyasn1>=0.6.4 floor that propagates into published metadata, so the pins
+# are removed: the resolver picks sdkcore>=3.1.223 whose pyasn1 range
+# (<0.7.0,>=0.5.0) accepts the floor.
 
-[dependency-groups]
-dev = ["pytest>=8,<10", "pytest-cov>=7,<8", "coverage>=7.10,<8"]
+[tool.hatch.build.targets.wheel]
+packages = ["src/mcp_server_supabase"]
+
+[tool.hatch.build.targets.sdist]
+only-include = ["src/mcp_server_supabase", "README.md", "README_en.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

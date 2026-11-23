@@ -4,13 +4,12 @@ SKILL.md「前置条件」与「验证方法」的展开。安装方式的权威
 
 ## 一、来源锁定（先立规矩，再动手）
 
-- **唯一来源**：GitHub 仓库 `https://github.com/huaweicloud/rds-supabase-fullstack` 的 `server/mcp_server_rds_supabase_mgr/` 子目录（源码、README、examples、docs 都在里面）。
-- 服务端**没有发布到 PyPI，也没有 npm 包**。`mcp-huaweicloud-rds-supabase-mgr` 是 uv 安装后的入口脚本名，不是 PyPI 包名。
+- **规范来源**：PyPI 包 `mcp-server-huaweicloud-rds-supabase-mgr`（本仓 `server/mcp_server_rds_supabase_mgr/` 构建发布；uvx 直接从 PyPI 解析安装，无需克隆仓库），源码同仓。
+- 入口脚本：`mcp-server-huaweicloud-rds-supabase-mgr`（主入口，与包名一致，uvx 直呼）；兼容别名 `mcp-huaweicloud-rds-supabase-mgr` 等价可用，既有配置免改动。
 - **禁止**：
-  - `uvx mcp-huaweicloud-rds-supabase-mgr`（不带 `--from` 的裸入口名会去 PyPI 解析，命中同名第三方包）
-  - `pip install` / `npm install` 任何同名或近名包
+  - `pip install` / `npm install` 任何近名包——只认 `mcp-server-huaweicloud-rds-supabase-mgr` 全名，近名包是别的服务器：工具列表对不上，凭据还发给不受信代码
   - 从搜索引擎、第三方镜像找"华为云 Supabase MCP"安装
-- PyPI 存在同名第三方包——装上就是错误的服务器：工具列表对不上，凭据还发给了不受信代码。**找不到官方包不是去别处搜的理由，是回本仓的理由。**
+- 数据面 MCP（SQL 与数据操作）是另一个独立包 `mcp-server-huaweicloud-rds-supabase`，与本管理面包分开安装。
 
 ## 二、前置条件
 
@@ -25,18 +24,13 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 
 ## 三、安装方式（二选一）
 
-### 方式 A：uvx 直接从 GitHub 运行（推荐，免克隆）
+### 方式 A：uvx 直接运行（推荐，免安装）
 
 ```bash
-uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr" \
-  mcp-huaweicloud-rds-supabase-mgr
+uvx mcp-server-huaweicloud-rds-supabase-mgr
 ```
 
-生产建议在 URL 后加 `@<commit>` 锁定版本（默认跟随分支，分支变更会引入未验证行为）：
-
-```
-git+https://github.com/huaweicloud/rds-supabase-fullstack@<commit>#subdirectory=server/mcp_server_rds_supabase_mgr
-```
+固化安装（启动零网络解析，最稳）：`uv tool install mcp-server-huaweicloud-rds-supabase-mgr`（更新 `uv tool update mcp-server-huaweicloud-rds-supabase-mgr`）。pip 通道等价：`pip install mcp-server-huaweicloud-rds-supabase-mgr`。
 
 ### 方式 B：克隆本仓本地运行（内网/离线/调试）
 
@@ -44,7 +38,7 @@ git+https://github.com/huaweicloud/rds-supabase-fullstack@<commit>#subdirectory=
 git clone https://github.com/huaweicloud/rds-supabase-fullstack.git
 cd rds-supabase-fullstack/server/mcp_server_rds_supabase_mgr
 uv sync
-uv run mcp-huaweicloud-rds-supabase-mgr          # stdio（默认）
+uv run mcp-server-huaweicloud-rds-supabase-mgr          # stdio（默认）
 ```
 
 两种方式等价；克隆后还可以跑 `uv run python -m mcp_server_supabase.diagnostics check` 做不碰云的自检。
@@ -61,9 +55,7 @@ uv run mcp-huaweicloud-rds-supabase-mgr          # stdio（默认）
     "rds-supabase-mgr-mcp": {
       "command": "uvx",
       "args": [
-        "--from",
-        "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr",
-        "mcp-huaweicloud-rds-supabase-mgr"
+        "mcp-server-huaweicloud-rds-supabase-mgr"
       ],
       "env": {
         "SUPABASE_TRANSPORT": "sdk_core",
@@ -88,7 +80,7 @@ opencode 项目 `opencode.json` 等价写法（V2 结构：服务器条目位于
     "servers": {
       "rds-supabase-mgr": {
         "type": "local",
-        "command": ["uvx", "--from", "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr", "mcp-huaweicloud-rds-supabase-mgr"],
+        "command": ["uvx", "mcp-server-huaweicloud-rds-supabase-mgr"],
         "environment": {
           "SUPABASE_TRANSPORT": "sdk_core",
           "SUPABASE_RDS_ENDPOINT": "<原生 RDS HTTPS 端点，可选；缺省按区域推导>",
@@ -122,15 +114,15 @@ opencode 项目 `opencode.json` 等价写法（V2 结构：服务器条目位于
 
 ### 会话内使能（动态安装后免重启）
 
-**慢网络/健康检查超时**：uvx 每次启动都对 git+PyPI 做在线解析，弱网下可能超过宿主约 30 秒的健康检查窗口（症状：MCP 面板显示 failed: Operation timed out）。处置二选一：
-- **预热缓存**：用同一来源跑一次 `uvx --from "<上述 git 来源>" mcp-huaweicloud-rds-supabase-mgr --help`，装完依赖再回宿主重连；PyPI 慢可设 `UV_DEFAULT_INDEX` 指向网络可达的镜像（镜像任选，网络通就行）
-- **固化安装**（启动零网络解析，最稳）：`uv tool install "mcp-server-supabase @ git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr"`（更新用 `uv tool update mcp-server-supabase`），然后把 MCP 配置的 command 改指安装产物入口 `mcp-huaweicloud-rds-supabase-mgr`（路径以 `uv tool dir` / shell 提示的安装位置为准，勿凭记忆猜），env 不变
+**慢网络/健康检查超时**：uvx 每次启动都对 PyPI 做在线解析，弱网下可能超过宿主约 30 秒的健康检查窗口（症状：MCP 面板显示 failed: Operation timed out）。处置二选一：
+- **预热缓存**：跑一次 `uvx mcp-server-huaweicloud-rds-supabase-mgr --help`，装完依赖再回宿主重连；PyPI 慢可设 `UV_DEFAULT_INDEX` 指向网络可达的镜像（镜像任选，网络通就行）
+- **固化安装**（启动零网络解析，最稳）：`uv tool install mcp-server-huaweicloud-rds-supabase-mgr`（更新用 `uv tool update mcp-server-huaweicloud-rds-supabase-mgr`），然后把 MCP 配置的 command 改指安装产物入口 `mcp-server-huaweicloud-rds-supabase-mgr`（路径以 `uv tool dir` / shell 提示的安装位置为准，勿凭记忆猜；兼容别名入口亦可用），env 不变
 
 配置写入项目级文件后，**当前会话**即可使能，不需要退出重进：
 
 | 宿主 | 使能方式 | 核对 |
 |---|---|---|
-| opencode | 保存 `opencode.json` 后新服务器**自动连接**；未自动连上时在 `/mcps` 面板选中该服务器连接。等价 CLI：`opencode mcp add rds-supabase-mgr --env K=V -- uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr" mcp-huaweicloud-rds-supabase-mgr`（注意 `--env` 的值会留在命令行历史里，写凭据建议直接编辑配置文件） | `opencode mcp list` 或 `/mcps` 显示 connected |
+| opencode | 保存 `opencode.json` 后新服务器**自动连接**；未自动连上时在 `/mcps` 面板选中该服务器连接。等价 CLI：`opencode mcp add rds-supabase-mgr --env K=V -- uvx mcp-server-huaweicloud-rds-supabase-mgr`（注意 `--env` 的值会留在命令行历史里，写凭据建议直接编辑配置文件） | `opencode mcp list` 或 `/mcps` 显示 connected |
 | Claude Code | 保存 `.mcp.json` 后会话内弹出项目服务器**批准提示**（安全机制，每个项目服务器一次），用户批准即连接；提示未弹出时在 `/mcp` 面板找到该服务器批准/连接 | `/mcp` 面板显示 connected 与工具数量 |
 | CodeArts | MCP 配置在设置页「MCP工具 → 配置MCP」打开的 `mcp_settings.json` 中编辑（`mcpServers` 结构与 `.mcp.json` 相同，uvx 条目直接复用模板一；服务器名称 ≤64 字符），**保存即启动**（等待"工具启动完成"）；「MCP工具 → 已安装」页签可启用/停用/重启。官方明示：**编辑既有条目后 IDE 缓存可能不自动刷新，须在该页签点一次重启该 MCP** | 「MCP工具 → 已安装」页签显示该服务器且已启用 |
 | OfficeAce | 写入项目级 MCP 配置后，在宿主自身的 MCP 管理入口启用/刷新（无公开文档，Agent 在该宿主内按其设置界面操作）；确无会话内机制时以一次性 reload 作为后备方案，如实告知用户——配置已就位，不算安装失败 | 宿主 MCP 管理界面显示已启用 |
@@ -158,16 +150,16 @@ opencode 项目 `opencode.json` 等价写法（V2 结构：服务器条目位于
 
 ## 六、网络逃生通道
 
-uvx 从 GitHub 拉取失败或停滞（连续失败 2 次，或 30 秒无进展，含挂代理后仍不通）→ **立即切换** ZIP 归档 + 本地运行，不要反复重试：
+uvx/PyPI 拉取失败或停滞（连续失败 2 次，或 30 秒无进展，含挂代理后仍不通）→ **立即切换** ZIP 归档 + 本地运行，不要反复重试：
 
 ```bash
 TMP=$(mktemp -d)
 curl -L --fail --max-time 120 -o "$TMP/rds.zip" https://github.com/huaweicloud/rds-supabase-fullstack/archive/refs/heads/main.zip
 unzip -q "$TMP/rds.zip" -d "$TMP"
-uv run --directory "$TMP/rds-supabase-fullstack-main/server/mcp_server_rds_supabase_mgr" mcp-huaweicloud-rds-supabase-mgr
+uv run --directory "$TMP/rds-supabase-fullstack-main/server/mcp_server_rds_supabase_mgr" mcp-server-huaweicloud-rds-supabase-mgr
 ```
 
-规则：下载物一律落唯一临时目录（`mktemp -d`），不污染项目目录和家目录；MCP 运行期间保留、停止后清理。ZIP 归档属本仓官方源，**不违反来源锁定，但 PyPI/第三方源仍然禁止**。浏览器手动下载同一 URL 也落临时目录。
+规则：下载物一律落唯一临时目录（`mktemp -d`），不污染项目目录和家目录；MCP 运行期间保留、停止后清理。ZIP 归档属本仓官方源，不违反来源锁定；PyPI 规范包之外的近名第三方包仍然禁止。浏览器手动下载同一 URL 也落临时目录。
 
 ## 七、安装后如何验证（三层）
 

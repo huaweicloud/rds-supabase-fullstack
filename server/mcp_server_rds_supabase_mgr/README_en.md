@@ -1,10 +1,10 @@
 # Huawei Cloud RDS Supabase MCP Server
 
-[中文](README.md)
+[中文](https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase_mgr/README.md)
 
 ## Version
 
-Current version: `0.4.0a62` (development prerelease); Python `3.10+`;
+Current version: `0.4.0`; Python `3.10+`;
 MCP Python SDK `2.x`; 58 tools.
 
 ## Overview
@@ -44,23 +44,18 @@ export HUAWEICLOUD_SECRET_KEY="<SK>"
 export HUAWEICLOUD_REGION="<region, e.g. cn-north-4>"
 export SUPABASE_TRANSPORT="sdk_core"
 export HUAWEICLOUD_MCP_READ_ONLY="true"
-uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr" \
-  mcp-huaweicloud-rds-supabase-mgr
+uvx mcp-server-huaweicloud-rds-supabase-mgr
 ```
 
 Generic stdio client configuration (token mode; AK/SK mode see
-[examples/mcp-sdk.example.json](examples/mcp-sdk.example.json)):
+[examples/mcp-sdk.example.json](https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase_mgr/examples/mcp-sdk.example.json)):
 
 ```json
 {
   "mcpServers": {
     "rds-supabase-mgr-mcp": {
       "command": "uvx",
-      "args": [
-        "--from",
-        "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr",
-        "mcp-huaweicloud-rds-supabase-mgr"
-      ],
+      "args": ["mcp-server-huaweicloud-rds-supabase-mgr"],
       "env": {
         "HUAWEICLOUD_AUTH_TOKEN": "<service token>",
         "HUAWEICLOUD_MCP_READ_ONLY": "true",
@@ -609,16 +604,24 @@ pull the managed instance up automatically.
 
 ### Installation
 
-**uvx direct run (recommended; the git repository is the only canonical
-source):**
+**uvx direct run (recommended):**
 
 ```bash
-uvx --from "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr" \
-  mcp-huaweicloud-rds-supabase-mgr
+uvx mcp-server-huaweicloud-rds-supabase-mgr
 ```
 
-The server is not published to PyPI; same-named third-party packages on
-PyPI are not this server and must not be installed.
+The server is published on PyPI as
+`mcp-server-huaweicloud-rds-supabase-mgr`; pin it with
+`uv tool install mcp-server-huaweicloud-rds-supabase-mgr` (update via
+`uv tool update mcp-server-huaweicloud-rds-supabase-mgr`). Near-named
+third-party packages are not this server.
+
+**pip install:**
+
+```bash
+pip install mcp-server-huaweicloud-rds-supabase-mgr
+mcp-server-huaweicloud-rds-supabase-mgr
+```
 
 **Clone for development:**
 
@@ -626,14 +629,15 @@ PyPI are not this server and must not be installed.
 git clone https://github.com/huaweicloud/rds-supabase-fullstack.git
 cd rds-supabase-fullstack/server/mcp_server_rds_supabase_mgr
 uv sync
-uv run mcp-huaweicloud-rds-supabase-mgr          # stdio (default)
-uv run mcp-huaweicloud-rds-supabase-mgr -t streamable-http
+uv run mcp-server-huaweicloud-rds-supabase-mgr          # stdio (default)
+uv run mcp-server-huaweicloud-rds-supabase-mgr -t streamable-http
 ```
 
-`mcp-huaweicloud-rds-supabase-mgr` is the canonical entry; the legacy entry
-`mcp_server_supabase` is kept transitionally and is equivalent. For
-slow-network uvx startup timeouts, see the
-[skill install reference](../../skills/huaweicloud-supabase/rds-supabase-mgr-mcp/references/install.md).
+`mcp-server-huaweicloud-rds-supabase-mgr` is the canonical entry (it
+matches the package name for direct uvx runs); the compatibility alias
+`mcp-huaweicloud-rds-supabase-mgr` is equivalent. For slow-network uvx
+startup timeouts, see the
+[skill install reference](https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/skills/huaweicloud-supabase/rds-supabase-mgr-mcp/references/install.md).
 
 ### Diagnostics CLI
 
@@ -754,7 +758,7 @@ Operations-troubleshooting notes:
 
 - **Prerequisite**: hcloud installed locally with its first-run privacy
   agreement accepted; installation is covered in
-  [section 4 of the skill INSTALL.md](../../skills/huaweicloud-supabase/rds-supabase-mgr-mcp/INSTALL.md).
+  [section 4 of the skill INSTALL.md](https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/skills/huaweicloud-supabase/rds-supabase-mgr-mcp/INSTALL.md).
 - **Binary location**: `HCLOUD_BIN` environment variable → fixed install
   directories → PATH, re-resolved on every call; no session restart needed
   after installation.
@@ -782,11 +786,7 @@ UVX stdio configuration for AgentArts and other clients:
   "mcpServers": {
     "rds-supabase-mgr-mcp": {
       "command": "uvx",
-      "args": [
-        "--from",
-        "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr",
-        "mcp-huaweicloud-rds-supabase-mgr"
-      ],
+      "args": ["mcp-server-huaweicloud-rds-supabase-mgr"],
       "env": {
         "HUAWEICLOUD_AUTH_TOKEN": "<service token>",
         "HUAWEICLOUD_MCP_READ_ONLY": "true",
@@ -800,12 +800,12 @@ UVX stdio configuration for AgentArts and other clients:
 AgentArts supports UVX stdio and Streamable HTTP. Remote mode startup:
 
 ```bash
-mcp-huaweicloud-rds-supabase-mgr -t streamable-http
+mcp-server-huaweicloud-rds-supabase-mgr -t streamable-http
 ```
 
 It listens on `0.0.0.0:8000` by default with the endpoint at `/mcp`; front it
-with HTTPS and client authentication in production. The server is not
-published to PyPI, so UVX always pulls from the git repository
+with HTTPS and client authentication in production. The server is
+published on PyPI; uvx resolves and installs it directly
 (see [Installation](#installation)).
 
 ## Examples
@@ -863,7 +863,7 @@ cloud API accepted the request, not that the change has completed.
 | Claude Code | stdio | Project-level `.mcp.json`; approve once in-session |
 | Claude Desktop / Cursor / Trae | stdio | `command`/`args`/`env` configuration |
 | CodeArts | stdio | Project-level `mcp_settings.json` (Settings → MCP tools); editing an entry needs a manual restart |
-| Remote mode | Streamable HTTP | `mcp-huaweicloud-rds-supabase-mgr -t streamable-http`, endpoint `/mcp`; front it with HTTPS and authentication in production |
+| Remote mode | Streamable HTTP | `mcp-server-huaweicloud-rds-supabase-mgr -t streamable-http`, endpoint `/mcp`; front it with HTTPS and authentication in production |
 
 No legacy SSE transport is provided.
 
@@ -904,17 +904,17 @@ must never be filed in public issues.
 
 ## Further documentation
 
-- [User guide](docs/USER_GUIDE.md) — installation, verification, and the
+- [User guide](https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase_mgr/docs/USER_GUIDE.md) — installation, verification, and the
   natural-language operation workflow
-- [Tool contracts](docs/TOOL_CONTRACTS.md) — the authoritative input/output
+- [Tool contracts](https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase_mgr/docs/TOOL_CONTRACTS.md) — the authoritative input/output
   and confirmation semantics
-- [Recovery rules](docs/RECOVERY.md) and
-  [reconciliation contract](docs/RECONCILIATION.md) — failure routing and
+- [Recovery rules](https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase_mgr/docs/RECOVERY.md) and
+  [reconciliation contract](https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase_mgr/docs/RECONCILIATION.md) — failure routing and
   Auth plan reconciliation
-- [Local secret I/O](docs/LOCAL_REQUESTS.md) — the sensitive-request
+- [Local secret I/O](https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase_mgr/docs/LOCAL_REQUESTS.md) — the sensitive-request
   reference mechanism
-- [SDK mode](docs/SDK.md), [migration notes](docs/MIGRATION.md)
-- [docs/legacy/](docs/legacy/) — archived offline Windows delivery process
+- [SDK mode](https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase_mgr/docs/SDK.md), [migration notes](https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase_mgr/docs/MIGRATION.md)
+- [docs/legacy/](https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase_mgr/docs/legacy/) — archived offline Windows delivery process
 
 ## License
 

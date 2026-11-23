@@ -30,17 +30,17 @@ npx skills add huaweicloud/rds-supabase-fullstack \
 
 | MCP | 入口脚本 | README（完整 URL） |
 |---|---|---|
-| 管理面（步骤三启动） | `mcp-huaweicloud-rds-supabase-mgr` | https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase_mgr/README.md |
+| 管理面（步骤三启动） | `mcp-server-huaweicloud-rds-supabase-mgr` | https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase_mgr/README.md |
 | 数据面（步骤四动态安装） | `mcp-server-huaweicloud-rds-supabase` | https://github.com/huaweicloud/rds-supabase-fullstack/blob/main/server/mcp_server_rds_supabase/README.md |
 
 ```bash
 # 管理面（步骤三启动）
-uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr mcp-huaweicloud-rds-supabase-mgr
+uvx mcp-server-huaweicloud-rds-supabase-mgr
 # 数据面（步骤四动态安装，实例凭据就绪后）
-uvx --from git+https://github.com/huaweicloud/rds-supabase-fullstack --subdirectory server/mcp_server_rds_supabase mcp-server-huaweicloud-rds-supabase
+uvx mcp-server-huaweicloud-rds-supabase
 ```
 
-本地已克隆仓库时可用 `uv run --directory server/<目录> <入口脚本>` 等价替代（生产建议 pin `@<commit>`）。**技能目录里没有 `server/` 子目录属预期行为**——服务器不在技能包内，所有仓内路径引用均应以上表 URL 为准；除上述两种来源外的一切途径（含 PyPI/第三方仓同名包）禁止。
+本地已克隆仓库时可用 `uv run --directory server/<目录> <入口脚本>` 等价替代；PyPI 安装可按需 pin 版本（如 `uvx mcp-server-huaweicloud-rds-supabase-mgr@0.4.0`）。**技能目录里没有 `server/` 子目录属预期行为**——服务器不在技能包内，所有仓内路径引用均应以上表 URL 为准；两个规范包全名之外的近名第三方包禁止安装。
 
 ## 价值对比
 

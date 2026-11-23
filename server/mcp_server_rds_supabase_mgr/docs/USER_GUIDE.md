@@ -2,7 +2,7 @@
 
 适用版本：0.3.8a2开发预发行版。文档更新：2026-11-09。
 
-本工具让你在 Claude Code 等支持本地 MCP 的助手中，用自然语言查询和管理华为云 RDS Supabase（全托管生命周期：应用创建、配置、安全访问、删除）。MCP 负责调用云接口，专项 Skill 负责理解需求、补充信息、展示影响及指导确认。安装采用本仓统一的 uvx 模板，跨平台（macOS / Linux / Windows）。先完成本地接入，再验证真实云访问；当前开发版尚未完成生产发布验收。
+本工具让你在 Claude Code 等支持本地 MCP 的助手中，用自然语言查询和管理华为云 RDS Supabase（全托管生命周期：应用创建、配置、安全访问、删除）。MCP 负责调用云接口，专项 Skill 负责理解需求、补充信息、展示影响及指导确认。安装采用本仓统一的 uvx 模板，跨平台（macOS / Linux / Windows）。先完成本地接入，再验证真实云访问；服务端已发布至 PyPI（`mcp-server-huaweicloud-rds-supabase-mgr`）。
 
 ## 1. 能做什么
 
@@ -21,7 +21,7 @@
 
 - 已安装 uv（含 uvx）：macOS/Linux 执行 `curl -LsSf https://astral.sh/uv/install.sh | sh`；Windows PowerShell 执行 `powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"`
 - 已安装支持本地 MCP 的客户端（如 Claude Code），并能正常与所配置的模型对话；本包不安装客户端或配置模型账号
-- 机器可访问 github.com（uvx 首次运行需拉取本仓库）。完全离线或 Windows 离线交付场景见 [docs/legacy/](legacy/)（已归档的 bundle 流程）
+- 机器可访问 PyPI（uvx 首次运行需拉取依赖与包）。完全离线或 Windows 离线交付场景见 [docs/legacy/](legacy/)（已归档的 bundle 流程）
 
 ## 3. 安装（uvx 模板）
 
@@ -32,11 +32,7 @@
   "mcpServers": {
     "rds-supabase-mgr-mcp": {
       "command": "uvx",
-      "args": [
-        "--from",
-        "git+https://github.com/huaweicloud/rds-supabase-fullstack#subdirectory=server/mcp_server_rds_supabase_mgr",
-        "mcp-huaweicloud-rds-supabase-mgr"
-      ],
+      "args": ["mcp-server-huaweicloud-rds-supabase-mgr"],
       "env": {
         "SUPABASE_RDS_ENDPOINT": "<原生 RDS HTTPS 入口>",
         "HUAWEICLOUD_PROJECT_ID": "<项目 ID>",
@@ -53,7 +49,7 @@ SDK 签名模式（AK/SK）见 [examples/mcp-sdk.example.json](../examples/mcp-s
 
 入口与项目 ID 可在配置前自动发现：`uv run python -m mcp_server_supabase.diagnostics discover` 用现有凭据查询 IAM 项目清单（REST 模式自查 Token 作用域）并按区域推导候选入口，输出 `suggested_env` 供勾选；追加 `--probe` 做一次只读可达性探测。显式配置的 `SUPABASE_RDS_ENDPOINT` 优先。安全组工具与 RDS 共用同一原生入口，无需单独配置。
 
-首次接入建议保持只读（上表默认值）。uvx 首次运行解析依赖并缓存，之后启动为秒级；需要更新到仓库最新版本时在命令中加入 `--refresh`。旧入口脚本名 `mcp_server_supabase` 与规范入口 `mcp-huaweicloud-rds-supabase-mgr` 等价，保留过渡。
+首次接入建议保持只读（上表默认值）。uvx 首次运行解析依赖并缓存，之后启动为秒级；需要更新到最新发布版本时在命令中加入 `--refresh`。规范入口 `mcp-server-huaweicloud-rds-supabase-mgr`（与包名一致）；兼容别名 `mcp-huaweicloud-rds-supabase-mgr` 等价可用。
 
 ## 4. 安装专项 Skill
 

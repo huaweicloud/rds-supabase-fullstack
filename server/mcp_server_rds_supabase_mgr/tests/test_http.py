@@ -13,6 +13,20 @@ from mcp_server_supabase.service.operations import Operations
 from huaweicloud_mcp_core.errors import McpToolError
 from mcp_server_supabase.failures import RecoveryError
 
+# Loopback fixtures must never traverse a host proxy: requests falls back to
+# system/env proxies, and an interception proxy 404s fixture paths it cannot
+# route back to 127.0.0.1.
+def _bypass_proxy_for_loopback():
+    for key in ('NO_PROXY', 'no_proxy'):
+        parts = [h.strip() for h in os.environ.get(key, '').split(',') if h.strip()]
+        for host in ('127.0.0.1', 'localhost'):
+            if host not in parts:
+                parts.append(host)
+        os.environ[key] = ','.join(parts)
+
+_bypass_proxy_for_loopback()
+
+
 class Handler(BaseHTTPRequestHandler):
     calls = []
     code = 200

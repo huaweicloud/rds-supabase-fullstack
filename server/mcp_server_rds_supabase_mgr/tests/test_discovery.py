@@ -77,7 +77,10 @@ class DiscoveryTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_sdk_core_lists_projects_and_flags_non_region(self):
         env = {'SUPABASE_TRANSPORT': 'sdk_core', 'HUAWEICLOUD_ACCESS_KEY': 'test-ak',
-               'HUAWEICLOUD_SECRET_KEY': 'test-sk'}
+               'HUAWEICLOUD_SECRET_KEY': 'test-sk',
+               # clear=True wipes the module-level loopback proxy bypass; the
+               # sdk_core IAM call below targets the local fixture server.
+               'NO_PROXY': '127.0.0.1,localhost', 'no_proxy': '127.0.0.1,localhost'}
         with patch.dict(os.environ, env, clear=True), \
              patch.object(self.discovery, 'IAM_ORIGIN', self.origin):
             result = await self.discovery.discover()

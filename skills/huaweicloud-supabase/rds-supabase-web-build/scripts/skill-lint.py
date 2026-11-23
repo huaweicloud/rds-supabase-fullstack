@@ -21,6 +21,9 @@ import re
 import sys
 from pathlib import Path
 
+# The gate import below must not leave bytecode caches in the skill package.
+sys.dont_write_bytecode = True
+
 STEPS = [
     ("步骤一", "环境检查与配置", "environment_ready"),
     ("步骤二", "需求澄清与设计", "requirements_confirmed"),

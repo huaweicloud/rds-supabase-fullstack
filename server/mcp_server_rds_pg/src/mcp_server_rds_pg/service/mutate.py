@@ -158,9 +158,12 @@ async def run_mutation(
             hint="Call this tool with confirm=false first, present the changes, then "
             "resubmit with confirm=true and the returned plan_id.",
         )
-    plans.claim(plan_id, digest)
+    # Recheck BEFORE claiming: a failed pre-flight check must not consume
+    # the plan (E2E found claim-then-fail leaves stuck 'submitted' rows that
+    # block the same intent forever).
     if recheck and instance_id:
         await _assert_mutation_ready(client, instance_id, tool_name)
+    plans.claim(plan_id, digest)
     try:
         result = await execute()
     except McpToolError:

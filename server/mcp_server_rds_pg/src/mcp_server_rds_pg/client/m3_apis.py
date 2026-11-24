@@ -557,6 +557,11 @@ class CesClient:
         time_range: int,
         filt: str = "average",
     ) -> dict[str, Any]:
+        # CES requires dimension format "dimension_name,resource_id"; for RDS
+        # instances the dimension name is rds_cluster_id. A bare instance id
+        # returns 400 ces.0013.
+        if "," not in dim_0:
+            dim_0 = f"rds_cluster_id,{dim_0}"
         def _call() -> dict[str, Any]:
             import time as _time
 

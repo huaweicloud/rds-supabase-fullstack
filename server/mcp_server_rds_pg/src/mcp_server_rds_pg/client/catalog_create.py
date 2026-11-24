@@ -97,7 +97,9 @@ class InstanceCreateMixin:
             from huaweicloudsdkrds.v3.model.pwd_reset_request import PwdResetRequest
             from huaweicloudsdkrds.v3.model.reset_pwd_request import ResetPwdRequest
 
-            body = PwdResetRequest(password=password)
+            # SDK field is db_user_pwd (not password) - wrong kwarg raises
+            # TypeError that the pipeline misclassifies as unknown.
+            body = PwdResetRequest(db_user_pwd=password)
             request = ResetPwdRequest(instance_id=instance_id, body=body)
             return cast(dict[str, Any], _to_dict(self._client.reset_pwd(request)))
 

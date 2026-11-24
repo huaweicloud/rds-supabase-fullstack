@@ -491,6 +491,34 @@ class MonitorService:
         return single_result(response)
 
     async def list_resource_metrics(self) -> dict[str, Any]:
+        # The RDS metric-keys endpoint returns resource_monitoring_infos -
+        # a live per-instance monitoring snapshot (cpu/memory/disk usage,
+        # iops, tps/qps) rather than a metric-name catalog. Surface both the
+        # snapshot and a static catalog of the common RDS PG metrics.
         response = await self._client.list_instances_resource_metrics(engine="postgresql")
-        items = response.get("metric_keys") or []
-        return page_result(items, total=len(items))
+        infos = response.get("resource_monitoring_infos") or []
+        catalog = [
+            {"metric_name": "rds001_cpu_util", "unit": "%", "desc": "CPU usage"},
+            {"metric_name": "rds002_mem_util", "unit": "%", "desc": "memory usage"},
+            {"metric_name": "rds080_disk_util", "unit": "%", "desc": "disk usage"},
+            {"metric_name": "rds077_conn_usage", "unit": "%", "desc": "connection usage"},
+            {"metric_name": "rds073_conns", "unit": "count", "desc": "active connections"},
+            {"metric_name": "rds061_in_bandwidth", "unit": "byte/s", "desc": "in bandwidth"},
+        ]
+        return page_result(
+            [
+                {
+                    "id": i.get("id"),
+                    "name": i.get("name"),
+                    "status": (i.get("instance_state") or {}).get("status"),
+                    "cpu_usage": i.get("cpu_usage"),
+                    "memory_usage": i.get("memory_usage"),
+                    "disk_usage": i.get("disk_usage"),
+                    "tps": i.get("tps"),
+                    "iops": i.get("iops"),
+                }
+                for i in infos
+            ],
+            total=response.get("total_count"),
+            marker=None,
+        ) if infos else page_result(catalog, total=len(catalog))

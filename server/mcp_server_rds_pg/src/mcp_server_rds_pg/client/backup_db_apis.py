@@ -330,7 +330,8 @@ class PgDatabaseMixin:
             )
 
             grant_body = PostgresqlGrantRequest(
-                users=[PostgresqlUserWithPrivilege(**u) for u in users]
+                db_name=db_name,
+                users=[PostgresqlUserWithPrivilege(**u) for u in users],
             )
             request = AllowDbPrivilegeRequest(
                 instance_id=instance_id, body=grant_body

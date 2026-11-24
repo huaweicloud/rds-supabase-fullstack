@@ -26,10 +26,10 @@ packages = ["src/mcp_server_rds_pg"]
 # Force pyasn1 >= 0.6.4 to fix 3 DoS CVEs (CVE-2026-59884/59885/59886).
 # huaweicloudsdkcore<=3.1.218 pins pyasn1<=0.6.3 in its own requires_dist; override
 # until the SDK ships a relaxed constraint.
-override-dependencies = ["pyasn1>=0.6.4"]
+override-dependencies = ["pyasn1>=0.6.4", "cryptography<50"]
 
 [tool.uv.sources]
-huaweicloud-mcp-core = { path = "../../libs/huaweicloud_mcp_core" }
+huaweicloud-mcp-core = { path = "../rds-supabase-fullstack/libs/huaweicloud_mcp_core" }
 
 [dependency-groups]
 dev = [
@@ -61,3 +61,7 @@ python_version = "3.10"
 module = ["huaweicloudsdkcore.*", "huaweicloudsdkrds.*"]
 ignore_missing_imports = true
 
+[[tool.uv.index]]
+name = "tuna"
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true

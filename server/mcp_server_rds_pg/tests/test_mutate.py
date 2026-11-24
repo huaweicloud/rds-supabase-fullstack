@@ -10,10 +10,9 @@ from typing import Any
 import pytest
 from huaweicloud_mcp_core.errors import McpToolError
 
+from conftest import FakeSdkRdsClient
 from mcp_server_rds_pg.service.mutate import run_mutation
 from mcp_server_rds_pg.service.plans import PlanStore
-
-from tests.conftest import FakeSdkRdsClient
 
 OPERATION = "reboot"
 
@@ -44,7 +43,7 @@ async def _preview_then_submit(
     )
     assert preview["status"] == "confirmation_required"
     assert preview["execution"] == "not_executed"
-    assert "plan_id" in preview and preview["plan_id"]
+    assert preview.get("plan_id")
     assert preview["warnings"] == ["interrupts connections"]
     return await run_mutation(
         tool_name="reboot_pg_instance",
@@ -82,8 +81,9 @@ async def test_preview_has_no_side_effect(
 
 
 async def test_submit_requires_plan_id(
-    plans: PlanStore, fake_client: FakeSdkRdsClient
+    plans: PlanStore, fake_client: FakeSdkRdsClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    monkeypatch.setenv("RDS_PG_ENABLE_WRITES", "true")
     with pytest.raises(McpToolError) as excinfo:
         await run_mutation(
             tool_name="reboot_pg_instance",

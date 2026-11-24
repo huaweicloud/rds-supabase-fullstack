@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import os
-import sqlite3
 import time
 from pathlib import Path
 
@@ -52,10 +51,12 @@ async def test_claim_rejects_digest_mismatch(plans: PlanStore) -> None:
         plans.claim(issued["plan_id"], digest(SCOPE_B))
 
 
-async def test_claim_rejects_expired_plan(plans: PlanStore, monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_claim_rejects_expired_plan(
+    plans: PlanStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
     issued = plans.issue(digest(SCOPE_A), ttl=1)
-    monkeypatch.setattr(time, "time", lambda: time.time() + 2)
-    # Directly test expiry via a short ttl and time travel using a real offset
+    real_time = time.time()
+    monkeypatch.setattr(time, "time", lambda: real_time + 2)
     with pytest.raises(McpToolError):
         plans.claim(issued["plan_id"], digest(SCOPE_A))
 

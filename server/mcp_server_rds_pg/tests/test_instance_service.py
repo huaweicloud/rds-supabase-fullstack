@@ -5,15 +5,12 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import pytest
 from huaweicloud_mcp_core.errors import McpToolError
 
+from conftest import FakeSdkRdsClient
 from mcp_server_rds_pg.service.instance_service import InstanceService
 from mcp_server_rds_pg.service.plans import PlanStore
-
-from tests.conftest import FakeSdkRdsClient
 
 
 @pytest.fixture
@@ -88,7 +85,7 @@ async def test_stop_rejects_prepaid(
 
 
 async def test_stop_two_stage(
-    service: InstanceService, monkeypatch: pytest.MonkeyPatch
+    service: InstanceService, fake_client: FakeSdkRdsClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("RDS_PG_ENABLE_WRITES", "true")
     preview = await service.stop(instance_id="inst-1", confirm=False, plan_id=None)

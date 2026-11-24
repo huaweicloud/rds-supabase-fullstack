@@ -20,9 +20,10 @@ import os
 import secrets
 import sqlite3
 import time
+from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 from huaweicloud_mcp_core.errors import McpToolError
 
@@ -46,13 +47,10 @@ class PlanStore:
     """SQLite-backed one-use plan ledger (0700 dir / 0600 file, symlink-rejected)."""
 
     def __init__(self, path: str | None = None) -> None:
-        self.path = Path(
-            path
-            or os.getenv(
-                "RDS_PG_STATE_FILE",
-                str(Path.home() / ".local/state/huaweicloud-rds-pg/plans.sqlite3"),
-            )
-        )
+        default_path = str(Path.home() / ".local/state/huaweicloud-rds-pg/plans.sqlite3")
+        env_path: str | None = os.getenv("RDS_PG_STATE_FILE")
+        resolved: str = path or env_path or default_path
+        self.path = Path(resolved)
 
     @contextmanager
     def connect(self) -> Iterator[sqlite3.Connection]:
@@ -69,6 +67,10 @@ class PlanStore:
         db.execute(
             "CREATE TABLE IF NOT EXISTS plans"
             " (id TEXT PRIMARY KEY, digest TEXT, expires REAL, state TEXT, job TEXT)"
+        )
+        db.execute(
+            "CREATE TABLE IF NOT EXISTS verification"
+            " (plan TEXT PRIMARY KEY, checked_at REAL, kind TEXT)"
         )
         db.commit()
         try:
@@ -107,7 +109,8 @@ class PlanStore:
                     hint="Preview again only after reconciling prior executions.",
                 )
             if db.execute(
-                "SELECT 1 FROM plans WHERE digest=? AND state IN ('submitted','accepted','unknown')",
+                "SELECT 1 FROM plans WHERE digest=?"
+                " AND state IN ('submitted','accepted','unknown')",
                 (digest,),
             ).fetchone():
                 raise McpToolError(

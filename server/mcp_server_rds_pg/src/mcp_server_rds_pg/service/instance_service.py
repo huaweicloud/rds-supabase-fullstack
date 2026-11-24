@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from huaweicloud_mcp_core.errors import McpToolError
 from huaweicloud_mcp_core.output import clamp_limit, page_result, single_result
@@ -189,11 +189,12 @@ class InstanceService:
                 f"Instance {instance_id} not found",
                 hint="Call list_pg_instances to get the exact instance id.",
             )
-        return instances[0]
+        return cast(dict[str, Any], instances[0])
 
     async def _require_found(self, instance_id: str) -> None:
         await self._find(instance_id)
 
     async def _charge_mode(self, instance_id: str) -> str | None:
         instance = await self._find(instance_id)
-        return (instance.get("charge_info") or {}).get("charge_mode")
+        charge_mode = (instance.get("charge_info") or {}).get("charge_mode")
+        return str(charge_mode) if charge_mode is not None else None

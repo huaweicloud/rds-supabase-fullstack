@@ -62,7 +62,7 @@ uv run ruff check && uv run mypy && uv run pytest --cov
 | stop_pg_instance | DANGEROUS | 停机，仅 postPaid（两段式） |
 | start_pg_instance | DANGEROUS | 启动（两段式） |
 
-按设计文档暂缓：删实例、删手动备份、备份恢复到新实例、PITR 恢复到已有实例。
+范围外（已决策移除，不实现）：删实例、删手动备份、恢复到新实例、PITR 恢复。
 
 ## 里程碑
 

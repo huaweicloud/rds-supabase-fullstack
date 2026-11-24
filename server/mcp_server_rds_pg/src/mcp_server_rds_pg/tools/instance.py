@@ -1,12 +1,7 @@
 # Copyright (c) 2026 Huawei Technologies Co., Ltd.
 # SPDX-License-Identifier: MIT
 
-"""Scenario tools: RDS for PostgreSQL instance lifecycle (P0-1).
-
-Deferred from v0.1 by decision (see design doc §13):
-delete_pg_instance, and all backup-restore scenarios (restore-to-new, PITR,
-table-level restore, delete manual backup).
-"""
+"""Scenario tools: RDS for PostgreSQL instance lifecycle (P0-1)."""
 
 from __future__ import annotations
 

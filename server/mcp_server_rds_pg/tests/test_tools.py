@@ -19,6 +19,35 @@ EXPECTED_TOOLS = {
     "reboot_pg_instance": ToolRisk.DANGEROUS,
     "stop_pg_instance": ToolRisk.DANGEROUS,
     "start_pg_instance": ToolRisk.DANGEROUS,
+    "list_pg_flavors": ToolRisk.READ,
+    "list_pg_datastores": ToolRisk.READ,
+    "list_pg_storage_types": ToolRisk.READ,
+    "show_pg_quotas": ToolRisk.READ,
+    "plan_pg_instance_creation": ToolRisk.READ,
+    "write_pg_secret_request": ToolRisk.WRITE,
+    "create_pg_instance": ToolRisk.DANGEROUS,
+    "reset_pg_admin_password": ToolRisk.WRITE,
+    "show_pg_connection_info": ToolRisk.READ,
+    "download_pg_ssl_cert": ToolRisk.READ,
+    "change_pg_instance_port": ToolRisk.DANGEROUS,
+    "change_pg_security_group": ToolRisk.DANGEROUS,
+    "list_pg_hba_conf": ToolRisk.READ,
+    "change_pg_hba_conf": ToolRisk.WRITE,
+    "show_pg_backup_policy": ToolRisk.READ,
+    "set_pg_backup_policy": ToolRisk.WRITE,
+    "create_pg_manual_backup": ToolRisk.WRITE,
+    "list_pg_backups": ToolRisk.READ,
+    "show_pg_backup_download_link": ToolRisk.READ,
+    "list_pg_restore_times": ToolRisk.READ,
+    "list_pg_databases": ToolRisk.READ,
+    "create_pg_database": ToolRisk.WRITE,
+    "list_pg_schemas": ToolRisk.READ,
+    "create_pg_schema": ToolRisk.WRITE,
+    "list_pg_db_users": ToolRisk.READ,
+    "create_pg_db_user": ToolRisk.WRITE,
+    "set_pg_db_user_password": ToolRisk.WRITE,
+    "update_pg_db_user_comment": ToolRisk.WRITE,
+    "grant_pg_db_privilege": ToolRisk.WRITE,
 }
 
 
@@ -28,7 +57,13 @@ def test_all_tools_declare_risk() -> None:
 
 
 def test_mutation_tools_have_confirm_parameter() -> None:
-    for tool_name in ("reboot_pg_instance", "stop_pg_instance", "start_pg_instance"):
+    for tool_name in (
+        "reboot_pg_instance",
+        "stop_pg_instance",
+        "start_pg_instance",
+        "create_pg_instance",
+        "reset_pg_admin_password",
+    ):
         assert tool_supports_confirm(tool_name) is True, tool_name
     assert tool_supports_confirm("list_pg_instances") is False
 

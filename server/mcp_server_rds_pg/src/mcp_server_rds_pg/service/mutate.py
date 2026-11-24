@@ -39,7 +39,10 @@ _JOB_FOLLOW_UP = (
     "current_actions) before issuing further operations."
 )
 
-_MUTATION_READY_STATES = {"ACTIVE"}
+# BACKING UP is a quasi-normal state (background auto-backup cycle), not an
+# action lock: mutations are accepted while it shows. Only current_actions
+# (explicit in-flight tasks) block submission.
+_MUTATION_READY_STATES = {"ACTIVE", "BACKING UP", "BACKUP_KEEPING"}
 
 
 def _writes_disabled() -> bool:

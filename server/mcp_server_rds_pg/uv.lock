@@ -948,6 +948,17 @@ wheels = [
 ]
 
 [[package]]
+name = "huaweicloudsdkvpc"
+version = "3.1.223"
+source = { registry = "https://pypi.tuna.tsinghua.edu.cn/simple" }
+dependencies = [
+    { name = "huaweicloudsdkcore" },
+]
+wheels = [
+    { url = "https://pypi.tuna.tsinghua.edu.cn/packages/4a/29/4f0f3f216d2c2dea73c0f74e2a8ec773f096abce3adbfa7f756e5ccaaad6/huaweicloudsdkvpc-3.1.223-py3-none-any.whl", hash = "sha256:9d4d1b5551b91247952f218e723cb21b37104cafe555f5492d9c3d3eef52a4dd", size = 1183910, upload-time = "2026-11-19T09:31:49.884Z" },
+]
+
+[[package]]
 name = "idna"
 version = "3.20"
 source = { registry = "https://pypi.tuna.tsinghua.edu.cn/simple" }
@@ -1163,6 +1174,7 @@ dependencies = [
     { name = "huaweicloud-mcp-core" },
     { name = "huaweicloudsdkcore" },
     { name = "huaweicloudsdkrds" },
+    { name = "huaweicloudsdkvpc" },
     { name = "mcp" },
 ]
 
@@ -1180,6 +1192,7 @@ requires-dist = [
     { name = "huaweicloud-mcp-core", directory = "../rds-supabase-fullstack/libs/huaweicloud_mcp_core" },
     { name = "huaweicloudsdkcore", specifier = ">=3.1" },
     { name = "huaweicloudsdkrds", specifier = ">=3.1" },
+    { name = "huaweicloudsdkvpc", specifier = ">=3.1.223" },
     { name = "mcp", specifier = ">=2.0" },
 ]
 

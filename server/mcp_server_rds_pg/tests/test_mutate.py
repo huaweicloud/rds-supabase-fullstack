@@ -174,6 +174,7 @@ async def test_non_active_status_fails_closed(
     plans: PlanStore, fake_client: FakeSdkRdsClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("RDS_PG_ENABLE_WRITES", "true")
+    # REBOOTING is a real in-flight state that must never accept mutations.
     fake_client.instances["inst-1"]["status"] = "REBOOTING"
     with pytest.raises(McpToolError):
         await _preview_then_submit(plans, fake_client)

@@ -17,6 +17,10 @@ from huaweicloudsdkrds.v3.model.list_instances_request import ListInstancesReque
 from huaweicloudsdkrds.v3.model.list_job_info_request import ListJobInfoRequest
 from huaweicloudsdkrds.v3.model.show_task_detail_request import ShowTaskDetailRequest
 
+from mcp_server_rds_pg.client.backup_db_apis import BackupMixin, PgDatabaseMixin
+from mcp_server_rds_pg.client.catalog_create import CatalogMixin, InstanceCreateMixin
+from mcp_server_rds_pg.client.connection_apis import ConnectionMixin
+
 _SKIP_ATTRS = {
     "local_vars_configuration",
     "discriminator",
@@ -49,7 +53,13 @@ def _is_not_found(exc: SdkException) -> bool:
     return getattr(exc, "status_code", None) == 404
 
 
-class SdkRdsClient:
+class SdkRdsClient(
+    CatalogMixin,
+    InstanceCreateMixin,
+    ConnectionMixin,
+    BackupMixin,
+    PgDatabaseMixin,
+):
     """Async wrapper around the synchronous huaweicloudsdkrds v3 client."""
 
     def __init__(

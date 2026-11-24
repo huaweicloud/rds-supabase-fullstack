@@ -23,4 +23,9 @@ async def health_check(_request: Request) -> JSONResponse:
 
 # Tool modules register themselves via the @mcp.tool() import side effect.
 # Registration order is intentional (scenario grouping) - do NOT sort alphabetically.
-from mcp_server_rds_pg.tools import instance  # noqa: E402,F401
+from mcp_server_rds_pg.tools import (  # noqa: E402
+    backup_database,  # noqa: F401
+    connection,  # noqa: F401
+    creation,  # noqa: F401
+    instance,  # noqa: F401
+)

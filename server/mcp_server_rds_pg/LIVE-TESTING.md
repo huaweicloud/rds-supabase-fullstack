@@ -1,7 +1,20 @@
 # 现网测试指引（华为云 RDS for PostgreSQL）
 
-> M1 版本。测试分两个维度：**机制测试**（验证 MCP 框架能力：两段式/护栏/账本）和
-> **业务场景测试**（验证用户视角的真实运维旅程）。
+> 完整版测试计划：**全量覆盖设计文档 10 个业务场景**（§3.1-§3.10）+ 横向机制。
+> 每个测试组标注实现状态：✅ M1 已实现可测 / ⏳ M2 / ⏳ M3 / 🚫 暂缓（用户决策）。
+> 暂缓项：删实例、删手动备份、恢复到新实例、PITR 恢复（含库表级）——见设计文档 §13。
+
+## 0. 总体结构
+
+| 维度 | 测试组 | 覆盖设计文档 |
+|---|---|---|
+| 机制 | G1-G6 | §4（两段式）§5（request_ref）§7（环境变量）+ core 护栏 |
+| 业务场景 | B1-B16 | §3.1-§3.10 全部十个场景，一场景一组 |
+| 机制进阶 | E1-E3 | §6 编排工具（三档确认级别、分阶段 apply_steps） |
+
+执行顺序：先机制（G）→ 已实现场景（B1-B3）→ 随 M2/M3 交付逐组点亮其余 B 组 → E 组随编排工具交付。
+
+---
 
 ## 1. 安装
 
@@ -22,109 +35,281 @@ export HUAWEICLOUD_REGION=cn-north-4        # 按实际区域
 export HUAWEICLOUD_PROJECT_ID=<项目ID>      # 缺省经 IAM 自动解析
 ```
 
-## 3. 机制测试矩阵（框架能力验证）
+## 3. 机制测试（G1-G6，随 M1 立即执行）
 
-| 步骤 | 工具 | 预期 |
+### G1 基础读写
+
+| # | 操作 | 验收 |
 |---|---|---|
-| 1 只读 | list_pg_instances | 返回当前区域实例列表（无实例返回空 items） |
-| 2 只读 | show_pg_instance <id> | 单实例详情（status/引擎/flavor） |
-| 3 只读 | show_pg_instance_job <id> | 任意历史 job 查询 |
-| 4 两段式 | reboot_pg_instance confirm=false | 返回 confirmation_required + plan_id + warnings |
-| 5 两段式 | 同参 + confirm=true + plan_id | 提交返回 job_id（**注意：真会重启实例！选测试实例**） |
-| 6 护栏 | 同上但 HUAWEICLOUD_MCP_READ_ONLY=true | 返回 MCP_READ_ONLY 拒绝 |
-| 7 防重放 | 提交后再用同 plan_id | 返回 MCP_GUARDRAIL_BLOCKED |
+| G1.1 | list_pg_instances | page_result 信封；与控制台实例管理页核对数量/status/AZ/规格 |
+| G1.2 | list_pg_instances(limit=1, marker=...) | 分页字段 count/total/marker 正确 |
+| G1.3 | show_pg_instance <真实id> | datastore.version/flavor_ref/volume/ha/charge_mode 与控制台一致 |
+| G1.4 | show_pg_instance 不存在 id | MCP_NOT_FOUND 信封 + hint 引导先 list |
+| G1.5 | show_pg_instance_job <历史job> | 从控制台任务中心取 id 验证 |
+| G1.6 | 凭证缺失/错误 | 首次调用报错信封（不崩溃），含 request_id |
 
-## 3B. 业务场景测试（用户旅程验证）
+### G2 两段式管线
 
-以真实运维场景为主线串联工具，验证「Agent 按场景指引能否走通完整旅程」。
-每个场景对应设计文档的 P0 场景编号，是 Skill 编写前的需求验证。
-
-### 场景 B1：日常巡检（P0-1 + P1-7 雏形，只读，无风险）
-
-**用户故事**：「每天早上给我一份 PG 实例健康简报」
-
-| 步 | 操作 | 验收 |
+| # | 操作 | 验收 |
 |---|---|---|
-| B1.1 | `list_pg_instances` 全量 | 拿到实例清单，与控制台实例管理页逐字段核对（数量/status/AZ/规格） |
-| B1.2 | 对每个实例 `show_pg_instance` | 关键字段正确：datastore.version、flavor_ref、volume.size、ha.mode、charge_mode |
-| B1.3 | 检查 action 锁 | current_actions 为空的实例 = 可操作；非空的记录在简报里 |
-| B1.4 | 编写简报输出 | Agent 能基于上述数据生成：实例数/异常状态数/锁定实例清单 |
+| G2.1 | reboot confirm=false | confirmation_required + changes + warnings + plan_id + expires_at；实例无动作（控制台刷新） |
+| G2.2 | 同参 + confirm=true + plan_id | submitted + job_id；控制台 REBOOTING |
+| G2.3 | job 轮询至 Completed | show_pg_instance 复核 ACTIVE 无 action 锁 |
+| G2.4 | 重放已消费 plan_id | MCP_GUARDRAIL_BLOCKED (already used) |
+| G2.5 | 嫁接：预览 A 提交 B | digest 不匹配 → blocked |
+| G2.6 | plan 过期（10min） | blocked (expired) |
+| G2.7 | 伪造 plan_id 提交 | blocked (missing) |
+| G2.8 | 提交时实例带 action 锁 | blocked (not demonstrably ready)，未下发任务 |
 
-**覆盖验证点**：列表分页信封、字段映射与控制台一致性、action 锁语义。
+### G3 双写开关
 
-### 场景 B2：故障自愈重启（P0-1，两段式全流程）
-
-**用户故事**：「实例假死，帮我重启恢复」
-
-| 步 | 操作 | 验收 |
+| # | 操作 | 验收 |
 |---|---|---|
-| B2.1 | `show_pg_instance <id>` 确认现状 | status 为 ACTIVE 或异常态，记录 current_actions |
-| B2.2 | `reboot_pg_instance confirm=false` | 预览信封含 warnings（中断连接提示）；**实例未动**（控制台刷新确认） |
-| B2.3 | 模拟「用户犹豫改了主意」：放弃该 plan_id | 不提交，10 分钟后该 plan 自然过期（可跳过等待，逻辑已被单测覆盖） |
-| B2.4 | 重新预览 + `confirm=true` 提交 | 返回 job_id；控制台实例变 REBOOTING |
-| B2.5 | `show_pg_instance_job` 轮询（30s×20） | status 走向 Completed |
-| B2.6 | `show_pg_instance` 复核 | status 回 ACTIVE、无 current_actions |
-| B2.7 | 重启期间再发一个预览 | 提交时应被 action 锁拦截（MCP_GUARDRAIL_BLOCKED: not demonstrably ready） |
+| G3.1 | 两者均未设，直接 confirm=true | MCP_READ_ONLY 拒绝 |
+| G3.2 | RDS_PG_ENABLE_WRITES=true + READ_ONLY=true | 仍拒绝 |
+| G3.3 | 只开 READ_ONLY，confirm=false 预览 | 预览正常（preview 不受限） |
 
-**覆盖验证点**：两段式全链、job 轮询、TOCTOU 回查（action 锁）。
+### G4 保护规则
 
-### 场景 B3：成本优化停机（P0-1，计费语义验证）
-
-**用户故事**：「周末不用的开发实例停掉省钱，周一再开」
-
-| 步 | 操作 | 验收 |
+| # | 操作 | 验收 |
 |---|---|---|
-| B3.1 | 对按需实例 `stop_pg_instance` 两段式 | 提交成功，实例 STOPPED |
-| B3.2 | 停机后 `show_pg_instance` | 状态正确；**预览信封中的 warning「停机仍计存储费」出现了** |
-| B3.3 | 停机状态下 psql 连接实例 | 连接失败（真实中断验证） |
-| B3.4 | 对包周期实例调 stop | `MCP_INVALID_ARGS`（prePaid 拒绝）——计费语义正确 |
-| B3.5 | `start_pg_instance` 两段式恢复 | 回 ACTIVE，psql 可连 |
-| B3.6 | start 走两段式但目标实例已是 ACTIVE | 提交被 ACTIVE 回查拦截（非 ACTIVE 才是 start 的合法目标） |
+| G4.1 | HUAWEICLOUD_MCP_PROTECTED_IDS=<id> 后 show 该实例 | READ 放行 |
+| G4.2 | 对该实例 reboot 预览 | 参数级匹配命中 → blocked |
+| G4.3 | 改用 PROTECTED_NAMES=<实例名> | name 匹配同样生效 |
 
-**覆盖验证点**：计费模式分流、停机真实效果、start 的状态前置。
+### G5 审计
 
-### 场景 B4：异常输入与边界（鲁棒性）
-
-**用户故事**：Agent 被用户输入错误信息时的行为
-
-| 步 | 操作 | 验收 |
+| # | 操作 | 验收 |
 |---|---|---|
-| B4.1 | `show_pg_instance` 不存在 id | `MCP_NOT_FOUND` 信封，hint 引导先 list |
-| B4.2 | `reboot` 空 id / 非法字符 | 参数校验拒绝，不产生 SDK 调用 |
-| B4.3 | `show_pg_instance_job` 无效 job id | `MCP_NOT_FOUND` 或空 job 信封，不崩溃 |
-| B4.4 | list limit=0 / limit=999 / 负数 | 夹紧到 1..100，不报错 |
-| B4.5 | 凭证错误（错 AK） | 错误信封含 request_id，提示权限/凭证问题 |
-| B4.6 | 区域无实例的账号 | 空列表正常返回 |
+| G5.1 | HUAWEICLOUD_MCP_AUDIT_FILE 设置后跑 G2 全组 | 每调用一条 JSONL（含被拦的） |
+| G5.2 | 检查 params 字段 | 脱敏 + 截断，无敏感值 |
+| G5.3 | jq 可解析 | tool/risk/decision/duration_ms 齐全 |
 
-**覆盖验证点**：错误信封统一格式、参数夹紧、SDK 异常 wrap。
+### G6 协议冒烟
 
-### 场景 B5：保护规则实战（护栏业务化）
-
-**用户故事**：「生产实例绝不能被 Agent 动」
-
-| 步 | 操作 | 验收 |
+| # | 操作 | 验收 |
 |---|---|---|
-| B5.1 | `export HUAWEICLOUD_MCP_PROTECTED_IDS=<生产实例id>` 重启 server | 启动时 fail-fast 校验通过 |
-| B5.2 | `show_pg_instance <生产id>` | READ 正常（保护规则不拦读） |
-| B5.3 | `reboot_pg_instance <生产id> confirm=false` | 预览即被 block（参数级匹配命中） |
-| B5.4 | 改用 `HUAWEICLOUD_MCP_PROTECTED_NAMES=<实例名>` 同样验证 | name 匹配生效 |
+| G6.1 | MCP 客户端 initialize | server 名 huaweicloud-rds-pg |
+| G6.2 | tools/list | 6 工具按序注册（M1 数量随版本增长） |
+| G6.3 | /health（HTTP 模式） | 200 {"status":"ok"} |
 
-**覆盖验证点**：保护规则 id/name 两级匹配、读写不对称。
+---
 
-### 场景 B6：审计追溯（合规）
+## 4. 业务场景测试（B1-B16，全量对齐设计文档 §3.1-§3.10）
 
-**用户故事**：「安全团队要查最近谁通过 MCP 动了实例」
+### B1 日常巡检 ⏳ 部分实现（M1）
 
-| 步 | 操作 | 验收 |
+**用户故事**：「每天早上给我 PG 实例健康简报」→ 设计文档 P0-1 只读族 + P1-7 指标雏形
+
+| # | 操作 | 验收 | 状态 |
+|---|---|---|---|
+| B1.1 | list 全量实例 | 数量/状态与控制台一致 | ✅ |
+| B1.2 | 逐实例 show | 关键字段正确 | ✅ |
+| B1.3 | 汇总 action 锁 | 锁定实例进简报 | ✅ |
+| B1.4 | list_pg_flavors / list_pg_datastores / list_pg_storage_types / show_pg_quotas | 选型数据可查（M2 前作为巡检补充项） | ⏳ |
+| B1.5 | show_pg_metric_data（CPU/磁盘指标） | 指标数据进简报 | ⏳ M3 |
+
+### B2 故障自愈重启 ✅ M1
+
+**用户故事**：「实例假死帮我重启」→ P0-1 reboot
+
+| # | 操作 | 验收 | 状态 |
+|---|---|---|---|
+| B2.1 | show 确认现状 | 记录 status/current_actions | ✅ |
+| B2.2 | reboot 预览 | warnings 含中断提示；实例未动 | ✅ |
+| B2.3 | 放弃 plan（模拟犹豫） | 不提交即无效果 | ✅ |
+| B2.4 | 重新预览 + 提交 | job_id + 控制台 REBOOTING | ✅ |
+| B2.5 | job 轮询 | Running → Completed | ✅ |
+| B2.6 | 复核 | ACTIVE 无锁 | ✅ |
+| B2.7 | 重启中再提交另一操作 | action 锁拦截 | ✅ |
+
+### B3 成本优化停机 ✅ M1
+
+**用户故事**：「周末停开发实例省钱」→ P0-1 stop/start
+
+| # | 操作 | 验收 | 状态 |
+|---|---|---|---|
+| B3.1 | 按需实例 stop 两段式 | STOPPED + 计费 warning 出现 | ✅ |
+| B3.2 | 停机后 psql 连接 | 连接失败（真实中断） | ✅ |
+| B3.3 | 包周期实例 stop | MCP_INVALID_ARGS 拒绝 | ✅ |
+| B3.4 | start 两段式恢复 | ACTIVE + psql 可连 | ✅ |
+| B3.5 | 对 ACTIVE 实例 start | 状态前置拦截 | ✅ |
+
+### B4 实例开通 ⏳ M2
+
+**用户故事**：「新建一个 PG 实例，先给我方案」→ P0-1 create + plan 编排
+
+| # | 操作 | 验收 | 状态 |
+|---|---|---|---|
+| B4.1 | plan_pg_instance_creation(region, needs_public_access, needs_read_replica) | 返回 baseline（实时 flavors/storage/AZ）+ decision_checklist + apply_steps | ⏳ |
+| B4.2 | 检查三档确认级别 | charge_mode/EIP 计费/副本数量 = user-only（无默认推荐）；flavor/volume/HA = user-confirm（有 recommended） | ⏳ |
+| B4.3 | 收集用户选择前直接调 create | 工具层/Skill 层拦截（user-only 未决不得执行） | ⏳ |
+| B4.4 | 密码走 request_ref | 预览信封不显示密码值 | ⏳ |
+| B4.5 | create confirm=false → true | plan_id 链正确；job 轮询 5-25 分钟 | ⏳ |
+| B4.6 | 重复同意图提交 | 同意图未决拒绝（防双开） | ⏳ |
+| B4.7 | needs_public_access=true | apply_steps 含条件步骤（bind EIP），实例 ACTIVE 前不可执行 | ⏳ |
+| B4.8 | B4.5 完成后复核 | ACTIVE + show_pg_connection_info 可获取内网地址 | ⏳ |
+| B4.9 | 包周期计费选择 | prePaid 需额外确认层级（计费时长 user-only） | ⏳ |
+| B4.10 | show_pg_quotas 不足 | 建实例前配额预检给出明确错误 | ⏳ |
+
+### B5 密码管理 ⏳ M2
+
+**用户故事**：「root 密码泄露，立即改」→ P0-1 reset_pg_admin_password
+
+| # | 操作 | 验收 | 状态 |
+|---|---|---|---|
+| B5.1 | reset 预览 | password_ref 别名引用，值不出现在信封 | ⏳ |
+| B5.2 | 提交后旧密码 psql | 连接失败 | ⏳ |
+| B5.3 | 新密码 psql | 连接成功 | ⏳ |
+| B5.4 | 审计日志 | password 字段脱敏为 *** | ⏳ |
+
+### B6 连接交付 ⏳ M2
+
+**用户故事**：「应用要连库，给我连接信息」→ P0-2 连接管理
+
+| # | 操作 | 验收 | 状态 |
+|---|---|---|---|
+| B6.1 | show_pg_connection_info | 内网 IP/端口/域名聚合视图，与 psql 实连一致 | ⏳ |
+| B6.2 | download_pg_ssl_cert | 临时 URL 可下载；hint 声明时效 | ⏳ |
+| B6.3 | 用证书 psql sslmode=verify-ca | 按 PG 客户端指南连接成功 | ⏳ |
+| B6.4 | bind EIP 两段式 | 绑定后公网可连（安全组已放行前提） | ⏳ |
+| B6.5 | unbind | warning 明示「EIP 未释放仍计费」 | ⏳ |
+| B6.6 | change port 两段式 | warning 含 4-10 分钟重启窗口；改后 psql 用新端口连 | ⏳ |
+| B6.7 | change security_group | **全量替换语义**：提交清单未含的既有组被移除——测试保留组显式列入 | ⏳ |
+| B6.8 | list_pg_hba_conf + change | hba 变更后 ListPostgresqlHbaInfoHistory 可查历史 | ⏳ |
+
+### B7 备份管理 ⏳ M2
+
+**用户故事**：「按公司规范配置备份策略 + 关键变更前手动备份」→ P0-3 备份（恢复类暂缓）
+
+| # | 操作 | 验收 | 状态 |
+|---|---|---|---|
+| B7.1 | show_pg_backup_policy | 当前策略可见 | ⏳ |
+| B7.2 | set_pg_backup_policy（keep_days<7） | 参数校验拒绝（≥7 约束） | ⏳ |
+| B7.3 | set 合法策略 | 预览展示窗口/保留期；提交后 show 复核生效 | ⏳ |
+| B7.4 | set offsite | 跨区费用 warning 出现 | ⏳ |
+| B7.5 | create manual backup | name 约束 + job 完成 + list_pg_backups 可见（type=手动） | ⏳ |
+| B7.6 | show download link | 临时 URL 可下载 | ⏳ |
+| B7.7 | list_pg_restore_times | 返回可恢复时间窗（为 P2 恢复场景做数据验证） | ⏳ |
+
+> 恢复类（restore_to_new / PITR / 库表级）为用户决策暂缓，待解冻后加 B7.8-B7.10。
+
+### B8 库与账号开通 ⏳ M2
+
+**用户故事**：「新应用上线：建库+专用账号+最小授权」→ P0-4
+
+| # | 操作 | 验收 | 状态 |
+|---|---|---|---|
+| B8.1 | create_pg_database | 库出现于 list；psql 可 \c | ⏳ |
+| B8.2 | create schema | schema 出现 | ⏳ |
+| B8.3 | create_pg_db_user | **密码 request_ref 全链路**：预览无值、审计脱敏、值不进对话 | ⏳ |
+| B8.4 | set_pg_db_user_password | 改后新旧密码验证 | ⏳ |
+| B8.5 | grant 最小权限 | 按授权矩阵授予；psql 验证越权操作被拒 | ⏳ |
+| B8.6 | revoke | 权限回收生效 | ⏳ |
+| B8.7 | update comment（L1 轻写） | middleware confirm 即可（无 plan_id）；同步生效 | ⏳ |
+
+### B9 规格与容量演进 ⏳ M3
+
+**用户故事**：「业务量涨了，扩容磁盘 + 升配」→ P1-5
+
+| # | 操作 | 验收 | 状态 |
+|---|---|---|---|
+| B9.1 | resize_pg_flavor | warning 含「会重启」；job 完成后 flavor_ref 变化 | ⏳ |
+| B9.2 | extend_pg_volume | 容量增长 + 计费 warning | ⏳ |
+| B9.3 | reduce_pg_volume | 引擎 17+ 限定校验（16 实例被拒） | ⏳ |
+| B9.4 | set auto enlarge policy | 阈值/上限生效（show 复核） | ⏳ |
+| B9.5 | switch single to Ha | 单机转主备走完 job | ⏳ |
+| B9.6 | change ops window | 维护窗口变更生效 | ⏳ |
+
+### B10 读写分离扩展 ⏳ M3
+
+**用户故事**：「读压力大，加只读实例」→ P1-6
+
+| # | 操作 | 验收 | 状态 |
+|---|---|---|---|
+| B10.1 | create read replica 两段式 | 前置校验：主实例 ACTIVE 无锁；replica 出现于 list_pg_read_replicas | ⏳ |
+| B10.2 | 主实例带锁时创建 | blocked | ⏳ |
+| B10.3 | replica 上执行写操作验证只读 | psql 写入报错（只读实例语义） | ⏳ |
+| B10.4 | 编排入口（B4 的 needs_read_replica 路径） | apply_steps 步骤 6 条件执行 | ⏳ |
+
+### B11 监控告警 ⏳ M3
+
+**用户故事**：「CPU 打满要提前知道」→ P1-7（CES 通道）
+
+| # | 操作 | 验收 | 状态 |
+|---|---|---|---|
+| B11.1 | list_pg_resource_metrics | 指标元数据（含 PG 专属指标） | ⏳ |
+| B11.2 | show_pg_metric_data（rds021 CPU 等） | 时序数据返回，与控制台曲线趋势一致 | ⏳ |
+| B11.3 | create_pg_alarm_rule 两段式 | 告警规则出现于 CES 控制台 | ⏳ |
+| B11.4 | 告警触达 | （可选，注入负载触发告警验证通知链路） | ⏳ |
+
+### B12 慢 SQL 排查 ⏳ M3
+
+**用户故事**：「应用变慢，查慢日志」→ P1-8 日志
+
+| # | 操作 | 验收 | 状态 |
+|---|---|---|---|
+| B12.1 | list_pg_slow_logs | 有慢日志记录（先跑一条 >log_min_duration 的 SQL） | ⏳ |
+| B12.2 | download slow log | 临时 URL 可下载 | ⏳ |
+| B12.3 | list_pg_error_logs | 错误日志可见 | ⏳ |
+| B12.4 | download_pg_error_log | 临时 URL 可下载 | ⏳ |
+| B12.5 | set_audit_log_policy | **按量计费 warning** 必须出现；开启后 list_pg_audit_logs 有记录 | ⏳ |
+
+### B13 参数调优 ⏳ M3
+
+**用户故事**：「连接数吃紧，调 max_connections」→ P1-9
+
+| # | 操作 | 验收 | 状态 |
+|---|---|---|---|
+| B13.1 | show_pg_parameters | 参数清单含 max_connections 等当前值 | ⏳ |
+| B13.2 | update 非重启参数 | 立即生效，show 复核 | ⏳ |
+| B13.3 | update restart_required 参数 | 预览强制出现重启 warning + 需 confirm | ⏳ |
+| B13.4 | list/compare configurations | 模板清单与差异对比 | ⏳ |
+| B13.5 | apply configuration | 应用后参数生效 | ⏳ |
+
+### B14 插件管理 ⏳ M3
+
+**用户故事**：「要做向量检索，装 pgvector」→ P1-10
+
+| # | 操作 | 验收 | 状态 |
+|---|---|---|---|
+| B14.1 | list_pg_extensions | 插件清单（含 pgvector 可用性） | ⏳ |
+| B14.2 | install pgvector | 安装后 list 状态变化；psql CREATE EXTENSION 可用 | ⏳ |
+| B14.3 | install 需重启插件 | hint 提示重启要求 | ⏳ |
+| B14.4 | uninstall | 状态回退 | ⏳ |
+
+### B15 异常输入边界 ✅ M1（随 B 组持续回归）
+
+| # | 操作 | 验收 |
 |---|---|---|
-| B6.1 | `export HUAWEICLOUD_MCP_AUDIT_FILE=/tmp/audit.jsonl` 重启 | 每次工具调用（含被拦的）写一条 |
-| B6.2 | 跑一遍 B2 场景 | audit.jsonl 有完整记录：预览（allowed）→ 提交（allowed）→ action 锁拦截（blocked） |
-| B6.3 | 检查 params 字段 | 已脱敏、长参数截断、无敏感值 |
-| B6.4 | jsonl 可被 jq 解析 | 机器可读，含 tool/risk/decision/duration_ms |
+| B15.1 | 各工具空 id/非法字符 | 参数校验拒绝，不产生 SDK 调用 |
+| B15.2 | limit=0/999/负数 | 夹紧 1..100 |
+| B15.3 | 空账号/无权限账号 | 错误信封含权限提示 |
+| B15.4 | 传输层异常（断网） | unknown 信封「do NOT resubmit」 |
 
-**覆盖验证点**：审计完整性、脱敏、JSONL 可解析。
+### B16 保护与审计（横切）✅ M1（随 B 组持续回归）
 
-## 4. 写开关
+即 G4/G5 的业务化重复执行：每个新交付 B 组跑通后，对其写操作各做一次保护规则拦截 + 审计记录验证。
+
+---
+
+## 5. 编排机制进阶（E1-E3，随 M2 编排工具交付）
+
+> 设计文档 §6：三档确认级别 + 分阶段提交 + 条件步骤
+
+| # | 测试 | 验收 | 状态 |
+|---|---|---|---|
+| E1.1 | user-only 项 Agent 代选 | 拒绝执行（清单未决） | ⏳ |
+| E1.2 | user-confirm 项用户接受推荐 | 推荐值进请求 | ⏳ |
+| E1.3 | agent-default 项 | 预览信封展示，不问即生效 | ⏳ |
+| E2.1 | 多步流程中断（主实例创建失败） | 后置步骤不启动；断点可重入 | ⏳ |
+| E2.2 | 条件步骤静默省略 | 报告必须显式说明跳过原因（Skill 层校验） | ⏳ |
+| E3.1 | 分阶段各自 plan_id | 每步独立绑定，跨步嫁接被拒 | ⏳ |
+| E3.2 | 步骤前置运行时回查 | EIP/replica 在实例 ACTIVE 前执行被拒 | ⏳ |
+
+---
+
+## 6. 写开关
 
 写操作默认关闭。测试两段式前需要：
 ```bash
@@ -132,15 +317,28 @@ export RDS_PG_ENABLE_WRITES=true
 unset HUAWEICLOUD_MCP_READ_ONLY
 ```
 
-## 5. 已知限制（M1 范围）
+## 7. 里程碑对应的测试执行节奏
 
-- 仅 6 个工具：list/show/show_job + reboot/stop/start
-- 删除/备份恢复/建库建账号等在 M2
-- stop 仅对按需（postPaid）实例有效
-- PlanStore 状态文件在 ~/.local/state/huaweicloud-rds-pg/plans.sqlite3
-- B 场景中涉及 M2 工具的（创建实例/变配/备份）待 M2 后补充对应场景（B7+）
+| 里程碑 | 交付 | 本计划新增可执行组 |
+|---|---|---|
+| M1（已完成） | 6 工具 | G1-G6 + B1(部分) + B2 + B3 + B15 + B16 |
+| M2 | P0 全量（创建编排/连接/备份/库账号） | B1 补全 + B4 + B5 + B6 + B7 + B8 + E1-E3 |
+| M3 | P1 全量 + Skill | B9 + B10 + B11 + B12 + B13 + B14 |
+| P2（暂缓解冻后） | 删除/恢复类 | B7.8-B7.10（恢复）+ 删除场景 |
 
-## 6. MCP 客户端注册（Claude Code）
+## 8. 测试结果记录模板
+
+```
+G1 基础读写: PASS（6/6）
+G2 两段式: PASS（8/8），G2.5 嫁接拦截验证: PASS
+B1 巡检: PASS（3/3，B1.4/B1.5 待 M2/M3）
+B2 重启: PASS（7/7）
+B3 停机: FAIL B3.3 —— 包周期未拒绝，信封: {...}
+B4 创建: ⏳ M2 未交付
+...
+```
+
+## 9. MCP 客户端注册（Claude Code）
 
 ```json
 {
@@ -158,14 +356,8 @@ unset HUAWEICLOUD_MCP_READ_ONLY
 }
 ```
 
-## 7. 测试结果记录模板
+## 10. 已知限制
 
-每场景一行，附失败详情：
-```
-B1 巡检: PASS（4/4 步）
-B2 重启: PASS，B2.7 action 锁拦截验证: PASS
-B3 停机: FAIL B3.4 —— 包周期实例未被拒绝，错误信封: {...}
-B4 边界: PASS（6/6）
-B5 保护: PASS
-B6 审计: PASS，jq 解析正常
-```
+- 暂缓（用户决策，设计文档 §13）：删实例、删手动备份、恢复到新实例、PITR 恢复（含库表级）——对应 B7.8+/删除场景在 P2 解冻后补
+- E1-E3 的 Agent 行为约束（E1.1/E2.2）部分依赖 Skill 层纪律，MCP 工具层只做兜底拦截
+- B11 告警触达（B11.4）依赖通知渠道配置，可选执行

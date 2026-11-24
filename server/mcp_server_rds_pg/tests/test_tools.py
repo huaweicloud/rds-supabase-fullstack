@@ -56,7 +56,7 @@ async def test_read_tool_end_to_end(monkeypatch: pytest.MonkeyPatch) -> None:
             name: str | None = None,
             instance_id: str | None = None,
             limit: int = 20,
-            marker: str | None = None,
+            offset: int | None = None,
         ) -> dict[str, Any]:
             return {"items": [{"id": "inst-1"}], "count": 1, "total": 1,
                     "marker": None, "truncated": False}

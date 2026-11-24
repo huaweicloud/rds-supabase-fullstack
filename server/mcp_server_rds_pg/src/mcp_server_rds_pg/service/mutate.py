@@ -56,7 +56,7 @@ async def _assert_mutation_ready(
     Unknown/missing instances and action-locked instances fail closed - a task
     submitted against an instance mid-restart/resize conflicts or corrupts state.
     """
-    response = await client.list_instances(limit=1, marker=None, id=instance_id)
+    response = await client.list_instances(limit=1, offset=None, id=instance_id)
     instances = response.get("instances") or []
     target = instances[0] if instances else None
     if not target or target.get("id") != instance_id:

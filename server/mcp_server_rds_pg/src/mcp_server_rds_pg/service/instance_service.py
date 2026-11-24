@@ -62,18 +62,23 @@ class InstanceService:
         name: str | None = None,
         instance_id: str | None = None,
         limit: int = 20,
-        marker: str | None = None,
+        offset: int | None = None,
     ) -> dict[str, Any]:
         limit = clamp_limit(limit)
         response = await self._client.list_instances(
-            limit=limit, marker=marker, id=instance_id, name=name
+            limit=limit, offset=offset, id=instance_id, name=name
         )
         instances = [self._view(item) for item in response.get("instances") or []]
         total = response.get("total")
+        next_offset: int | None = None
+        if total is not None and instances:
+            consumed = int(offset or 0) + len(instances)
+            if consumed < int(total):
+                next_offset = consumed
         return page_result(
             instances,
             total=int(total) if total is not None else None,
-            marker=marker,
+            marker=str(next_offset) if next_offset is not None else None,
         )
 
     async def show_instance(self, *, instance_id: str) -> dict[str, Any]:
@@ -181,13 +186,21 @@ class InstanceService:
         return {key: source[key] for key in fields if source.get(key) is not None}
 
     async def _find(self, instance_id: str) -> dict[str, Any]:
-        response = await self._client.list_instances(limit=1, marker=None, id=instance_id)
+        response = await self._client.list_instances(limit=1, offset=None, id=instance_id)
         instances = response.get("instances") or []
         if not instances or instances[0].get("id") != instance_id:
             raise McpToolError(
                 "MCP_NOT_FOUND",
                 f"Instance {instance_id} not found",
                 hint="Call list_pg_instances to get the exact instance id.",
+            )
+        engine = (instances[0].get("datastore") or {}).get("type")
+        if engine and engine != "PostgreSQL":
+            raise McpToolError(
+                "MCP_INVALID_ARGS",
+                f"Instance {instance_id} is a {engine} instance;"
+                " this service only manages PostgreSQL",
+                hint="PostgreSQL only; use the engine-specific service for this instance.",
             )
         return cast(dict[str, Any], instances[0])
 

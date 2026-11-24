@@ -69,11 +69,23 @@ class SdkRdsClient:
             )
 
     async def list_instances(
-        self, *, limit: int, marker: str | None, id: str | None = None, name: str | None = None
+        self,
+        *,
+        limit: int,
+        offset: int | None = None,
+        id: str | None = None,
+        name: str | None = None,
     ) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
+            # Server-side filter: this service only manages PostgreSQL engines.
+            # Exact-id lookups stay unfiltered so non-PG engines get the clear
+            # engine-guard error instead of a misleading "not found".
             request = ListInstancesRequest(
-                limit=limit, marker=marker, id=id, name=name
+                limit=limit,
+                offset=offset,
+                id=id,
+                name=name,
+                datastore_type="PostgreSQL" if id is None else None,
             )
             return cast(dict[str, Any], sdk_to_dict(self._client.list_instances(request)))
 
@@ -82,7 +94,13 @@ class SdkRdsClient:
     async def list_job_info(self, *, job_id: str) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
             request = ListJobInfoRequest(id=job_id)
-            return cast(dict[str, Any], sdk_to_dict(self._client.list_job_info(request)))
+            try:
+                response = self._client.list_job_info(request)
+            except SdkException as exc:
+                if getattr(exc, "error_code", None) in ("DBS.200543",):
+                    return {}
+                raise wrap_sdk_error(exc) from exc
+            return cast(dict[str, Any], sdk_to_dict(response))
 
         return await asyncio.to_thread(_call)
 

@@ -72,10 +72,11 @@ class FakeSdkRdsClient:
         )
 
     async def list_instances(
-        self, *, limit: int, marker: str | None, id: str | None = None, name: str | None = None
+        self, *, limit: int, offset: int | None = None,
+        id: str | None = None, name: str | None = None
     ) -> dict[str, Any]:
         self.calls.append(
-            ("list_instances", {"limit": limit, "id": id, "name": name, "marker": marker})
+            ("list_instances", {"limit": limit, "id": id, "name": name, "offset": offset})
         )
         items = list(self.instances.values())
         if id:

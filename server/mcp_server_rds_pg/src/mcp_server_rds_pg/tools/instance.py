@@ -19,7 +19,7 @@ async def list_pg_instances(
     name: str | None = None,
     instance_id: str | None = None,
     limit: int = 20,
-    marker: str | None = None,
+    offset: int | None = None,
 ) -> dict[str, Any]:
     """List RDS for PostgreSQL instances in the current region.
 
@@ -30,13 +30,13 @@ async def list_pg_instances(
         name: optional fuzzy instance-name filter.
         instance_id: fetch one exact instance id.
         limit: max instances to return, 1-100 (default 20).
-        marker: pagination marker returned by a previous call.
+        offset: page offset returned as marker by a previous call.
 
     Returns:
         Paginated envelope with instance summaries.
     """
     return await InstanceService().list_instances(
-        name=name, instance_id=instance_id, limit=limit, marker=marker
+        name=name, instance_id=instance_id, limit=limit, offset=offset
     )
 
 

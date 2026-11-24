@@ -166,14 +166,31 @@ async def run_mutation(
     except McpToolError:
         plans.finish(plan_id, "failed")
         raise
-    except BaseException:
+    except Exception as exc:
+        # SDK ServiceResponseException / ClientRequestException are definite
+        # rejections (the cloud said no) - classify as failed, not unknown,
+        # so retry-with-changed-args works. Non-SDK errors (timeouts,
+        # transport) stay unknown.
+        try:
+            from huaweicloudsdkcore.exceptions.exceptions import (
+                SdkException,
+            )
+
+            is_sdk = isinstance(exc, SdkException)
+        except ImportError:
+            is_sdk = False
+        if is_sdk:
+            from huaweicloud_mcp_core.errors import wrap_sdk_error
+
+            plans.finish(plan_id, "failed")
+            raise wrap_sdk_error(exc) from exc
         plans.finish(plan_id, "unknown")
         raise McpToolError(
             "MCP_SDK_ERROR",
             "Write result unknown",
             hint=_UNKNOWN_HINT,
             request_id=None,
-        ) from None
+        ) from exc
     plans.finish(plan_id, "accepted", _extract_job_id(result))
     return {"status": "submitted", "result": result, "plan_id": plan_id,
             "job_follow_up": _JOB_FOLLOW_UP, **notices}

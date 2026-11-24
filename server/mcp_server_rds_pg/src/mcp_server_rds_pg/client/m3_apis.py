@@ -360,20 +360,27 @@ class ParamMixin:
         self, *, instance_id: str, name: str, value: str
     ) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
-            from huaweicloudsdkrds.v3.model.modify_param_request import ModifyParamRequest
-            from huaweicloudsdkrds.v3.model.update_postgresql_parameter_value_request import (
-                UpdatePostgresqlParameterValueRequest,
+            # The PG-specific path (v3/.../parameter/{name}) returns 403
+            # DBS.280015 for credentials without its dedicated policy; the
+            # generic instance-configuration API works and carries the
+            # restart_required flag (live-verified).
+            from huaweicloudsdkrds.v3.model.update_instance_configuration_request import (
+                UpdateInstanceConfigurationRequest,
+            )
+            from huaweicloudsdkrds.v3.model.update_instance_configuration_request_body import (
+                UpdateInstanceConfigurationRequestBody,
             )
 
-            request = UpdatePostgresqlParameterValueRequest(
+            request = UpdateInstanceConfigurationRequest(
                 instance_id=instance_id,
-                name=name,
-                body=ModifyParamRequest(value=value),
+                body=UpdateInstanceConfigurationRequestBody(
+                    values={name: value}
+                ),
             )
             try:
                 return cast(
                     dict[str, Any],
-                    _to_dict(self._client.update_postgresql_parameter_value(request)),
+                    _to_dict(self._client.update_instance_configuration(request)),
                 )
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc

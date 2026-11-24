@@ -1,6 +1,6 @@
 # mcp_server_rds_pg
 
-华为云 RDS for PostgreSQL 实例管理 MCP Server（v1.0.0，M1+M2+M3 全量 59 工具，配套 Skill：skills/huaweicloud-rds-pg-ops）。
+华为云 RDS for PostgreSQL 实例管理 MCP Server（v1.0.0，M1+M2+M3 全量 59 工具，配套 Skill：skills/database/rds/huaweicloud-rds-pg-ops）。
 
 ## 架构
 

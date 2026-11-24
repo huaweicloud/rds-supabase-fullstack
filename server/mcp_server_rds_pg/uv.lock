@@ -909,6 +909,17 @@ dev = [
 ]
 
 [[package]]
+name = "huaweicloudsdkces"
+version = "3.1.223"
+source = { registry = "https://pypi.tuna.tsinghua.edu.cn/simple" }
+dependencies = [
+    { name = "huaweicloudsdkcore" },
+]
+wheels = [
+    { url = "https://pypi.tuna.tsinghua.edu.cn/packages/c0/a3/4159b9be22e55aa6a70b084538a018564aa346688bc132573edd840309c4/huaweicloudsdkces-3.1.223-py3-none-any.whl", hash = "sha256:f337b1787c5db7d5c674e219403f4b25934f5fb12ad20c1f14c19b80438ec93c", size = 835358, upload-time = "2026-11-19T09:28:09.934Z" },
+]
+
+[[package]]
 name = "huaweicloudsdkcore"
 version = "3.1.223"
 source = { registry = "https://pypi.tuna.tsinghua.edu.cn/simple" }
@@ -1172,6 +1183,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "huaweicloud-mcp-core" },
+    { name = "huaweicloudsdkces" },
     { name = "huaweicloudsdkcore" },
     { name = "huaweicloudsdkrds" },
     { name = "huaweicloudsdkvpc" },
@@ -1190,6 +1202,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "huaweicloud-mcp-core", directory = "../rds-supabase-fullstack/libs/huaweicloud_mcp_core" },
+    { name = "huaweicloudsdkces", specifier = ">=3.1.223" },
     { name = "huaweicloudsdkcore", specifier = ">=3.1" },
     { name = "huaweicloudsdkrds", specifier = ">=3.1" },
     { name = "huaweicloudsdkvpc", specifier = ">=3.1.223" },

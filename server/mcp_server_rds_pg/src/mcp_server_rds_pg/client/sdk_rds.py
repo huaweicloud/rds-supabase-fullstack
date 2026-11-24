@@ -20,6 +20,7 @@ from huaweicloudsdkrds.v3.model.show_task_detail_request import ShowTaskDetailRe
 from mcp_server_rds_pg.client.backup_db_apis import BackupMixin, PgDatabaseMixin
 from mcp_server_rds_pg.client.catalog_create import CatalogMixin, InstanceCreateMixin
 from mcp_server_rds_pg.client.connection_apis import ConnectionMixin
+from mcp_server_rds_pg.client.m3_apis import ExtensionMixin, LogMixin, ParamMixin, ResizeMixin
 
 _SKIP_ATTRS = {
     "local_vars_configuration",
@@ -59,6 +60,10 @@ class SdkRdsClient(
     ConnectionMixin,
     BackupMixin,
     PgDatabaseMixin,
+    ResizeMixin,
+    LogMixin,
+    ParamMixin,
+    ExtensionMixin,
 ):
     """Async wrapper around the synchronous huaweicloudsdkrds v3 client."""
 
@@ -133,16 +138,26 @@ class SdkRdsClient(
             from huaweicloudsdkrds.v3.model.instance_restart_requset_body import (
                 InstanceRestartRequsetBody,
             )
+            from huaweicloudsdkrds.v3.model.restart_configuration import (
+                RestartConfiguration,
+            )
             from huaweicloudsdkrds.v3.model.start_instance_restart_action_request import (
                 StartInstanceRestartActionRequest,
             )
 
+            # restart=RestartConfiguration() is required - an empty body
+            # yields DBS.280001 Parameter error.
             request = StartInstanceRestartActionRequest(
-                instance_id=instance_id, body=InstanceRestartRequsetBody()
+                instance_id=instance_id,
+                body=InstanceRestartRequsetBody(restart=RestartConfiguration()),
             )
-            return cast(
-                dict[str, Any], sdk_to_dict(self._client.start_instance_restart_action(request))
-            )
+            try:
+                return cast(
+                    dict[str, Any],
+                    sdk_to_dict(self._client.start_instance_restart_action(request)),
+                )
+            except SdkException as exc:
+                raise wrap_sdk_error(exc) from exc
 
         return await asyncio.to_thread(_call)
 
@@ -153,7 +168,10 @@ class SdkRdsClient(
             )
 
             request = StopInstanceRequest(instance_id=instance_id)
-            return cast(dict[str, Any], sdk_to_dict(self._client.stop_instance(request)))
+            try:
+                return cast(dict[str, Any], sdk_to_dict(self._client.stop_instance(request)))
+            except SdkException as exc:
+                raise wrap_sdk_error(exc) from exc
 
         return await asyncio.to_thread(_call)
 
@@ -164,7 +182,10 @@ class SdkRdsClient(
             )
 
             request = StartupInstanceRequest(instance_id=instance_id)
-            return cast(dict[str, Any], sdk_to_dict(self._client.startup_instance(request)))
+            try:
+                return cast(dict[str, Any], sdk_to_dict(self._client.startup_instance(request)))
+            except SdkException as exc:
+                raise wrap_sdk_error(exc) from exc
 
         return await asyncio.to_thread(_call)
 

@@ -11,6 +11,7 @@ dependencies = [
     "huaweicloudsdkcore>=3.1",
     "huaweicloudsdkrds>=3.1",
     "huaweicloudsdkvpc>=3.1.223",
+    "huaweicloudsdkces>=3.1.223",
 ]
 
 [project.scripts]
@@ -59,7 +60,7 @@ python_version = "3.10"
 
 # huaweicloudsdk* ships without type stubs; treat as untyped per spec §11.2.
 [[tool.mypy.overrides]]
-module = ["huaweicloudsdkcore.*", "huaweicloudsdkrds.*"]
+module = ["huaweicloudsdkcore.*", "huaweicloudsdkrds.*", "huaweicloudsdkces.*"]
 ignore_missing_imports = true
 
 [[tool.uv.index]]

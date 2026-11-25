@@ -91,6 +91,38 @@ async def _assert_mutation_ready(
     )
 
 
+async def assert_not_ai_managed(
+    client: Any, instance_id: str, tool_name: str
+) -> None:
+    """Generic AI-application guard (Supabase / GraphRAG / ContextBase / ...).
+
+    Any RDS AI application binding this instance makes instance-level
+    writes dangerous (security-group replacement, EIP/port changes break
+    the hosted app; the platforms manage their own networking). Detected
+    via the official ListAiApplications API - covers ALL AI app types,
+    present and future, not just Supabase.
+    """
+    try:
+        response = await client.list_ai_applications(limit=100)
+    except Exception:
+        # detection unavailable -> fail open for READ-safety only; the
+        # caller is a write path so we degrade to naming heuristic below
+        response = {}
+    apps = response.get("ai_applications") or response.get("applications") or []
+    for app in apps:
+        if app.get("managed_instance_id") == instance_id:
+            raise McpToolError(
+                "MCP_GUARDRAIL_BLOCKED",
+                f"Instance is bound to AI application '{app.get('name')}'"
+                f" (type {app.get('type') or 'unknown'}, status"
+                f" {app.get('status')}); instance-level changes via this"
+                " tool can break the hosted application",
+                hint="Use the AI application's own management plane for"
+                " this operation; rds-pg tools may read this instance"
+                " freely.",
+            )
+
+
 async def run_mutation(
     *,
     tool_name: str,
@@ -163,6 +195,11 @@ async def run_mutation(
     # block the same intent forever).
     if recheck and instance_id:
         await _assert_mutation_ready(client, instance_id, tool_name)
+    if instance_id:
+        # AI-application guard applies to ALL write tools (generic across
+        # Supabase/GraphRAG/ContextBase/...) - runs for every mutation on
+        # an instance, including recheck=False paths like create.
+        await assert_not_ai_managed(client, instance_id, tool_name)
     plans.claim(plan_id, digest)
     try:
         result = await execute()

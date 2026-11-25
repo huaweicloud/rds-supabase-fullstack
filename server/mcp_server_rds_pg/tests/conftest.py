@@ -96,6 +96,10 @@ class FakeSdkRdsClient:
         self.calls.append(("show_task_detail", {"job_id": job_id}))
         return self.jobs.get(job_id, {})
 
+    async def list_ai_applications(self, *, limit: int = 100) -> dict[str, Any]:
+        self.calls.append(("list_ai_applications", {"limit": limit}))
+        return {"ai_applications": []}
+
     async def reboot_instance(self, *, instance_id: str) -> dict[str, Any]:
         self.calls.append(("reboot_instance", {"instance_id": instance_id}))
         return dict(self.reboot_result)

@@ -274,3 +274,59 @@ async def test_unknown_outcome_marks_unknown_and_forbids_replay(
         plans.claim(second["plan_id"], plans.record(preview["plan_id"])["digest"])
 
 
+
+
+async def test_ai_application_guard_blocks_managed_instance(
+    plans: PlanStore, fake_client: FakeSdkRdsClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The generic AI-app guard (Supabase/GraphRAG/ContextBase/any type)
+    blocks write tools on bound instances via ListAiApplications."""
+    monkeypatch.setenv("RDS_PG_ENABLE_WRITES", "true")
+    fake_client_ai = fake_client
+
+    async def fake_apps(*, limit: int = 100):
+        return {
+            "ai_applications": [
+                {
+                    "id": "app-1",
+                    "name": "my-graphrag",
+                    "status": "normal",
+                    "managed_instance_id": "inst-1",
+                }
+            ]
+        }
+
+    fake_client_ai.list_ai_applications = fake_apps
+
+    async def _exec() -> dict[str, Any]:
+        return {"job_id": "j1"}
+
+    preview = await run_mutation(
+        tool_name="reboot_pg_instance",
+        instance_id="inst-1",
+        operation="reboot",
+        body={"instance_id": "inst-1"},
+        notices={},
+        recheck=True,
+        execute=_exec,
+        plans=plans,
+        client=fake_client_ai,
+        confirm=False,
+    )
+    pid = preview.get("plan_id")
+    with pytest.raises(McpToolError) as excinfo:
+        await run_mutation(
+            tool_name="reboot_pg_instance",
+            instance_id="inst-1",
+            operation="reboot",
+            body={"instance_id": "inst-1"},
+            notices={},
+            recheck=True,
+            execute=_exec,
+            plans=plans,
+            client=fake_client_ai,
+            confirm=True,
+            plan_id=pid,
+        )
+    assert excinfo.value.code == "MCP_GUARDRAIL_BLOCKED"
+    assert "my-graphrag" in excinfo.value.message

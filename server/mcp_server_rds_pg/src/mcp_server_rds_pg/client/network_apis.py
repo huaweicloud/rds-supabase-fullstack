@@ -442,6 +442,30 @@ class EpsChannel:
 
 
 class NetworkMixin:
+    # module-level guard helper lives in NetworkMixin so every write tool
+    # path can share it
+
+    async def list_ai_applications(self, *, limit: int = 100) -> dict[str, Any]:
+        """RDS AI applications (Supabase/GraphRAG/ContextBase/...) with their
+        bound managed instances - the generic detection channel for the
+        AI-application guard."""
+
+        def _call() -> dict[str, Any]:
+            from huaweicloudsdkrds.v3.model.list_ai_applications_request import (
+                ListAiApplicationsRequest,
+            )
+
+            request = ListAiApplicationsRequest(limit=str(limit))
+            try:
+                return cast(
+                    dict[str, Any],
+                    _to_dict(self._client.list_ai_applications(request)),
+                )
+            except SdkException as exc:
+                raise wrap_sdk_error(exc) from exc
+
+        return await asyncio.to_thread(_call)
+
     """RDS-side network APIs: EIP bind/unbind (AttachEip PUT public-ip)."""
 
     _client: Any

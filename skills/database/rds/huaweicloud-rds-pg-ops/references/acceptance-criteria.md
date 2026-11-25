@@ -38,7 +38,7 @@
 - [ ] `ruff check` + `mypy` + `pytest --cov` 三件套全绿
 - [ ] 只读模式（HUAWEICLOUD_MCP_READ_ONLY）与写开关（RDS_PG_ENABLE_WRITES）双闸生效
 - [ ] 输出脱敏不可关；审计 JSONL 完整（含被拦截调用）
-- [ ] AGENT-TEST-INDEX.md 对应测试层全部 ✅（发版时点）
+- [ ] 测试矩阵执行全绿（矩阵文档随工程资料分发，不在仓库内）
 
 ## 6. 验收执行顺序
 

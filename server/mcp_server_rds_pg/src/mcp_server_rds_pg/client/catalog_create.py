@@ -9,11 +9,12 @@ installed (service/tools tests inject fakes).
 
 from __future__ import annotations
 
-import asyncio
 from typing import Any, cast
 
 from huaweicloud_mcp_core.errors import wrap_sdk_error
 from huaweicloudsdkcore.exceptions.exceptions import SdkException
+
+from mcp_server_rds_pg.client.throttle import guarded_call
 
 
 class CatalogMixin:
@@ -32,7 +33,7 @@ class CatalogMixin:
             )
             return cast(dict[str, Any], _to_dict(self._client.list_flavors(request)))
 
-        return await asyncio.to_thread(_call)
+        return await guarded_call("sdk", _call)
 
     async def list_datastores(self, *, version: str | None = None) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
@@ -43,7 +44,7 @@ class CatalogMixin:
             request = ListDatastoresRequest(database_name="PostgreSQL")
             return cast(dict[str, Any], _to_dict(self._client.list_datastores(request)))
 
-        return await asyncio.to_thread(_call)
+        return await guarded_call("sdk", _call)
 
     async def list_storage_types(self, *, version: str, ha_mode: str) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
@@ -56,7 +57,7 @@ class CatalogMixin:
             )
             return cast(dict[str, Any], _to_dict(self._client.list_storage_types(request)))
 
-        return await asyncio.to_thread(_call)
+        return await guarded_call("sdk", _call)
 
     async def show_quotas(self) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
@@ -64,7 +65,7 @@ class CatalogMixin:
 
             return cast(dict[str, Any], _to_dict(self._client.show_quotas(ShowQuotasRequest())))
 
-        return await asyncio.to_thread(_call)
+        return await guarded_call("sdk", _call)
 
 
 class InstanceCreateMixin:
@@ -88,7 +89,7 @@ class InstanceCreateMixin:
                 dict[str, Any], _to_dict(self._client.create_instance(request))
             )
 
-        return await asyncio.to_thread(_call)
+        return await guarded_call("sdk", _call)
 
     async def reset_admin_password(
         self, *, instance_id: str, password: str
@@ -103,7 +104,7 @@ class InstanceCreateMixin:
             request = ResetPwdRequest(instance_id=instance_id, body=body)
             return cast(dict[str, Any], _to_dict(self._client.reset_pwd(request)))
 
-        return await asyncio.to_thread(_call)
+        return await guarded_call("sdk", _call)
 
 
 def _to_dict(obj: Any) -> Any:

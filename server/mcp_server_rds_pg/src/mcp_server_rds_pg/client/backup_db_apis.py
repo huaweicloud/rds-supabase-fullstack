@@ -5,11 +5,12 @@
 
 from __future__ import annotations
 
-import asyncio
 from typing import Any, cast
 
 from huaweicloud_mcp_core.errors import wrap_sdk_error
 from huaweicloudsdkcore.exceptions.exceptions import SdkException
+
+from mcp_server_rds_pg.client.throttle import guarded_call
 
 
 def _to_dict(obj: Any) -> Any:
@@ -30,7 +31,7 @@ class BackupMixin:
             request = ShowBackupPolicyRequest(instance_id=instance_id)
             return cast(dict[str, Any], _to_dict(self._client.show_backup_policy(request)))
 
-        return await asyncio.to_thread(_call)
+        return await guarded_call("sdk", _call)
 
     async def set_backup_policy(
         self, *, instance_id: str, keep_days: int, start_time: str, period: str
@@ -57,7 +58,7 @@ class BackupMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await asyncio.to_thread(_call)
+        return await guarded_call("sdk", _call)
 
     async def create_manual_backup(
         self, *, instance_id: str, name: str, description: str | None = None
@@ -81,7 +82,7 @@ class BackupMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await asyncio.to_thread(_call)
+        return await guarded_call("sdk", _call)
 
     async def list_backups(
         self,
@@ -104,7 +105,7 @@ class BackupMixin:
             )
             return cast(dict[str, Any], _to_dict(self._client.list_backups(request)))
 
-        return await asyncio.to_thread(_call)
+        return await guarded_call("sdk", _call)
 
     async def show_backup_download_link(self, *, backup_id: str) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
@@ -118,7 +119,7 @@ class BackupMixin:
                 _to_dict(self._client.show_backup_download_link(request)),
             )
 
-        return await asyncio.to_thread(_call)
+        return await guarded_call("sdk", _call)
 
     async def list_restore_times(self, *, instance_id: str) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
@@ -131,7 +132,7 @@ class BackupMixin:
                 dict[str, Any], _to_dict(self._client.list_restore_times(request))
             )
 
-        return await asyncio.to_thread(_call)
+        return await guarded_call("sdk", _call)
 
 
 class PgDatabaseMixin:
@@ -153,7 +154,7 @@ class PgDatabaseMixin:
                 _to_dict(self._client.list_postgresql_databases(request)),
             )
 
-        return await asyncio.to_thread(_call)
+        return await guarded_call("sdk", _call)
 
     async def create_pg_database(
         self, *, instance_id: str, name: str, owner: str | None = None,
@@ -181,7 +182,7 @@ class PgDatabaseMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await asyncio.to_thread(_call)
+        return await guarded_call("sdk", _call)
 
     async def list_pg_schemas(self, *, instance_id: str, db_name: str) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
@@ -197,7 +198,7 @@ class PgDatabaseMixin:
                 _to_dict(self._client.list_postgresql_database_schemas(request)),
             )
 
-        return await asyncio.to_thread(_call)
+        return await guarded_call("sdk", _call)
 
     async def create_pg_schema(
         self, *, instance_id: str, db_name: str, schema_name: str,
@@ -229,7 +230,7 @@ class PgDatabaseMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await asyncio.to_thread(_call)
+        return await guarded_call("sdk", _call)
 
     async def list_pg_db_users(self, *, instance_id: str) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
@@ -245,7 +246,7 @@ class PgDatabaseMixin:
                 _to_dict(self._client.list_postgresql_db_user_paginated(request)),
             )
 
-        return await asyncio.to_thread(_call)
+        return await guarded_call("sdk", _call)
 
     async def create_pg_db_user(
         self, *, instance_id: str, name: str, password: str,
@@ -271,7 +272,7 @@ class PgDatabaseMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await asyncio.to_thread(_call)
+        return await guarded_call("sdk", _call)
 
     async def set_pg_db_user_password(
         self, *, instance_id: str, name: str, password: str
@@ -291,7 +292,7 @@ class PgDatabaseMixin:
                 _to_dict(self._client.set_postgresql_db_user_pwd(request)),
             )
 
-        return await asyncio.to_thread(_call)
+        return await guarded_call("sdk", _call)
 
     async def update_pg_db_user_comment(
         self, *, instance_id: str, name: str, comment: str
@@ -313,7 +314,7 @@ class PgDatabaseMixin:
                 _to_dict(self._client.update_postgresql_db_user_comment(request)),
             )
 
-        return await asyncio.to_thread(_call)
+        return await guarded_call("sdk", _call)
 
     async def grant_pg_db_privilege(
         self, *, instance_id: str, db_name: str, users: list[dict[str, Any]]
@@ -344,4 +345,4 @@ class PgDatabaseMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await asyncio.to_thread(_call)
+        return await guarded_call("sdk", _call)

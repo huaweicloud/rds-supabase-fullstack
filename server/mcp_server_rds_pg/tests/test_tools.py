@@ -72,6 +72,18 @@ EXPECTED_TOOLS = {
     "list_pg_extensions": ToolRisk.READ,
     "install_pg_extension": ToolRisk.WRITE,
     "uninstall_pg_extension": ToolRisk.WRITE,
+    "discover_pg_network": ToolRisk.READ,
+    "list_pg_enterprise_projects": ToolRisk.READ,
+    "list_pg_vpcs": ToolRisk.READ,
+    "list_pg_subnets": ToolRisk.READ,
+    "list_pg_security_groups": ToolRisk.READ,
+    "create_pg_vpc": ToolRisk.WRITE,
+    "create_pg_subnet": ToolRisk.WRITE,
+    "create_pg_security_group": ToolRisk.WRITE,
+    "create_pg_enterprise_project": ToolRisk.WRITE,
+    "create_pg_eip": ToolRisk.WRITE,
+    "bind_pg_instance_eip": ToolRisk.DANGEROUS,
+    "unbind_pg_instance_eip": ToolRisk.DANGEROUS,
 }
 
 
@@ -87,9 +99,17 @@ def test_mutation_tools_have_confirm_parameter() -> None:
         "start_pg_instance",
         "create_pg_instance",
         "reset_pg_admin_password",
+        "create_pg_vpc",
+        "create_pg_subnet",
+        "create_pg_security_group",
+        "create_pg_enterprise_project",
+        "create_pg_eip",
+        "bind_pg_instance_eip",
+        "unbind_pg_instance_eip",
     ):
         assert tool_supports_confirm(tool_name) is True, tool_name
     assert tool_supports_confirm("list_pg_instances") is False
+    assert tool_supports_confirm("discover_pg_network") is False
 
 
 async def test_tools_are_registered_on_server() -> None:

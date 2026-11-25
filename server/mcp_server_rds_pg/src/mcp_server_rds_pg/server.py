@@ -29,4 +29,5 @@ from mcp_server_rds_pg.tools import (  # noqa: E402
     creation,  # noqa: F401
     instance,  # noqa: F401
     m3,  # noqa: F401
+    network,  # noqa: F401
 )

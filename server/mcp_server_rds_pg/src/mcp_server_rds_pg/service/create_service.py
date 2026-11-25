@@ -96,10 +96,12 @@ class CreationService:
         client: SdkRdsClient | None = None,
         plans: PlanStore | None = None,
         catalog: CatalogService | None = None,
+        network: Any = None,
     ) -> None:
         self._client = client or SdkRdsClient()
         self._plans = plans or PlanStore()
         self._catalog = catalog or CatalogService(client=self._client)
+        self._network = network
 
     async def plan_creation(
         self,
@@ -111,7 +113,10 @@ class CreationService:
 
         Charge mode / EIP billing / replica count are user-only decisions;
         flavor / volume / HA get a recommendation the user confirms.
+        M4: baseline gains a network module (placement recommendation + SG
+        open_5432 facts) and the EIP section expands to reuse-or-create.
         """
+        network_module = await self._network_module()
         datastores = await self._catalog.list_datastores()
         version = (datastores.get("latest")) or "16"
         flavors = await self._catalog.list_flavors(version=version)
@@ -132,6 +137,7 @@ class CreationService:
             "port": 5432,
             "charge_mode": "postPaid",
             "public_access": needs_public_access,
+            "network": network_module,
         }
         checklist = {
             "charge_mode": {
@@ -140,38 +146,75 @@ class CreationService:
                 "note": "prePaid needs period (month/year) and auto-renew choice; "
                 "billing decision the agent must not make.",
             },
-            "eip_billing": {
+            "eip": {
                 "level": "user-only",
-                "options": ["bandwidth 5-1000Mbps", "traffic (peak-limited)"],
                 "when": "needs_public_access=true",
+                "source": ["reuse idle EIP (prefer_idle)",
+                           "create new (create_pg_eip)"],
+                "billing": ["traffic (pay per GB)",
+                            "bandwidth (pay per Mbps, size 1-2000)"],
+                "note": "EIP billing starts at creation and continues until "
+                "release (idle EIPs still accrue a retention fee).",
             },
             "flavor": {"level": "user-confirm", "recommended": recommended},
             "volume": {"level": "user-confirm", "recommended": baseline["volume"]},
             "ha_mode": {"level": "user-confirm", "recommended": "Ha"},
+            "network": {
+                "level": "user-confirm",
+                "recommended": "reuse default VPC/subnet",
+                "alternatives": "new via create_pg_vpc + create_pg_subnet",
+            },
+            "security_group": {
+                "level": "user-confirm",
+                "recommended": self._sg_recommendation(network_module),
+                "note": "Reuse a group that already allows 5432, or create one "
+                "via create_pg_security_group (source: 'open' / device IP / "
+                "bounded CIDR).",
+            },
         }
+        if network_module.get("enterprise_projects") is None:
+            checklist["enterprise_project"] = {
+                "level": "omittable",
+                "note": "EPS unavailable: omit; placement is decided by the backend.",
+            }
         steps = [
             {
                 "step": 1,
+                "phase": "network",
+                "tool": "discover_pg_network",
+                "action": "Placement recommendation + SG plan (already folded "
+                "into this baseline); create nothing when reusing defaults.",
+            },
+            {
+                "step": 2,
+                "phase": "network_create",
+                "tool": "create_pg_vpc / create_pg_subnet / create_pg_security_group",
+                "when": "network or security-group decision = new",
+                "args": {"confirm": False},
+                "note": "Each is its own two-stage write with its own plan_id.",
+            },
+            {
+                "step": 3,
                 "phase": "request_file",
                 "tool": "write_pg_secret_request",
                 "action": "Store the admin password locally; use the returned request_ref.",
             },
             {
-                "step": 2,
+                "step": 4,
                 "phase": "create",
                 "tool": "create_pg_instance",
                 "args": {"confirm": False},
                 "note": "Preview returns plan_id; present changes+warnings to the user.",
             },
             {
-                "step": 3,
+                "step": 5,
                 "phase": "create",
                 "tool": "create_pg_instance",
-                "args": {"confirm": True, "plan_id": "<step 2>"},
+                "args": {"confirm": True, "plan_id": "<step 4>"},
                 "note": "Async job; poll show_pg_instance_job (5-25 min).",
             },
             {
-                "step": 4,
+                "step": 6,
                 "phase": "verify",
                 "tool": "show_pg_instance",
                 "note": "status ACTIVE and no current_actions before further operations.",
@@ -180,11 +223,23 @@ class CreationService:
         if needs_public_access:
             steps.append(
                 {
-                    "step": 5,
-                    "phase": "eip",
+                    "step": 7,
+                    "phase": "eip_create",
+                    "tool": "create_pg_eip",
+                    "when": "no idle EIP to reuse",
+                    "args": {"confirm": False},
+                    "note": "Billing mode is user-only; USAGE_FOR tag added "
+                    "automatically.",
+                }
+            )
+            steps.append(
+                {
+                    "step": 8,
+                    "phase": "eip_bind",
                     "tool": "bind_pg_instance_eip",
                     "when": "instance ACTIVE",
-                    "note": "M2 follow-up; billing method is user-only.",
+                    "args": {"confirm": False},
+                    "note": "Public exposure + traffic cost warning in preview.",
                 }
             )
         return single_result(
@@ -195,6 +250,47 @@ class CreationService:
                 "flavor_options": items[:20],
             }
         )
+
+    async def _network_module(self) -> dict[str, Any]:
+        """Live network facts for the baseline; degraded when unreachable.
+
+        Keeps plan_pg_instance_creation usable even on accounts where the
+        VPC/EPS read permissions are missing (network module then degrades
+        to a note and the user supplies placement manually).
+        """
+        if self._network is None:
+            from mcp_server_rds_pg.service.network_service import NetworkService
+
+            self._network = NetworkService(client=self._client, plans=self._plans)
+        try:
+            response = await self._network.discover()
+        except McpToolError as exc:
+            return {
+                "vpcs": None,
+                "subnets": None,
+                "security_groups": None,
+                "enterprise_projects": None,
+                "note": f"Network discovery unavailable: {exc.message} - pass "
+                "vpc_id/subnet_id/security_group_id explicitly.",
+            }
+        return {
+            "vpcs": response.get("vpcs"),
+            "subnets": response.get("subnets"),
+            "security_groups": response.get("security_groups"),
+            "enterprise_projects": response.get("enterprise_projects"),
+            "placement_recommendation": response.get("placement_recommendation"),
+        }
+
+    @staticmethod
+    def _sg_recommendation(network_module: dict[str, Any]) -> str:
+        groups = network_module.get("security_groups")
+        if not groups:
+            return "create new via create_pg_security_group"
+        open_groups = [g for g in groups if g.get("open_5432")]
+        if open_groups:
+            names = ", ".join(str(g.get("name")) for g in open_groups[:3])
+            return f"reuse a group that already allows 5432 ({names})"
+        return "create new (no existing group allows 5432)"
 
     async def create_instance(
         self,

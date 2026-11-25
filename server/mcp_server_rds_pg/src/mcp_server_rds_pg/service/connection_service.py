@@ -32,6 +32,13 @@ class ConnectionService:
         self._client = client or SdkRdsClient()
         self._plans = plans or PlanStore()
 
+    async def _find_managed_guard(self, instance_id: str) -> dict[str, Any]:
+        from mcp_server_rds_pg.service.instance_service import InstanceService
+
+        return await InstanceService(
+            client=self._client, plans=self._plans
+        )._find(instance_id)
+
     async def show_connection_info(self, *, instance_id: str) -> dict[str, Any]:
         from mcp_server_rds_pg.service.instance_service import InstanceService
 
@@ -112,6 +119,27 @@ class ConnectionService:
         self, *, instance_id: str, security_group_id: str, confirm: bool,
         plan_id: str | None,
     ) -> dict[str, Any]:
+        # Supabase-managed guard: the full-replacement semantics would strip
+        # the mgr-created dedicated groups (supabase-db-sg et al.), breaking
+        # the hosted application. Block hard before any preview/claim.
+        instance = await self._find_managed_guard(instance_id)
+        # instance detail carries security_group info; detect supabase naming
+        sg_list = instance.get("security_group_list") or instance.get("security_group") or []
+        names = []
+        if isinstance(sg_list, dict):
+            names = [str(sg_list.get("name") or "")]
+        elif isinstance(sg_list, list):
+            names = [str(g.get("name") or "") for g in sg_list]
+        if any("supabase" in n.lower() for n in names if n):
+            raise McpToolError(
+                "MCP_GUARDRAIL_BLOCKED",
+                "Instance appears Supabase-managed (dedicated security group"
+                " detected); full SG replacement would break the hosted"
+                " application",
+                hint="Use the Supabase management-plane tools"
+                " (change_supabase_security_group, which preserves the"
+                " dedicated groups) instead.",
+            )
         return await run_mutation(
             tool_name="change_pg_security_group",
             instance_id=instance_id,

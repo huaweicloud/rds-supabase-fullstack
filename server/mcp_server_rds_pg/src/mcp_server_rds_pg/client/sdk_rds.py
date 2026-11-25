@@ -21,6 +21,7 @@ from mcp_server_rds_pg.client.backup_db_apis import BackupMixin, PgDatabaseMixin
 from mcp_server_rds_pg.client.catalog_create import CatalogMixin, InstanceCreateMixin
 from mcp_server_rds_pg.client.connection_apis import ConnectionMixin
 from mcp_server_rds_pg.client.m3_apis import ExtensionMixin, LogMixin, ParamMixin, ResizeMixin
+from mcp_server_rds_pg.client.network_apis import NetworkMixin
 
 _SKIP_ATTRS = {
     "local_vars_configuration",
@@ -64,6 +65,7 @@ class SdkRdsClient(
     LogMixin,
     ParamMixin,
     ExtensionMixin,
+    NetworkMixin,
 ):
     """Async wrapper around the synchronous huaweicloudsdkrds v3 client."""
 

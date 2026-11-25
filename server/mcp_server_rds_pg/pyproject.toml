@@ -12,6 +12,8 @@ dependencies = [
     "huaweicloudsdkrds>=3.1",
     "huaweicloudsdkvpc>=3.1.223",
     "huaweicloudsdkces>=3.1.223",
+    "huaweicloudsdkeps>=3.1.223",
+    "huaweicloudsdkeip>=3.1.223",
 ]
 
 [project.scripts]
@@ -31,7 +33,7 @@ packages = ["src/mcp_server_rds_pg"]
 override-dependencies = ["pyasn1>=0.6.4", "cryptography<50"]
 
 [tool.uv.sources]
-huaweicloud-mcp-core = { path = "../rds-supabase-fullstack/libs/huaweicloud_mcp_core" }
+huaweicloud-mcp-core = { path = "../../libs/huaweicloud_mcp_core" }
 
 [dependency-groups]
 dev = [
@@ -60,7 +62,14 @@ python_version = "3.10"
 
 # huaweicloudsdk* ships without type stubs; treat as untyped per spec §11.2.
 [[tool.mypy.overrides]]
-module = ["huaweicloudsdkcore.*", "huaweicloudsdkrds.*", "huaweicloudsdkces.*"]
+module = [
+    "huaweicloudsdkcore.*",
+    "huaweicloudsdkrds.*",
+    "huaweicloudsdkces.*",
+    "huaweicloudsdkvpc.*",
+    "huaweicloudsdkeps.*",
+    "huaweicloudsdkeip.*",
+]
 ignore_missing_imports = true
 
 [[tool.uv.index]]

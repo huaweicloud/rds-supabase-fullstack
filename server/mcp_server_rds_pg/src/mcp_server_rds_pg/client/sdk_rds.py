@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from typing import Any, cast
 
 from huaweicloud_mcp_core.config import McpSettings
@@ -22,6 +21,7 @@ from mcp_server_rds_pg.client.catalog_create import CatalogMixin, InstanceCreate
 from mcp_server_rds_pg.client.connection_apis import ConnectionMixin
 from mcp_server_rds_pg.client.m3_apis import ExtensionMixin, LogMixin, ParamMixin, ResizeMixin
 from mcp_server_rds_pg.client.network_apis import NetworkMixin
+from mcp_server_rds_pg.client.throttle import guarded_call, reset_throttle  # noqa: F401
 
 _SKIP_ATTRS = {
     "local_vars_configuration",
@@ -104,9 +104,14 @@ class SdkRdsClient(
                 name=name,
                 datastore_type="PostgreSQL" if id is None else None,
             )
-            return cast(dict[str, Any], sdk_to_dict(self._client.list_instances(request)))
+            try:
+                return cast(
+                    dict[str, Any], sdk_to_dict(self._client.list_instances(request))
+                )
+            except SdkException as exc:
+                raise wrap_sdk_error(exc) from exc
 
-        return await asyncio.to_thread(_call)
+        return await guarded_call("list_instances", _call)
 
     async def list_job_info(self, *, job_id: str) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
@@ -119,7 +124,7 @@ class SdkRdsClient(
                 raise wrap_sdk_error(exc) from exc
             return cast(dict[str, Any], sdk_to_dict(response))
 
-        return await asyncio.to_thread(_call)
+        return await guarded_call("list_job_info", _call)
 
     async def show_task_detail(self, *, job_id: str) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
@@ -132,7 +137,7 @@ class SdkRdsClient(
                 raise wrap_sdk_error(exc) from exc
             return cast(dict[str, Any], sdk_to_dict(response))
 
-        return await asyncio.to_thread(_call)
+        return await guarded_call("show_task_detail", _call)
 
 
     async def reboot_instance(self, *, instance_id: str) -> dict[str, Any]:
@@ -161,7 +166,7 @@ class SdkRdsClient(
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await asyncio.to_thread(_call)
+        return await guarded_call("reboot_instance", _call)
 
     async def stop_instance(self, *, instance_id: str) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
@@ -175,7 +180,7 @@ class SdkRdsClient(
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await asyncio.to_thread(_call)
+        return await guarded_call("stop_instance", _call)
 
     async def start_instance(self, *, instance_id: str) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
@@ -189,7 +194,7 @@ class SdkRdsClient(
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await asyncio.to_thread(_call)
+        return await guarded_call("start_instance", _call)
 
 
 def _region_of(region: str) -> Any:

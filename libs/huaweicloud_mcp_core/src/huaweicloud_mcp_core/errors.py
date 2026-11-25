@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 _INTERNAL_CODES = {
@@ -16,7 +17,22 @@ _INTERNAL_CODES = {
     "MCP_GUARDRAIL_ERROR",
     "MCP_SDK_ERROR",
     "MCP_PROJECT_NOT_FOUND",
+    "MCP_CALL_TIMEOUT",
 }
+
+#: IAM/APIGW auth failures embed the full canonical_request (signed headers,
+#: user-agent, SDK date, payload hash) into error_msg - hundreds of characters
+#: of signature plumbing that an Agent consumer cannot act on and that pollute
+#: its context budget on every retry. Keep the actionable prefix, drop the rest.
+_CANONICAL_REQUEST_RE = re.compile(
+    r"\s*canonical_request:\S.*?(?=,\s*encoded_authorization_message:|$)", re.DOTALL
+)
+
+
+def _trim_error_message(message: str) -> str:
+    if "canonical_request:" in message:
+        message = _CANONICAL_REQUEST_RE.sub(" (canonical request elided)", message)
+    return message
 
 
 class McpToolError(Exception):
@@ -60,13 +76,13 @@ def wrap_sdk_error(exc: Exception) -> McpToolError:
     if isinstance(exc, ServiceResponseException):
         return McpToolError(
             code=getattr(exc, "error_code", None) or f"HTTP_{exc.status_code}",
-            message=str(getattr(exc, "error_msg", None) or exc),
+            message=_trim_error_message(str(getattr(exc, "error_msg", None) or exc)),
             request_id=getattr(exc, "request_id", None),
         )
     if isinstance(exc, ClientRequestException):
         return McpToolError(
             code=f"HTTP_{exc.status_code}",
-            message=str(exc),
+            message=_trim_error_message(str(exc)),
             request_id=getattr(exc, "request_id", None),
         )
-    return McpToolError("MCP_SDK_ERROR", str(exc))
+    return McpToolError("MCP_SDK_ERROR", _trim_error_message(str(exc)))

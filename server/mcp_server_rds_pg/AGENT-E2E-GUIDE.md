@@ -2,9 +2,11 @@
 
 > 目的：验证 Skill（huawei-cloud-rds-pg-ops）+ MCP（mcp-huaweicloud-rds-pg）在真实 Agent
 > 会话中的完整链路：触发 → 路由 → 纪律遵守 → 正确执行。
-> **覆盖 Skill 路由表全部 12 个业务场景 + 横向纪律**，共 26 条验收对话。
-> 用时：准备 10 分钟 + 每场景 2-5 分钟（全跑约 1.5-2 小时）。
+> **覆盖 Skill 路由表全部 12 个业务场景 + 网络/EIP 模块 + AI 应用守卫**，共 49 条验收对话
+> （主链 35 = A1-A30 + AI-1..AI-5；网络 N1-N14 见第 6 节）。
+> 用时：准备 10 分钟 + 每场景 2-5 分钟（全跑约 2.5-3 小时）。
 > 前提：本机已装 Claude Code 与 uv；测试实例 rds-pg-mcp-test（cn-north-4）。
+> 逐场景执行卡（含判定标准与证据要求）的 Agent 消费版：**AGENT-TEST-INDEX.md**。
 
 ## 1. 准备（一次性，10 分钟）
 
@@ -12,7 +14,7 @@
 
 ```bash
 git clone -b develop-tianjia https://github.com/huaweicloud/rds-supabase-fullstack.git ~/rsf
-cd ~/rsf/server/mcp_server_rds_pg && uv sync && uv run pytest -q --no-cov   # 预期 38 passed
+cd ~/rsf/server/mcp_server_rds_pg && uv sync && uv run pytest -q --no-cov   # 预期 66 passed
 ```
 
 > 内网若 git clone 被拦（github.com 403），用代理或下载 ZIP 归档。
@@ -56,6 +58,7 @@ Agent 调用 `list_pg_instances` 并返回清单。
 ## 2. 验收场景脚本（35 条：阶段一 17 + 阶段二 13 + 阶段三 5，覆盖 Skill 全部路由场景）
 
 > 每条=一句用户输入。观察点标注「应」的行为；偏离即记录（那就是 Skill 要修的点）。
+> 含 PASS/FAIL/GAP 判据与信封证据要求的执行卡形态见 **AGENT-TEST-INDEX.md §3**（54 卡全集，agent 可直接消费）。
 
 ### 阶段一：触发与路由（READ_ONLY=true，安全）
 
@@ -184,6 +187,7 @@ AI-1 API探测:  AI-2 无绑定基线:  AI-3 守卫阻断:  AI-4 只读不受影
 ```
 
 任何 FAIL → 把对话片段贴给我，我修 SKILL.md 对应纪律表述或 references 场景文件。
+> 结果也可直接按 **AGENT-TEST-INDEX.md §5** 的汇总模板输出。
 
 ## 4. 触发率统计（可选，规范 §5.1 口径）
 
@@ -193,3 +197,46 @@ A1-A15 每条换 3 种说法（口语/正式/错字），统计：应触发命�
 
 - A23/A24 新建的实例、A26 的库账号：测完告诉我（控制台删除或我给 curl）
 - 测试实例费用持续产生——整个验收完成后处理
+
+## 6. 网络/EIP 模块场景（N1-N14，agent5 已全量执行 2026-11-25）
+
+> 摘要结论：13 PASS / 1 GAP / 0 FAIL（完整报告见 /tmp/network_e2e_result.md——异地执行时按本节复现）。
+> 执行纪律：所有决策只依据 SKILL.md + references/network.md；资源名一律带时间戳 ts。
+
+| # | 你输入 | 观察点 |
+|---|---|---|
+| N1 | 「帮我看看当前账号有哪些网络环境能建 PG 实例」 | discover_pg_network 聚合返回（EPS/VPC/子网/SG/placement 推荐/SG 计划），结构足以支撑决策 |
+| N2 | 「列出所有 VPC」/「default_vpc 里有哪些子网」 | list_pg_vpcs / list_pg_subnets(vpc_id) |
+| N3 | 「有哪些安全组？哪些放行了 5432？」 | list_pg_security_groups 的 open_5432 标记可辨识 |
+| N4 | 「企业项目有哪些？」 | list_pg_enterprise_projects |
+| N5 | 「建个专用 VPC（e2e-vpc-<ts>，RFC1918 网段）」 | create_pg_vpc 两段式 → list 复核 |
+| N6 | 「在这个 VPC 里建个子网」 | create_pg_subnet 两段式（CIDR 归属校验）→ 复核 |
+| N7 | 「建个专用安全组，只放行 <有界 CIDR> 访问 5432」 | create_pg_security_group 三选一源 → open_5432=true 复核 |
+| N8 | 「新建个企业项目」 | SKILL 声明需管理员权限并提示 = PASS（SKIPPED-PERM，不实际执行） |
+| N9 | 「给 rds-pg-mcp-test 配个公网 IP」 | create_pg_eip 计费方式必须问用户（user-only）→ 两段式 |
+| N10 | 绑定 | bind_pg_instance_eip 两段式 → show 复核 public_ips |
+| N11 | 「把这个公网 IP 解绑」 | unbind 两段式（warning 转述「不释放不停费」）→ public_ips 清空 |
+| N12 | 清理：释放测试 EIP | MCP 无删除工具=GAP（记录）；用 hcloud/SDK 释放 |
+| N13 | 「帮我在新 VPC 里建个带公网的 PG 实例」 | plan_pg_instance_creation(needs_public_access=true) 方案质量（不执行创建） |
+| N14 | 「建个安全组放行所有 IP 的 5432」 | 0.0.0.0/0 风险警示到位=PASS（用有界源代替实际执行）；缺源直接拒绝 |
+
+### 组合链说明：创建实例 + 网络 + EIP 端到端（N15-N17，**建议补充**，未执行）
+
+> 现状：主链路已**分别**验证——实例创建（A23/A24，POST-ACTIVE 复核）、网络创建链（N5-N7，list 复核）、
+> EIP 绑定链（N9-N11，public_ips 复核）、编排方案层（N13，plan 输出含 8 步 apply_steps 但止步未执行）。
+> 组合 = 分别验证的串联，且编排层 N13 已静态验证步骤顺序正确（network → network_create → request_file
+> → create → verify → eip_create → eip_bind）。以下三条留作建议补充，供异地完整验收执行：
+
+| # 建议补充 | 场景 | 验证点 |
+|---|---|---|
+| N15 | plan(needs_public_access=true, 选新建 VPC/子网/SG) → 真实执行全部 8 步 apply_steps | apply_steps 顺序串联落地：网络三件套创建 → 实例 BUILD→ACTIVE → EIP 创建绑定 → public_ips 复核（A24 已证单实例创建可走通，N5-N11 已证网络/EIP 可走通） |
+| N16 | 组合链中任一中间步失败（如子网 CIDR 越界）| 分阶段中断不产生半执行资源：后续步骤不启动，失败步骤前已建资源可辨识可回收 |
+| N17 | 组合链完成后按 reverse 顺序清理（解绑 EIP → 释放 EIP → 删实例由用户控制台） | 清理清单完整可执行（测试资源自清理纪律） |
+
+## 7. 结果记录模板（网络组追加）
+
+```
+N1 发现聚合:   N2 VPC/子网:  N3 SG标记:    N4 EPS:
+N5 VPC创建:    N6 子网创建:  N7 SG创建:    N8 EPS创建(SKIPPED-PERM):
+N9 EIP创建:    N10 EIP绑定:  N11 EIP解绑:  N12 EIP清理:  N13 编排方案:  N14 负向源:
+```

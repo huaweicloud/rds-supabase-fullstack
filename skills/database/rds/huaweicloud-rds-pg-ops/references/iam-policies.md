@@ -4,7 +4,7 @@
 
 ## 1. 概述
 
-本技能的全部 59 工具经 `mcp-huaweicloud-rds-pg` MCP 服务器调用华为云 OpenAPI（SDK 直连，非 KooCLI）。涉及两个云服务：
+本技能的全部 71 工具经 `mcp-huaweicloud-rds-pg` MCP 服务器调用华为云 OpenAPI（SDK 直连，非 KooCLI）。涉及两个云服务：
 
 - **RDS**（rds:）：实例生命周期、备份、库/账号/参数/插件、日志
 - **CES**（ces:）：监控指标查询与告警规则创建

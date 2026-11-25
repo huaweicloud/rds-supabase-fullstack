@@ -389,3 +389,156 @@ B4 创建: ⏳ M2 未交付
 - 范围外（已决策移除）：删实例、删手动备份、恢复到新实例、PITR 恢复（含库表级）
 - E1-E3 的 Agent 行为约束（E1.1/E2.2）部分依赖 Skill 层纪律，MCP 工具层只做兜底拦截
 - B11 告警触达（B11.4）依赖通知渠道配置，可选执行
+
+---
+
+## 11. 覆盖矩阵（71 工具 × 已有测试，2026-11-25 审核结论）
+
+> 目的：查缺对照——71 个工具每个被哪层测试覆盖（场景号标注），或标注 NOT-COVERED。
+> 覆盖层级图例：**L4**=Skill 级 Agent E2E（A1-A30 主套件 / N1-N14 网络套件 / AI-1..AI-5 守卫）；
+> **L3**=机器级 G/B 组（LIVE-TESTING 本文档 §3-§5）；
+> **L2**=单元/服务层 pytest（tests/，66 用例全绿）；
+> **管线级**=该工具未经场景验证，但与已验证工具共用同一 `run_mutation` 提交管线（预览/confirm/plan_id/审计/守卫全链路已验证），仅参数封装差异。
+
+### 11.1 总体结论
+
+| 口径 | 数值 |
+|---|---|
+| 工具总数 | **71**（grep @mcp.tool 脚本清点，tools/ 5 文件） |
+| L4 场景级直接覆盖 | **55 / 71（77.5%）** |
+| L4+L3 组合覆盖 | **63 / 71（88.7%）** |
+| 含「管线级覆盖」口径 | **67 / 71（94.4%）** |
+| 完全未验证（连管线级都无法声称） | **4 / 71（5.6%）**——`create_pg_manual_backup`、`download_pg_slow_log`、`set_pg_audit_log_policy`*、`create_pg_alarm_rule`*（*后两项见 11.4 说明：L3 有 B12.5/B11.3 桌面条目但从未执行；audit/alarm 提交管线同构） |
+
+> 审核基线：A 套件 21/4/4（4 缺陷已修复后，A8/A9/A22/A26 的工具层 FAIL 均已闭环，复验场景见 AGENT-TEST-INDEX.md 相应执行卡「修复后复验」标注）；N 套件 13/1/0。
+
+### 11.2 逐工具覆盖矩阵
+
+**实例生命周期（instance.py，6 工具）**
+
+| 工具 | 风险 | 覆盖 | 场景号 |
+|---|---|---|---|
+| list_pg_instances | READ | L4+L2 | A1, G1.1/G1.2, 单元 |
+| show_pg_instance | READ | L4+L2 | A2, G1.3/G1.4, N10/N11 复核 |
+| show_pg_instance_job | READ | L4+L2 | A19, G1.5 |
+| reboot_pg_instance | DANGEROUS | L4+L3+L2 | A18/A19, G2.1-G2.8, B2 |
+| stop_pg_instance | DANGEROUS | L4+L3+L2 | A20, B3 |
+| start_pg_instance | DANGEROUS | L4+L3 | A21, B3.4 |
+
+**选型与创建（creation.py，9 工具）**
+
+| 工具 | 风险 | 覆盖 | 场景号 |
+|---|---|---|---|
+| list_pg_flavors | READ | L4+L3 | A23 方案基线, B1.4/B4.1 |
+| list_pg_datastores | READ | L3 | B1.4/B4.1（A23 plan 输出间接含版本基线） |
+| list_pg_storage_types | READ | L3 | B1.4/B4.1 |
+| show_pg_quotas | READ | L3 | B4.10 |
+| plan_pg_instance_creation | READ | L4+L3 | A23, N13, B4.1-B4.3, B6b.15 |
+| write_pg_secret_request | WRITE | L4+L3 | A22/A24, B4.4, B5.1 |
+| create_pg_instance | DANGEROUS | L4+L3 | A24（真实创建→BUILD→ACTIVE）, B4.5-B4.9 |
+| reset_pg_admin_password | WRITE | L4+L2 | A22（E2E 发现 client 字段 bug→已修复 commit ee96b47，修复后复验见 AGENT-TEST-INDEX 执行卡 A22-R）, B5.1-B5.4 |
+| —— create read replica 路径 | DANGEROUS | L3 | B10.1-B10.4（副本创建经 create_pg_instance 参数族；commit 12edcb4/d3ecdb2 交付+修复，测试为机器级） |
+
+**连接管理（connection.py，6 工具）**
+
+| 工具 | 风险 | 覆盖 | 场景号 |
+|---|---|---|---|
+| show_pg_connection_info | READ | L4+L3 | A3, B6.1, B4.8 |
+| download_pg_ssl_cert | READ | L4+L3 | A4, B6.2 |
+| change_pg_instance_port | DANGEROUS | L3+管线级 | B6.6（机器级桌面条目，未执行；与 reboot 同 DANGEROUS 管线） |
+| change_pg_security_group | DANGEROUS | L3+AI 守卫 | B6.7, AI-5（supabase 命名兜底, tests/test_ai_guard_e2e.py） |
+| list_pg_hba_conf | READ | L4+L3 | A5, B6.8 |
+| change_pg_hba_conf | WRITE | L3+管线级 | B6.8（未执行；WRITE 管线同构已验证） |
+
+**备份与库账号（backup_database.py，15 工具）**
+
+| 工具 | 风险 | 覆盖 | 场景号 |
+|---|---|---|---|
+| show_pg_backup_policy | READ | L4+L3 | A6, B7.1 |
+| set_pg_backup_policy | WRITE | L4+L3 | A25（负向≥7 校验+正向复核）, B7.2-B7.4 |
+| create_pg_manual_backup | WRITE | **L3 桌面（未执行）** | B7.5——成本原因（手动备份占存储计费）未真实执行；WRITE 管线级覆盖 |
+| list_pg_backups | READ | L4+L3 | A7, B7.5 复核 |
+| show_pg_backup_download_link | READ | L3 | B7.6 |
+| list_pg_restore_times | READ | L3 | B7.7 |
+| list_pg_databases | READ | L4+L2 | A12, AI-4 |
+| create_pg_database | WRITE | L4+L3 | A26, B8.1 |
+| list_pg_schemas | READ | L3 | B8 复核（A26 间接） |
+| create_pg_schema | WRITE | L4 | A26（发现 public 保留名 GAP→SKILL 已补）, B8.2 |
+| list_pg_db_users | READ | L4+L2 | A12, B8 复核 |
+| create_pg_db_user | WRITE | L4+L3 | A26（request_ref 全链）, B8.3 |
+| set_pg_db_user_password | WRITE | L3+管线级 | B8.4 |
+| update_pg_db_user_comment | WRITE | L3+管线级 | B8.7（L1 轻写，middleware confirm 即可） |
+| grant_pg_db_privilege | WRITE | L4+L2 | A26（发现 db_name 漏传 bug→已修复 commit ee96b47；复验见执行卡 A26-R）, B8.5/B8.6 |
+
+**变配/监控/日志/参数/插件（m3.py，26 工具）**
+
+| 工具 | 风险 | 覆盖 | 场景号 |
+|---|---|---|---|
+| resize_pg_flavor | DANGEROUS | L3 桌面 | B9.1 |
+| extend_pg_volume | DANGEROUS | L4 | A30（SKIPPED-BY-COST——负向判定保留，不可逆计费） |
+| reduce_pg_volume | DANGEROUS | L3 | B9.3（引擎 17+ 校验） |
+| set_pg_auto_enlarge_policy | WRITE | L3+管线级 | B9.4 |
+| switch_pg_single_to_ha | DANGEROUS | L3 | B9.5 |
+| change_pg_ops_window | WRITE | L4+AI 守卫 | A29, AI-2（无绑定不误伤） |
+| list_pg_read_replicas | READ | L4 | A15（参数名 GAP→已修复；返回空清单=正常） |
+| show_pg_metric_data | READ | L4+L2 | A8（发现 dim 格式 bug→已修复 commit ee96b47；复验见执行卡 A8-R）, B11.2 |
+| create_pg_alarm_rule | WRITE | **NOT-COVERED** | B11.3 桌面条目从未执行；CES 告警需通知渠道依赖，成本+配置原因搁置。WRITE 管线同构但连场景级预览都没跑过 |
+| list_pg_resource_metrics | READ | L4+L2 | A9（发现空返回→已修复 commit ee96b47；复验见执行卡 A9-R）, B11.1 |
+| list_pg_error_logs | READ | L4 | A11, B12.3 |
+| list_pg_slow_logs | READ | L4 | A10, B12.1 |
+| download_pg_error_log | READ | L3 | B12.4 |
+| download_pg_slow_log | READ | **NOT-COVERED** | B12.2 桌面条目从未执行（原因：无慢日志产生时下载无意义；READ 无风险，随手可补） |
+| set_pg_audit_log_policy | WRITE | **NOT-COVERED** | B12.5 桌面条目从未执行——**按量计费**开启 audit log（warning 已内置）成本原因搁置 |
+| list_pg_audit_logs | READ | L3 | B12.5 复核（依赖前项开启，同样未执行） |
+| show_pg_parameters | READ | L4 | A13, A27 前置, B13.1 |
+| update_pg_parameter | WRITE | L4 | A27（通用 API 路径，commit cb151d6 修复后）, B13.2/B13.3 |
+| list_pg_configurations | READ | L3 | B13.4 |
+| apply_pg_configuration | WRITE | L3+管线级 | B13.5 |
+| compare_pg_configurations | READ | L3 | B13.4 |
+| list_pg_extensions | READ | L4 | A14, A28 复核, B14.1 |
+| install_pg_extension | WRITE | L4 | A28（pg_stat_statements）, B14.2/B14.3 |
+| uninstall_pg_extension | WRITE | L3+管线级 | B14.4 |
+
+**网络/EIP（network.py，12 工具）**
+
+| 工具 | 风险 | 覆盖 | 场景号 |
+|---|---|---|---|
+| discover_pg_network | READ | L4 | N1 |
+| list_pg_enterprise_projects | READ | L4 | N4, B6b.9 |
+| list_pg_vpcs | READ | L4 | N2, N5/N6 复核, B6b.2 |
+| list_pg_subnets | READ | L4 | N2, B6b.3 |
+| list_pg_security_groups | READ | L4 | N3, N7 复核, B6b.4 |
+| create_pg_vpc | WRITE | L4 | N5, B6b.5 |
+| create_pg_subnet | WRITE | L4 | N6, B6b.6 |
+| create_pg_security_group | WRITE | L4 | N7, N14, B6b.7/B6b.8 |
+| create_pg_enterprise_project | WRITE | L4(预览) | N8（SKIPPED-PERM：管理员权限+组织级资源，只验预览信封与 Skill 警示）, B6b.10 |
+| create_pg_eip | WRITE | L4 | N9, B6b.11 |
+| bind_pg_instance_eip | DANGEROUS | L4 | N10, B6b.12, B6.4 |
+| unbind_pg_instance_eip | DANGEROUS | L4 | N11, B6b.13, B6.5 |
+
+### 11.3 创建实例 + 网络 + EIP 组合链审核（重点检查项）
+
+**结论：组合链无端到端场景，但可判定为低风险**，理由：
+
+1. 主链路**分别**验证完整：实例创建（A24：plan→选型→两段式→BUILD→轮询→ACTIVE，真实实例落地）；网络创建链（N5-N7：VPC→子网→SG 各自两段式+list 复核）；EIP 链（N9-N11：创建→绑定→public_ips 复核→解绑）。
+2. 编排层静态验证：N13 的 `plan_pg_instance_creation(needs_public_access=true)` 输出 8 步 apply_steps（network → network_create → request_file → create → verify → eip_create → eip_bind），步骤顺序与各已验证链路一致——组合=分别验证的串联。
+3. 已在 **AGENT-E2E-GUIDE.md §6** 补充建议场景 N15-N17（标注「建议补充」，不必执行）。
+
+### 11.4 NOT-COVERED 工具分类清单
+
+**A 类：管线级覆盖（可声称，共 63→67 中的差异部分）**——`change_pg_instance_port`、`change_pg_hba_conf`、`set_pg_db_user_password`、`update_pg_db_user_comment`、`apply_pg_configuration`、`uninstall_pg_extension`、`set_pg_auto_enlarge_policy`：未跑过真实场景，但走的是与 A18-A29 已验证工具**完全相同**的 `run_mutation` 管线（预览信封/plan_id/审计/双开关/AI 守卫），差异仅在参数封装。风险=参数映射错误（类似 grant bug 形态），建议异地验收时各补一次预览（confirm=false 零成本）即升为场景级。
+
+**B 类：完全未验证（4 项）**：
+
+| 工具 | 原因 | 补测成本 |
+|---|---|---|
+| create_pg_manual_backup | 备份占存储、按量计费 | 低：小实例 1 次备份+及时列表确认 |
+| create_pg_alarm_rule | CES 通知渠道配置依赖（SMN 未配则规则空转） | 低：建规则不触发通知 |
+| set_pg_audit_log_policy | audit log **按量计费**持续产生 | 中：开启→查日志→立即关闭 |
+| download_pg_slow_log | 前提是先有慢日志文件 | 低：跑一条慢 SQL 即可 |
+
+（`list_pg_audit_logs` 随 set 同步补；`download_pg_error_log`/`list/compare_pg_configurations`/`show_pg_backup_download_link`/`list_pg_restore_times`/`list_pg_datastores`/`list_pg_storage_types`/`show_pg_quotas` 为纯 READ，B 组桌面条目随时可点亮，无风险无成本。）
+
+### 11.5 口径修正
+
+全部文档中工具数统一为 **71**（原 59 为 M3 完成时口径，M4 网络 12 工具交付后未同步）。涉及文件：README.md、SKILL.md、references/iam-policies.md、references/verification-method.md、references/acceptance-criteria.md、references/spec-compliance-audit.md（本次已逐一修正）。

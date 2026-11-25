@@ -1,7 +1,7 @@
 # 规范遵从审核报告：huaweicloud-rds-pg-ops（Skill 包）+ mcp_server_rds_pg（MCP 工程）
 
 > 审核依据：《华为云基础云服务 Skill 开发与管理规范 v2.0.0》（全文 13 章，仓内 `.playwright-mcp/huaweicloud-skill-spec-v2.md`）
-> 审核对象：本技能包（SKILL.md + references/ 10 场景文件 + INSTALL.md）与配套 MCP 工程 `server/mcp_server_rds_pg`（59 工具，Python 三层架构）
+> 审核对象：本技能包（SKILL.md + references/ 10 场景文件 + INSTALL.md）与配套 MCP 工程 `server/mcp_server_rds_pg`（71 工具，Python 三层架构）
 > 审核日期：2025-11-24 · 审核轮次：第 1 轮（含整改复查）
 
 ---
@@ -17,14 +17,14 @@
 
 ## 1. 分型豁免口径（MCP 型技能 vs 规范的 CLI 前提）
 
-规范 v2.0.0 默认面向 **KooCLI/CLI 型技能**（Agent 生成 `hcloud` 命令执行）。本技能是 **MCP 型技能**：Agent 经 MCP 协议调用 `mcp-huaweicloud-rds-pg` 服务器的 59 个结构化工具，不生成、不执行任何 `hcloud` 命令。为此建立以下分型口径，供后续其他 MCP 型技能复用：
+规范 v2.0.0 默认面向 **KooCLI/CLI 型技能**（Agent 生成 `hcloud` 命令执行）。本技能是 **MCP 型技能**：Agent 经 MCP 协议调用 `mcp-huaweicloud-rds-pg` 服务器的 71 个结构化工具，不生成、不执行任何 `hcloud` 命令。为此建立以下分型口径，供后续其他 MCP 型技能复用：
 
 ### 1.1 不适用条款（CLI 专属，MCP 型豁免）
 
 | 规范条款 | 内容 | 豁免理由与替代 |
 |---|---|---|
 | §6 全章 | KooCLI 命令格式（`hcloud <SERVICE> <Operation>`、`--cli-region`、数组/嵌套参数格式、`--limit=1` 探索查询、v3 后缀/Keystone 前缀等易错点） | MCP 工具参数为结构化 JSON Schema，由服务器端校验；`--cli-region` 退化为 `HUAWEICLOUD_REGION` 环境变量。SKILL.md「核心命令」章节改为按功能分组的工具表（对应规范意图的 MCP 形态） |
-| §2.5 节 3「前置条件+KooCLI」中 CLI 版本与验证命令 | `hcloud version` ≥ 7.2.2 | 替代为 MCP 服务器版本（pyproject v0.1.0）+ `uv sync` + `/health` 探活 + `tools/list` 59 工具 |
+| §2.5 节 3「前置条件+KooCLI」中 CLI 版本与验证命令 | `hcloud version` ≥ 7.2.2 | 替代为 MCP 服务器版本（pyproject v0.1.0）+ `uv sync` + `/health` 探活 + `tools/list` 71 工具 |
 | §2.2 四件套之 `cli-installation-guide.md` | 「涉及 CLI 命令时必选」 | 不涉及 CLI 命令 → 不触发该必选条件；安装指引由本包 `references/install.md`（MCP 服务器安装/宿主注册/环境变量）承担同等职责 |
 | §5.4 集成测试「CLI 命令端到端执行（hcloud + jq）」 | 每次跑真实 hcloud | 替代为 LIVE-TESTING.md 的 G/B 测试组（真实 OpenAPI 端到端）+ `uv run pytest` 三件套 |
 | §7.2 / §7.3 认证梯队的 hcloud configure 项 | KooCLI 配置文件 | MCP 工程用 AK/SK 环境变量（`HUAWEICLOUD_ACCESS_KEY/SECRET_KEY`），符合「配置外置」；规范 §8.1 环境变量速查同样认可该来源 |
@@ -54,7 +54,7 @@
 | 技能包自包含（SKILL.md 唯一入口 + references/） | 合规 | 结构与 §2.2 蓝图一致 |
 | 包目录命名 `huawei-cloud-{产品}-{功能}` 公式 | **违规（低危，建议保留）** | 目录名为 `huaweicloud-rds-pg-ops`，非规范的 `huawei-cloud-` 前缀。改名会破坏 MCP 工程内 `skill/huaweicloud-rds-pg-ops` 镜像目录与既有用户安装路径，且本仓技能族统一用 `huaweicloud-` 前缀（仓级惯例）。**豁免处理**：以仓库既有命名体系为准，审核记录在案；若上游开源仓库强制 `huawei-cloud-` 前缀，需整族统一迁移 |
 | 参考文档 kebab-case 命名 | 合规 | backup.md / connection.md / iam-policies.md 等均合规 |
-| 四件套：iam-policies.md | **违规→已整改** | 原缺失；已补（59 工具按分组列 RDS/CES Action + 最小权限 JSON + 权限失败流程） |
+| 四件套：iam-policies.md | **违规→已整改** | 原缺失；已补（71 工具按分组列 RDS/CES Action + 最小权限 JSON + 权限失败流程） |
 | 四件套：verification-method.md | **违规→已整改** | 原缺失；已补（三级验证 + 五连验 + LIVE-TESTING 矩阵引用） |
 | 四件套：acceptance-criteria.md | 推荐级，原缺失→已补 | MCP 型技能验收清单 |
 | 四件套：cli-installation-guide.md | **豁免** | 见 §1.1：不涉 CLI 命令，必选条件不触发；职责由 references/install.md 承担 |
@@ -115,8 +115,8 @@
 | 规范条款 | 结论 | 说明 |
 |---|---|---|
 | 三层单向架构（tools→service→client，tools 禁 import SDK） | 合规 | 实测 tools/*.py 仅 import huaweicloud_mcp_core.guard 与本包 service；SDK import 全部在 client/ |
-| 场景化工具（动词_对象命名） | 合规 | 59 工具全部 `动词_对象`（list_/show_/create_/set_/change_/resize_…） |
-| 风险声明（每工具 @guard） | 合规 | 59 处 @mcp.tool 对应 59 处 @guard(risk=READ/WRITE/DANGEROUS)（creation 8、backup_database 15、instance 6、connection 6、m3 24，实测合计 59） |
+| 场景化工具（动词_对象命名） | 合规 | 71 工具全部 `动词_对象`（list_/show_/create_/set_/change_/resize_…） |
+| 风险声明（每工具 @guard） | 合规 | 71 处 @mcp.tool 对应 71 处 @guard(risk=READ/WRITE/DANGEROUS)（creation 9、backup_database 15、instance 6、connection 6、m3 26、network 12，实测合计 71） |
 | 写操作两段式 + plan_id 防重放 | 合规 | service/mutate.py run_mutation 管线：10 分钟 TTL、单次消费、digest 校验、提交前回查实例状态 |
 | 配置外置（凭证不硬编码） | 合规 | AK/SK 全经环境变量，grep 无明文 |
 | 输出脱敏 + 审计 | 合规 | core build_server 强制脱敏（不可关）+ JSONL 审计（含被拦调用） |
@@ -131,7 +131,7 @@
 ## 4. 整改清单（本轮已执行）
 
 1. SKILL.md 重写：英文正文 + 规范 2.5 的 11 节顺序 + 8 条安全硬约束（保留两段式/user-only/防重放/action 锁/request_ref/job 轮询全部原纪律，英文表述）+ 5 个典型用例 + version 递增 1.1.0
-2. 补 `references/iam-policies.md`（59 工具按 12 组列 RDS/CES Action、最小权限 JSON 两份、403 处理五步流程、正误对比）
+2. 补 `references/iam-policies.md`（71 工具按 12 组列 RDS/CES Action、最小权限 JSON 两份、403 处理五步流程、正误对比）
 3. 补 `references/verification-method.md`（连接/功能/五连验三级 + LIVE-TESTING 矩阵引用）
 4. 补 `references/acceptance-criteria.md`（MCP 型技能验收清单：结构/内容/安全一票否决/工程侧）
 5. 目录迁移 `git mv skills/huaweicloud-rds-pg-ops skills/database/rds/huaweicloud-rds-pg-ops`（git 全程识别为 rename）

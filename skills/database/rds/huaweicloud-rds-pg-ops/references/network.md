@@ -16,7 +16,7 @@ discover_pg_network（一次拿全：EPS + VPC + 子网 + SG + placement 推荐 
 2. **所有创建类工具两段式**：confirm=false 预览 → 展示 changes+warnings → 用户同意 → confirm=true+plan_id。plan_id 失效重新预览，不凭记忆重发。
 3. **SG 5432 来源永不缺省放行全网**：`open_5432=true` 必须给 `open_5432_from`（'open' / 设备出口 IP / 有界 CIDR）或 `subnet_id`（取该子网网段）。工具对缺失来源直接拒绝——不要绕过。
 4. **EIP 计费是 user-only 决策**：`create_pg_eip` 的 billing_type（traffic 按流量 / bandwidth 按带宽 Mbps）必须用户本人选，Agent 禁代选。
-5. **EIP 未绑定也计费**：创建即开始计费直至释放。测试/临时用途结束要提醒用户在控制台释放（删除不在本技能范围）。
+5. **EIP 未绑定也计费**：创建即开始计费直至释放。测试/临时用途结束要提醒用户释放（MCP 无删除工具，删除不在本技能范围）。释放方式：控制台 EIP 页删除，或 CLI：`hcloud EIP DeletePublicip/v3 --publicip_id=<id> --cli-region=<region>`；Python SDK：`EipClient.delete_publicip(DeletePublicipRequest(publicip_id=<id>))`。
 6. 单个 step 单独推进；创建子网前先建好 VPC；绑定 EIP 前实例必须 ACTIVE 无 current_actions。
 
 ## 2. 工具契约（实测）

@@ -33,7 +33,7 @@
 
 ## 5. MCP 工程侧验收（配套服务器）
 
-- [ ] 59 工具逐一带 `@guard(risk=...)` 声明（READ/WRITE/DANGEROUS）
+- [ ] 71 工具逐一带 `@guard(risk=...)` 声明（READ/WRITE/DANGEROUS）
 - [ ] 三层架构 tools → service → client 单向依赖，tools 层禁 import SDK
 - [ ] `ruff check` + `mypy` + `pytest --cov` 三件套全绿
 - [ ] 只读模式（HUAWEICLOUD_MCP_READ_ONLY）与写开关（RDS_PG_ENABLE_WRITES）双闸生效

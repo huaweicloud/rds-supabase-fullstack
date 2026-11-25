@@ -74,7 +74,9 @@ def read_request(request_ref: str) -> dict[str, Any]:
             f"Request file not found: {request_ref}",
             hint="Create one with write_pg_secret_request first.",
         ) from exc
-    if mode & 0o077:
+    if os.name != "nt" and mode & 0o077:
+        # POSIX-only: on Windows/NTFS stat() maps ACLs to a constant 0o666 -
+        # the bit check is meaningless there (ACL security is OS-managed).
         raise McpToolError(
             "MCP_GUARDRAIL_BLOCKED",
             "Request file permissions too open; expected 0600",

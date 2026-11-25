@@ -10,6 +10,10 @@ import time
 from pathlib import Path
 
 import pytest
+
+# Windows/NTFS: stat() maps ACLs to constant 0o666 - POSIX bit
+# assertions and symlink creation are Unix-only.
+_windows = pytest.mark.skipif(os.name == "nt", reason="POSIX permission bits / symlinks")
 from huaweicloud_mcp_core.errors import McpToolError
 
 from mcp_server_rds_pg.service.plans import PlanStore, intent_digest
@@ -107,6 +111,7 @@ async def test_inspect_never_leaks_digest(plans: PlanStore) -> None:
     assert result["state"] == "prepared"
 
 
+@_windows
 async def test_state_file_permissions(plans: PlanStore, tmp_path: Path) -> None:
     plans.issue(digest(SCOPE_A))
     mode = os.stat(plans.path).st_mode & 0o777
@@ -115,6 +120,7 @@ async def test_state_file_permissions(plans: PlanStore, tmp_path: Path) -> None:
     assert parent_mode == 0o700
 
 
+@_windows
 async def test_symlink_state_file_rejected(tmp_path: Path) -> None:
     real = tmp_path / "real.sqlite3"
     real.touch()

@@ -11,7 +11,7 @@ from huaweicloud_mcp_core.errors import McpToolError
 from huaweicloud_mcp_core.output import clamp_limit, page_result, single_result
 
 from mcp_server_rds_pg.client.m3_apis import CesClient
-from mcp_server_rds_pg.client.sdk_rds import SdkRdsClient
+from mcp_server_rds_pg.client.shared_client import get_shared_client
 from mcp_server_rds_pg.service.mutate import run_mutation
 from mcp_server_rds_pg.service.plans import PlanStore
 
@@ -24,7 +24,7 @@ class ResizeService:
     def __init__(
         self, client: SdkRdsClient | None = None, plans: PlanStore | None = None
     ) -> None:
-        self._client = client or SdkRdsClient()
+        self._client = client or get_shared_client()
         self._plans = plans or PlanStore()
 
     async def resize_flavor(
@@ -192,7 +192,7 @@ class LogService:
     def __init__(
         self, client: SdkRdsClient | None = None, plans: PlanStore | None = None
     ) -> None:
-        self._client = client or SdkRdsClient()
+        self._client = client or get_shared_client()
         self._plans = plans or PlanStore()
 
     @staticmethod
@@ -287,7 +287,7 @@ class ParamService:
     def __init__(
         self, client: SdkRdsClient | None = None, plans: PlanStore | None = None
     ) -> None:
-        self._client = client or SdkRdsClient()
+        self._client = client or get_shared_client()
         self._plans = plans or PlanStore()
 
     async def show_parameters(
@@ -382,7 +382,7 @@ class ExtensionService:
     def __init__(
         self, client: SdkRdsClient | None = None, plans: PlanStore | None = None
     ) -> None:
-        self._client = client or SdkRdsClient()
+        self._client = client or get_shared_client()
         self._plans = plans or PlanStore()
 
     async def list_extensions(
@@ -460,7 +460,7 @@ class MonitorService:
     def __init__(
         self, client: SdkRdsClient | None = None, ces: CesClient | None = None
     ) -> None:
-        self._client = client or SdkRdsClient()
+        self._client = client or get_shared_client()
         self._ces = ces or CesClient()
 
     async def show_metric_data(

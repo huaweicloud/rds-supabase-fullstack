@@ -14,7 +14,7 @@ from typing import Any
 from huaweicloud_mcp_core.errors import McpToolError
 from huaweicloud_mcp_core.output import page_result, single_result
 
-from mcp_server_rds_pg.client.sdk_rds import SdkRdsClient
+from mcp_server_rds_pg.client.shared_client import get_shared_client
 from mcp_server_rds_pg.service.mutate import run_mutation
 from mcp_server_rds_pg.service.plans import PlanStore
 
@@ -29,7 +29,7 @@ class ConnectionService:
         client: SdkRdsClient | None = None,
         plans: PlanStore | None = None,
     ) -> None:
-        self._client = client or SdkRdsClient()
+        self._client = client or get_shared_client()
         self._plans = plans or PlanStore()
 
     async def _find_managed_guard(self, instance_id: str) -> dict[str, Any]:

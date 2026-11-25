@@ -10,7 +10,7 @@ from typing import Any
 from huaweicloud_mcp_core.errors import McpToolError
 from huaweicloud_mcp_core.output import page_result, single_result
 
-from mcp_server_rds_pg.client.sdk_rds import SdkRdsClient
+from mcp_server_rds_pg.client.shared_client import get_shared_client
 from mcp_server_rds_pg.service.mutate import run_mutation
 from mcp_server_rds_pg.service.plans import PlanStore
 from mcp_server_rds_pg.service.request_refs import read_request
@@ -37,7 +37,7 @@ class CatalogService:
     """Creation-planning reads: flavors, datastores, storage types, quotas."""
 
     def __init__(self, client: SdkRdsClient | None = None) -> None:
-        self._client = client or SdkRdsClient()
+        self._client = client or get_shared_client()
 
     async def list_flavors(
         self, *, version: str, availability_zone: str | None = None
@@ -98,7 +98,7 @@ class CreationService:
         catalog: CatalogService | None = None,
         network: Any = None,
     ) -> None:
-        self._client = client or SdkRdsClient()
+        self._client = client or get_shared_client()
         self._plans = plans or PlanStore()
         self._catalog = catalog or CatalogService(client=self._client)
         self._network = network

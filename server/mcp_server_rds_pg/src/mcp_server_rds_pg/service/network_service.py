@@ -21,7 +21,7 @@ from mcp_server_rds_pg.client.network_apis import (
     EpsChannel,
     VpcChannel,
 )
-from mcp_server_rds_pg.client.sdk_rds import SdkRdsClient
+from mcp_server_rds_pg.client.shared_client import get_shared_client
 from mcp_server_rds_pg.service.mutate import run_mutation
 from mcp_server_rds_pg.service.plans import PlanStore
 
@@ -84,7 +84,7 @@ class NetworkService:
         eip: EipChannel | None = None,
         eps: EpsChannel | None = None,
     ) -> None:
-        self._client = client or SdkRdsClient()
+        self._client = client or get_shared_client()
         self._plans = plans or PlanStore()
         self._vpc = vpc or VpcChannel()
         self._eip = eip or EipChannel()

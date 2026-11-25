@@ -194,7 +194,7 @@ export HUAWEICLOUD_PROJECT_ID=<项目ID>      # 缺省经 IAM 自动解析
 
 | # | 操作 | 验收 | 状态 |
 |---|---|---|---|
-| B6b.1 | discover_pg_network | 聚合 EPS+VPC+子网+SG；default_vpc=2159580a… 与 default_subnet=d244effd… 出现在推荐位；SG 带 open_5432 标记；EPS 个人账号正常降级（null+note）不炸整体 | ⏳ |
+| B6b.1 | discover_pg_network | 聚合 EPS+VPC+子网+SG；default_vpc/default_subnet 出现在推荐位；SG 带 open_5432 标记；EPS 个人账号正常降级（null+note）不炸整体 | ⏳ |
 | B6b.2 | list_pg_vpcs | 至少含 default VPC；字段 id/name/cidr/status | ⏳ |
 | B6b.3 | list_pg_subnets(default_vpc) | 含 default 子网；cidr/az/gateway/available_ip_address_count | ⏳ |
 | B6b.4 | list_pg_security_groups | 多组返回；至少一组 open_5432 与控制台规则核对 | ⏳ |
@@ -551,7 +551,7 @@ B4 创建: ⏳ M2 未交付
 
 ### 11.6 M4b 内网域名实测记录（2026-11-25，test01 / rds-pg-mcp-test）
 
-> 场景号 B6.9-B6.11 / A31-A33，实例 `2a942f4a987c4b38aa3c6ed4434742fcin03`（cn-north-4，ACTIVE）。
+> 场景号 B6.9-B6.11 / A31-A33，实例 `<TEST_INSTANCE_ID>`（cn-north-4，ACTIVE）。
 
 **云端通道受阻（IAM 账号级 401）**：本会话与 06:23-15:26 全程（45s/60s/180s 三档间隔共 25+ 次探测），
 对 `iam.myhuaweicloud.com /v3/projects` 的 SDK 签名请求一律返回：

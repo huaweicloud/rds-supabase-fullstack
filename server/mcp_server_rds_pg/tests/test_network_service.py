@@ -14,8 +14,8 @@ from conftest import FakeSdkRdsClient
 from mcp_server_rds_pg.service.network_service import NetworkService
 from mcp_server_rds_pg.service.plans import PlanStore
 
-DEFAULT_VPC_ID = "2159580a-3ea2-408c-aeac-c029a7ae5712"
-DEFAULT_SUBNET_ID = "d244effd-2d91-4cef-8c88-0c75c8019d7f"
+DEFAULT_VPC_ID = "11111111-2222-3333-4444-555555555555"
+DEFAULT_SUBNET_ID = "66666666-7777-8888-9999-000000000000"
 DEFAULT_SG_ID = "5f4251d3-6c16-4345-b2bb-8947dc7e4d72"
 
 

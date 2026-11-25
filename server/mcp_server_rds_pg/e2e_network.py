@@ -1,12 +1,13 @@
 # E2E driver for network/EIP module (run via: uv run python e2e_network.py <phase>)
 # Phases: read | create | eip | plan
-import asyncio, json, os, sys, time
+import asyncio
+import os, json, os, sys, time
 
-AK = "HPUAQ7RIEWIUJTO98UVW"
-SK = "UCFOACM0ohu51hsShY1aAqQy2MOIzt8Y0kC90Er5"
+AK = os.environ.get("HUAWEICLOUD_ACCESS_KEY", "")
+SK = os.environ.get("HUAWEICLOUD_SECRET_KEY", "")
 REGION = "cn-north-4"
 CWD = "/Users/tianjia/Desktop/pg mcp/mcp_server_rds_pg"
-TEST01 = "2a942f4a987c4b38aa3c6ed4434742fcin03"
+TEST01 = "<TEST_INSTANCE_ID>"
 
 from mcp import ClientSession
 from mcp.client.stdio import StdioServerParameters, stdio_client

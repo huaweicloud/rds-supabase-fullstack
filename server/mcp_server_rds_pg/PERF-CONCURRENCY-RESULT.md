@@ -120,4 +120,4 @@ T1a: 成功6/6 failed=0 unknown=0 账本: submitted卡死=0 孤儿prepared=0 重
 
 ## 7. 资源清单（用户手动删除）
 
-6 个实例（按控制台名称前缀 `perf-batch-` 筛选删除），详见 `/tmp/t1a_resources.json`。费用从创建起计，截至报告产出约 0.6h/实例，估 ~¥1。**不要删除 rds-pg-mcp-test（2a942f4a...in03，非测试创建物）。**
+6 个实例（按控制台名称前缀 `perf-batch-` 筛选删除），详见 `/tmp/t1a_resources.json`。费用从创建起计，截至报告产出约 0.6h/实例，估 ~¥1。**不要删除 rds-pg-mcp-test（<TEST_INSTANCE_ID>，非测试创建物）。**

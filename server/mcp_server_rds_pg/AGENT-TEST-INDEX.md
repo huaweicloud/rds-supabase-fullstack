@@ -214,13 +214,13 @@ L4 AI 守卫:             AI-1..5: 逐条结果
 
 | 资源 | ID | 名称/说明 | 状态（截至 2026-11-25） |
 |---|---|---|---|
-| RDS 实例 | `388238c29ff0489b8d5ef701e29c86d5in03` | rds-pg-e2e-test（A24 产物） | 待用户处置（持续计费） |
-| RDS 实例 | `2a942f4a987c4b38aa3c6ed4434742fcin03` | rds-pg-mcp-test（主测试实例） | ACTIVE，保留 |
+| RDS 实例 | `<E2E_INSTANCE_ID>` | rds-pg-e2e-test（A24 产物） | 待用户处置（持续计费） |
+| RDS 实例 | `<TEST_INSTANCE_ID>` | rds-pg-mcp-test（主测试实例） | ACTIVE，保留 |
 | VPC | `74d8df44-a3de-4d73-b820-a15490ddc300` | e2e5-vpc-5110 | 空闲免费，待删 |
 | 子网 | `cd0cb6c8-2f90-46de-97fb-99695461a45a` | e2e5-sub-5110 | 同上 |
 | 安全组 | `2d89fa87-e6b0-4550-b3c6-dd37417b8dd6` | e2e5-sg-5110 | 待删 |
 | 安全组 | `3da17142-ed6f-46db-993e-a103b79ea352` | e2e5-sg2-5110（N14） | 待删 |
-| EIP | `2f2fca68-7784-4143-9dfa-2cccdeb2ba41` | 123.249.68.119 | **已释放**（DeletePublicip 204） |
+| EIP | `2f2fca68-7784-4143-9dfa-2cccdeb2ba41` | <TEST_EIP_ADDR> | **已释放**（DeletePublicip 204） |
 | EIP（前次遗留） | `c5357ae5-a014-4459-9866-cc45fe23127d` / `cf530f7d-40bf-4c7f-a9f4-71a977e2b72e` / `db98fb88-5ddf-4a4a-8d1a-6328c2d13f81` | e2e-eip-* 三个 DOWN 闲置 | 持续计费，非本次创建，仅提醒 |
 | 库/账号残留 | — | e2e_testdb / e2e_user（主实例上） | 待清理 |
 

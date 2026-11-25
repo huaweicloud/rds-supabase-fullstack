@@ -53,7 +53,7 @@ cp -R ~/rsf/skills/database/rds/huaweicloud-rds-pg-ops <工作项目>/.claude/sk
 在 `<工作项目>` 启动 `claude`，输入「帮我列出 cn-north-4 的 PG 实例」——预期：
 Agent 调用 `list_pg_instances` 并返回清单。
 
-## 2. 验收场景脚本（26 条，覆盖 Skill 全部路由场景）
+## 2. 验收场景脚本（35 条：阶段一 17 + 阶段二 13 + 阶段三 5，覆盖 Skill 全部路由场景）
 
 > 每条=一句用户输入。观察点标注「应」的行为；偏离即记录（那就是 Skill 要修的点）。
 
@@ -139,6 +139,25 @@ Agent 调用 `list_pg_instances` 并返回清单。
 | A29 | 「维护窗口改到凌晨 2 点到 6 点」 | change_pg_ops_window("02:00","06:00") 两段式（4h 上限/不跨午夜语义） |
 | A30 | 「磁盘加 10 个 G」 | extend_pg_volume 两段式 + 计费增长 warning 转述（**会产生真实费用，可选执行**） |
 
+### 阶段三：AI 应用守卫场景（通用 AI 应用守卫，A31-A35 / AI-1..AI-5）
+
+> 机制背景：`assert_not_ai_managed`（service/mutate.py）挂在 run_mutation 管线——所有写工具提交前查
+> RDS `ListAiApplications` API，实例被任何 AI 应用（Supabase/GraphRAG/ContextBase/未来类型）绑定为
+> managed_instance 时阻断，错误信封含应用名+指引。配套：change_pg_security_group 保留 supabase
+> 命名探测兜底（AI 通道不可用时降级）。
+>
+> AI-3/AI-5 无法在真实云端制造（真绑定需先创建 AI 应用，公测功能且产生费用，不在范围）——用
+> service 层 mock 注入执行：`uv run pytest tests/test_ai_guard_e2e.py`（fake 注入是 E2E 中唯一
+> 可行的等效方式，走的是真实的 run_mutation + PlanStore 账本管线）。
+
+| # | 操作 | 期望 |
+|---|---|---|
+| AI-1 | list_ai_applications 能力探测：直接用 SDK（huaweicloudsdkrds `ListAiApplicationsRequest`）列出账号 AI 应用与绑定实例（可能为空——记录即可） | 返回结构含 `managed_instance_id` 字段（SDK AIApplicationListItem.openapi_types 验证） |
+| AI-2 | 对 test01（未被 AI 应用绑定）执行一个写操作预览+提交（change_pg_ops_window "02:00"/"06:00"，唯一值防账本冲突） | 正常 submitted——守卫不误伤普通实例 |
+| AI-3 | 模拟绑定：账号无真实 AI 应用，用 mock 方式——tests/test_ai_guard_e2e.py monkeypatch client.list_ai_applications 返回假绑定，验证 reboot/ops_window/port 等写工具提交返回 MCP_GUARDRAIL_BLOCKED 且信封含应用名（真实 run_mutation+PlanStore 账本路径） | 阻断+应用名+指引；预览不受影响；plan 未被消费 |
+| AI-4 | 对（真实或假绑定的）实例执行 show_pg_instance / list_pg_databases | 正常返回——守卫只拦写 |
+| AI-5 | 模拟：monkeypatch 让 list_ai_applications 抛异常（API 不可用），对挂 supabase 命名组的实例调 change_pg_security_group 预览 | 命名探测兜底阻断（service 层脚本验证）；普通命名组不误伤 |
+
 ### 横向纪律观察（贯穿阶段二）
 
 | 观察点 | 判定 |
@@ -159,6 +178,8 @@ A14 插件列表: A15 副本列表: A16 负向SQL:  A17 负向引擎:
 A18 两段式:   A19 job轮询:  A20 停机:     A21 启动:
 A22 密码纪律: A23 编排门:   A24 分阶段:   A25 备份策略:
 A26 串行链:   A27 参数改:   A28 装插件:   A29 维护窗口:  A30(可选)扩容:
+阶段三（AI 应用守卫，A31-A35 / AI-1..AI-5）：
+AI-1 API探测:  AI-2 无绑定基线:  AI-3 守卫阻断:  AI-4 只读不受影响:  AI-5 命名兜底:
 横向: 串行纪律 / unknown 处置 / 审计核验
 ```
 

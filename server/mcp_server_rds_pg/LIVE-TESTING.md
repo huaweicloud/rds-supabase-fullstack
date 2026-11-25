@@ -7,7 +7,7 @@
 
 | 维度 | 测试组 | 覆盖设计文档 |
 |---|---|---|
-| 机制 | G1-G6 | §4（两段式）§5（request_ref）§7（环境变量）+ core 护栏 |
+| 机制 | G1-G6（+G7 AI 应用守卫） | §4（两段式）§5（request_ref）§7（环境变量）+ core 护栏 |
 | 业务场景 | B1-B16 | §3.1-§3.10 全部十个场景，一场景一组 |
 | 机制进阶 | E1-E3 | §6 编排工具（三档确认级别、分阶段 apply_steps） |
 
@@ -91,6 +91,12 @@ export HUAWEICLOUD_PROJECT_ID=<项目ID>      # 缺省经 IAM 自动解析
 | G6.1 | MCP 客户端 initialize | server 名 huaweicloud-rds-pg |
 | G6.2 | tools/list | 6 工具按序注册（M1 数量随版本增长） |
 | G6.3 | /health（HTTP 模式） | 200 {"status":"ok"} |
+
+### G7 AI 应用守卫（通用守卫：ListAiApplications 绑定检测）
+
+| # | 操作 | 验收 |
+|---|---|---|
+| G7.1 | 详见 **AGENT-E2E-GUIDE.md 阶段三（AI-1..AI-5）** | AI-1 SDK 探测 API 字段；AI-2 无绑定不误伤；AI-3 绑定阻断（信封含应用名，tests/test_ai_guard_e2e.py mock 注入）；AI-4 只读不受影响；AI-5 API 不可用时 supabase 命名兜底 |
 
 ---
 
@@ -176,6 +182,30 @@ export HUAWEICLOUD_PROJECT_ID=<项目ID>      # 缺省经 IAM 自动解析
 | B6.6 | change port 两段式 | warning 含 4-10 分钟重启窗口；改后 psql 用新端口连 | ⏳ |
 | B6.7 | change security_group | **全量替换语义**：提交清单未含的既有组被移除——测试保留组显式列入 | ⏳ |
 | B6.8 | list_pg_hba_conf + change | hba 变更后 ListPostgresqlHbaInfoHistory 可查历史 | ⏳ |
+
+### B6b 网络环境 + EIP（M4，12 工具）
+
+**用户故事**：「建实例前先把网络弄好」/「给这台实例开公网」→ §3.2b 网络环境模块
+
+测试命名一律带时间戳（e2e-test-<res>-<ts>）避免 PlanStore 账本冲突；写前清 stuck 账本行。
+
+| # | 操作 | 验收 | 状态 |
+|---|---|---|---|
+| B6b.1 | discover_pg_network | 聚合 EPS+VPC+子网+SG；default_vpc=2159580a… 与 default_subnet=d244effd… 出现在推荐位；SG 带 open_5432 标记；EPS 个人账号正常降级（null+note）不炸整体 | ⏳ |
+| B6b.2 | list_pg_vpcs | 至少含 default VPC；字段 id/name/cidr/status | ⏳ |
+| B6b.3 | list_pg_subnets(default_vpc) | 含 default 子网；cidr/az/gateway/available_ip_address_count | ⏳ |
+| B6b.4 | list_pg_security_groups | 多组返回；至少一组 open_5432 与控制台规则核对 | ⏳ |
+| B6b.5 | create_pg_vpc(e2e-test-vpc-<ts>) 两段式 | 预览信封 changes/warnings/plan_id；提交后 list_pg_vpcs 可见；控制台核对 CIDR | ⏳ |
+| B6b.6 | create_pg_subnet（在新 VPC，192.168.6.0/24，cn-north-4a） | 提交后 list 可见；**CIDR 不在 VPC 内被拒**（负向：10.99.0.0/24 → MCP_INVALID_ARGS） | ⏳ |
+| B6b.7 | create_pg_security_group(e2e-test-sg-<ts>, open_5432_from='10.0.0.0/24') | 组创建+规则创建；list_pg_security_groups 中该组 open_5432=true；控制台规则 remote 10.0.0.0/24 TCP 5432 | ⏳ |
+| B6b.8 | SG 负向：无来源 | open_5432=true 且无 open_5432_from/subnet_id → MCP_INVALID_ARGS 拒绝 | ⏳ |
+| B6b.9 | list_pg_enterprise_projects | EPS v1 钉 cn-north-4；个人账号降级 note | ⏳ |
+| B6b.10 | create_pg_enterprise_project | **SKIPPED-PERM**（管理员权限+组织级资源，只测预览信封不提交） | ⏳ |
+| B6b.11 | create_pg_eip(e2e-test-eip-<ts>, billing_type=traffic) 两段式 | 按流量计费（最便宜）；USAGE_FOR=rds-pg 标签写入；billing_type 缺失/非法 → 拒绝（user-only） | ⏳ |
+| B6b.12 | bind_pg_instance_eip(test01, 新 EIP id) 两段式 | 预览含公网暴露+费用 warning；提交后 show_pg_instance public_ips 出现该 IP；test01 忙（非 ACTIVE/带 current_actions）→ 等待重试最多 15 分钟，仍忙记 SKIPPED-BUSY | ⏳ |
+| B6b.13 | unbind_pg_instance_eip(test01) 两段式 | warning「解绑不释放不停止计费」；提交后 public_ips 清空 | ⏳ |
+| B6b.14 | 测试收尾释放 EIP | EIP 未绑定状态也计保有费——用 hcloud/SDK DeletePublicip 释放（工具面无删除）；释放后确认 | ⏳ |
+| B6b.15 | plan_pg_instance_creation | baseline.network 模块出现（placement+SG 决策）；checklist 含 network/security_group/eip 三档；needs_public_access=true 时 apply_steps 含 eip_create/eip_bind | ⏳ |
 
 ### B7 备份管理 ⏳ M2
 
@@ -322,6 +352,7 @@ unset HUAWEICLOUD_MCP_READ_ONLY
 | M1（已完成） | 6 工具 | G1-G6 + B1(部分) + B2 + B3 + B15 + B16 |
 | M2 | P0 全量（创建编排/连接/备份/库账号） | B1 补全 + B4 + B5 + B6 + B7 + B8 + E1-E3 |
 | M3 | P1 全量 + Skill | B9 + B10 + B11 + B12 + B13 + B14 |
+| M4 | 网络环境 + EIP 12 工具 | B6b（+B6.4/B6.5 由 bind/unbind 实测点亮） |
 
 ## 8. 测试结果记录模板
 

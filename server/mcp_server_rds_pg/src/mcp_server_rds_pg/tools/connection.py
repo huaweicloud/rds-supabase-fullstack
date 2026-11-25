@@ -91,6 +91,65 @@ async def change_pg_security_group(
 
 @mcp.tool()
 @guard(risk=ToolRisk.READ)
+async def show_pg_dns_name(instance_id: str) -> dict[str, Any]:
+    """Get the intranet DNS name of an instance (if enabled).
+
+    Scenario: checking the domain-based connection endpoint before pointing
+    applications at it, or verifying a recent rename.
+
+    Args:
+        instance_id: exact instance id.
+    """
+    return await ConnectionService().show_dns_name(instance_id=instance_id)
+
+
+@mcp.tool()
+@guard(risk=ToolRisk.WRITE)
+async def create_pg_dns_name(
+    instance_id: str, dns_type: str = "private", confirm: bool = False,
+    plan_id: str | None = None,
+) -> dict[str, Any]:
+    """Enable the intranet DNS name for an instance (two-stage).
+
+    After creation, applications inside the VPC can connect via the domain
+    instead of the private IP. Requires the instance to be ACTIVE.
+
+    Args:
+        instance_id: exact instance id.
+        dns_type: domain scope, only 'private' (intranet) is supported.
+        confirm: stage-2 flag.
+        plan_id: plan from the preview call.
+    """
+    return await ConnectionService().create_dns_name(
+        instance_id=instance_id, dns_type=dns_type, confirm=confirm, plan_id=plan_id
+    )
+
+
+@mcp.tool()
+@guard(risk=ToolRisk.WRITE)
+async def update_pg_dns_name(
+    instance_id: str, dns_name: str, confirm: bool = False,
+    plan_id: str | None = None,
+) -> dict[str, Any]:
+    """Rename the intranet DNS name to a custom name (two-stage).
+
+    The OLD domain stops resolving immediately after the change - every
+    connection string using the old domain breaks.
+
+    Args:
+        instance_id: exact instance id.
+        dns_name: custom domain label; lowercase letters, digits and
+            hyphens only (no leading/trailing hyphen).
+        confirm: stage-2 flag.
+        plan_id: plan from the preview call.
+    """
+    return await ConnectionService().change_dns_name(
+        instance_id=instance_id, dns_name=dns_name, confirm=confirm, plan_id=plan_id
+    )
+
+
+@mcp.tool()
+@guard(risk=ToolRisk.READ)
 async def list_pg_hba_conf(instance_id: str) -> dict[str, Any]:
     """List pg_hba.conf client-authentication rules of an instance.
 

@@ -11,6 +11,22 @@ psql 示例（hint 已内置）：
 psql --no-readline -h <private_ip> -p 5432 dbname=postgres user=root
 ```
 
+已开通内网域名时，`dns_name` 字段非空，可直接用域名替代内网 IP 作 host。
+
+## 内网域名（DNS 域名替代 IP 连接）
+
+链路：**申请 →（可选）自定义名 → 查询复核**：
+
+1. `show_pg_dns_name(instance_id)` → 查当前域名（未开通时 dns_name 为空——属正常结构）
+2. `create_pg_dns_name(instance_id, dns_type="private", 两段式)` → 开通内网域名（需实例 ACTIVE）；开通后 `show_pg_connection_info` 的 `dns_name` 出现
+3. `update_pg_dns_name(instance_id, dns_name, 两段式)` → 改为自定义域名；**名称规则**：小写字母/数字/连字符（首尾不得为连字符）
+4. 再 `show_pg_dns_name` 复核新名
+
+**纪律（MUST）**：
+- **修改域名后旧域名立即失效**——所有仍用旧域名的连接串会断，提交前必须转述此 warning 并通知应用方
+- 域名仅同 VPC 内网解析有效，不改变公网访问路径
+- 自定义名先做唯一性/格式自检，避免云端拒绝后重试浪费两段式 plan
+
 ## SSL 加密连接
 
 1. `download_pg_ssl_cert(instance_id)` → 临时下载链接（有效期短，立刻下载）

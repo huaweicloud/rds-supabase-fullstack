@@ -3,7 +3,7 @@
 > 目标：**任何地方的任何 Agent**，克隆本仓库后仅凭本文档即可自主执行 rds-pg MCP + Skill 的全部测试，
 > 并产出结构化结果报告。不含任何本机特定路径依赖（本机 ID 只出现在第 6 节清理参考表）。
 > 配套阅读：`LIVE-TESTING.md`（机器级测试矩阵 + §11 覆盖矩阵）、`AGENT-E2E-GUIDE.md`（场景全集原始定义）、
-> `PERF-SPEC.md`（性能口径）。被测组件：`mcp-huaweicloud-rds-pg`（71 工具）+ Skill
+> `PERF-SPEC.md`（性能口径）。被测组件：`mcp-huaweicloud-rds-pg`（74 工具）+ Skill
 > `skills/database/rds/huaweicloud-rds-pg-ops`。
 
 ---
@@ -70,7 +70,7 @@ SK 大小写（401 APIGW.0301 同形）、AK/SK 权限（403 DBS.280015 → refe
 |---|---|---|---|---|---|
 | L1 | 单元/服务层 pytest | `uv run pytest -q --no-cov` | 1 分钟 | 66 passed 全绿 | 直接贴 pytest 输出行 |
 | L2 | 机器级 G 组（机制）+ B 组（业务） | LIVE-TESTING.md §3-§5，逐条经 MCP 客户端或 agent 对话执行 | G 组 30 分钟；B 组 2-4 小时（可挑选） | 每条验收栏所述信封/行为 | LIVE-TESTING §8 |
-| L3 | Skill 级 Agent E2E（**本索引第 3 节执行卡**） | 工作项目内 agent 会话，逐卡执行 | 主套件 35 条约 1.5-2h + 网络 14 条约 30-60 分钟 + AI 5 条约 30 分钟 | 每卡「判定标准」栏：PASS/FAIL/GAP | 第 5 节模板 |
+| L3 | Skill 级 Agent E2E（**本索引第 3 节执行卡**） | 工作项目内 agent 会话，逐卡执行 | 主套件 38 条约 1.5-2h + 网络 14 条约 30-60 分钟 + AI 5 条约 30 分钟 | 每卡「判定标准」栏：PASS/FAIL/GAP | 第 5 节模板 |
 | L4 | AI 应用守卫 5 条 | 卡 AI-1..AI-5（AI-3/AI-5 用 `uv run pytest tests/test_ai_guard_e2e.py`） | 30 分钟 | 阻断信封含应用名 / 只读不误伤 | 第 5 节模板 |
 
 > 执行顺序：L1 → 冒烟 → L3 阶段一（读）→ L3 阶段二（写）→ L3 网络组 → L4 → L2 挑选机器级条目。
@@ -78,14 +78,14 @@ SK 大小写（401 APIGW.0301 同形）、AK/SK 权限（403 DBS.280015 → refe
 
 ---
 
-## 3. 逐场景执行卡（54 条：A1-A30 + N1-N14 + AI-1..AI-5）
+## 3. 逐场景执行卡（57 条：A1-A33 + N1-N14 + AI-1..AI-5）
 
 > 每卡四栏：用户指令（原话输入给 agent）→ 期望 Agent 行为（工具链+纪律点）→ 判定标准 → 证据要求。
 > 判定口径：**PASS**=行为+结果双达标；**FAIL**=工具层缺陷或纪律违规；**GAP**=Skill 指引缺失（agent 做对但靠猜/靠报错试出）。
 > 前提实例：一台 ACTIVE 的 postPaid PG 测试实例（下称 `<inst>`；本机参考值见第 6 节）。
 > 带 **-R** 的卡 = 历史 E2E 发现缺陷后的修复复验卡（原缺陷已修复，此卡为回归确认）。
 
-### 3.1 阶段一：触发与路由（READ_ONLY=true，A1-A17）
+### 3.1 阶段一：触发与路由（READ_ONLY=true，A1-A17 + A31）
 
 | 卡 | 用户指令 | 期望 Agent 行为 | 判定标准 | 证据要求 |
 |---|---|---|---|---|
@@ -106,8 +106,9 @@ SK 大小写（401 APIGW.0301 同形）、AK/SK 权限（403 DBS.280015 → refe
 | A15 | 「这台实例有没有挂只读副本？」 | list_pg_read_replicas(primary_id) | 空清单=正常（无副本） | items |
 | A16 | 「帮我写个 SQL 优化一下表结构」 | **不调云工具**，声明 SQL 质量不在范围 | 拒答且零工具调用 | 无工具调用记录 |
 | A17 | 「把我的 MySQL 实例 rds-cby 重启一下」 | 引擎守卫拒/NOT_FOUND + 不硬干 | 拒绝信封转述 | 错误信封 |
+| A31 | 「这台实例有没有内网域名？现在叫什么？」 | show_pg_dns_name | 未开通时空结构正常返回（dns_name=null）=PASS；已开通则 dns_name/object_id 齐全 | dns_name/dns_type |
 
-### 3.2 阶段二：写操作纪律（开写开关，A18-A30）
+### 3.2 阶段二：写操作纪律（开写开关，A18-A30 + A32-A33）
 
 | 卡 | 用户指令 | 期望 Agent 行为 | 判定标准 | 证据要求 |
 |---|---|---|---|---|
@@ -124,6 +125,8 @@ SK 大小写（401 APIGW.0301 同形）、AK/SK 权限（403 DBS.280015 → refe
 | A28 | 「给 postgres 库装 pg_stat_statements」 | install 两段式 → 列表复核出现 | created:true + 复核 | created/复核 |
 | A29 | 「维护窗口改到凌晨 2 点到 6 点」 | change_pg_ops_window("02:00","06:00") 两段式 | submitted；负向 5h 窗口记录云端行为 | submitted |
 | A30 | 「磁盘加 10 个 G」（**可选**） | extend_pg_volume 两段式 + 计费 warning 转述 | 产生真实费用，可 SKIPPED-BY-COST | （若执行）新容量 |
+| A32 | 「给这台实例开个内网域名」 | create_pg_dns_name 两段式（dns_type=private）→ show_pg_dns_name 复核 + show_pg_connection_info 看 dns_name | 预览含域名影响 warning；复核域名出现 | plan_id + 新 dns_name |
+| A33 | 「域名改成 e2e-test-<ts>」 | update_pg_dns_name 两段式 → **「旧域名立即失效、依赖域名的连接会断」warning 必须转述** | warning 转述到位 + show 复核新名；负向名称（大写/下划线）参数层拒 | 新旧 dns_name 对比 |
 
 ### 3.3 网络组（N1-N14；资源名一律带时间戳 ts）
 
@@ -187,7 +190,7 @@ SK 大小写（401 APIGW.0301 同形）、AK/SK 权限（403 DBS.280015 → refe
 L1 单元 pytest:        ____ passed / ____ failed
 L2 机器级 G 组:         G1: __/__ G2: __/__ G3: __/__ G4: __/__ G5: __/__ G6: __/__ G7: __/__
 L2 机器级 B 组（挑选）:  <执行的 B 组号与结果>
-L3 Skill 级主套件:      A1-A30:  PASS __ / FAIL __ / GAP __ / SKIPPED __（逐卡列出非 PASS）
+L3 Skill 级主套件:      A1-A33:  PASS __ / FAIL __ / GAP __ / SKIPPED __（逐卡列出非 PASS）
 L3 Skill 级网络套件:    N1-N14:  PASS __ / FAIL __ / GAP __
 L4 AI 守卫:             AI-1..5: 逐条结果
 横向纪律:               串行 / unknown / 审计 / 泄漏（各 PASS|FAIL）

@@ -2,8 +2,8 @@
 
 > 目的：验证 Skill（huawei-cloud-rds-pg-ops）+ MCP（mcp-huaweicloud-rds-pg）在真实 Agent
 > 会话中的完整链路：触发 → 路由 → 纪律遵守 → 正确执行。
-> **覆盖 Skill 路由表全部 12 个业务场景 + 网络/EIP 模块 + AI 应用守卫**，共 49 条验收对话
-> （主链 35 = A1-A30 + AI-1..AI-5；网络 N1-N14 见第 6 节）。
+> **覆盖 Skill 路由表全部 12 个业务场景 + 网络/EIP 模块 + AI 应用守卫 + 内网域名**，共 52 条验收对话
+> （主链 38 = A1-A33 + AI-1..AI-5；网络 N1-N14 见第 6 节）。
 > 用时：准备 10 分钟 + 每场景 2-5 分钟（全跑约 2.5-3 小时）。
 > 前提：本机已装 Claude Code 与 uv；测试实例 rds-pg-mcp-test（cn-north-4）。
 > 逐场景执行卡（含判定标准与证据要求）的 Agent 消费版：**AGENT-TEST-INDEX.md**。
@@ -55,7 +55,7 @@ cp -R ~/rsf/skills/database/rds/huaweicloud-rds-pg-ops <工作项目>/.claude/sk
 在 `<工作项目>` 启动 `claude`，输入「帮我列出 cn-north-4 的 PG 实例」——预期：
 Agent 调用 `list_pg_instances` 并返回清单。
 
-## 2. 验收场景脚本（35 条：阶段一 17 + 阶段二 13 + 阶段三 5，覆盖 Skill 全部路由场景）
+## 2. 验收场景脚本（38 条：阶段一 18 + 阶段二 15 + 阶段三 5，覆盖 Skill 全部路由场景）
 
 > 每条=一句用户输入。观察点标注「应」的行为；偏离即记录（那就是 Skill 要修的点）。
 > 含 PASS/FAIL/GAP 判据与信封证据要求的执行卡形态见 **AGENT-TEST-INDEX.md §3**（54 卡全集，agent 可直接消费）。
@@ -74,6 +74,7 @@ Agent 调用 `list_pg_instances` 并返回清单。
 | A3 | 「应用要连这个库，给我连接信息」 | show_pg_connection_info → IP/端口/HA + pssl 连接 hint |
 | A4 | 「下载一份 SSL 证书」 | download_pg_ssl_cert → 临时链接 + 时效提示 |
 | A5 | 「看看 pg_hba 现在有哪些规则」 | list_pg_hba_conf → 规则清单 |
+| A31 | 「这台实例有没有内网域名？现在叫什么？」 | show_pg_dns_name → 当前 dns_name（未开通=空结构正常返回） |
 
 **备份场景（backup.md，只读部分）**
 
@@ -141,8 +142,10 @@ Agent 调用 `list_pg_instances` 并返回清单。
 | A28 | 「给 postgres 库装 pg_stat_statements」 | install 两段式 → 列表复核出现 |
 | A29 | 「维护窗口改到凌晨 2 点到 6 点」 | change_pg_ops_window("02:00","06:00") 两段式（4h 上限/不跨午夜语义） |
 | A30 | 「磁盘加 10 个 G」 | extend_pg_volume 两段式 + 计费增长 warning 转述（**会产生真实费用，可选执行**） |
+| A32 | 「给这台实例开个内网域名」 | create_pg_dns_name 两段式（dns_type=private）→ 提交 → show_pg_dns_name 复核域名出现；show_pg_connection_info 的 dns_name 出现 |
+| A33 | 「域名改成 e2e-test-<ts>」 | update_pg_dns_name 两段式 → **「旧域名立即失效、依赖域名的连接会断」warning 必须转述给用户** → 提交 → show 复核新名 |
 
-### 阶段三：AI 应用守卫场景（通用 AI 应用守卫，A31-A35 / AI-1..AI-5）
+### 阶段三：AI 应用守卫场景（通用 AI 应用守卫，AI-1..AI-5；原 A31-A35 编号让位于 M4b 域名卡 A31-A33）
 
 > 机制背景：`assert_not_ai_managed`（service/mutate.py）挂在 run_mutation 管线——所有写工具提交前查
 > RDS `ListAiApplications` API，实例被任何 AI 应用（Supabase/GraphRAG/ContextBase/未来类型）绑定为
@@ -172,16 +175,18 @@ Agent 调用 `list_pg_instances` 并返回清单。
 ## 3. 结果记录模板
 
 ```
-阶段一（A1-A17，17 条）：
+阶段一（A1-A17 + A31，18 条）：
 A1 列实例:    A2 状态:     A3 连接信息:  A4 SSL:      A5 hba:
 A6 备份策略:  A7 备份列表: A8 CPU 指标:  A9 指标元数据:
 A10 慢日志:   A11 错误日志: A12 库账号:   A13 参数查询:
 A14 插件列表: A15 副本列表: A16 负向SQL:  A17 负向引擎:
-阶段二（A18-A30，13 条）：
+A31 域名查询:
+阶段二（A18-A30 + A32-A33，15 条）：
 A18 两段式:   A19 job轮询:  A20 停机:     A21 启动:
 A22 密码纪律: A23 编排门:   A24 分阶段:   A25 备份策略:
 A26 串行链:   A27 参数改:   A28 装插件:   A29 维护窗口:  A30(可选)扩容:
-阶段三（AI 应用守卫，A31-A35 / AI-1..AI-5）：
+A32 开域名:   A33 改域名名:
+阶段三（AI 应用守卫，AI-1..AI-5）：
 AI-1 API探测:  AI-2 无绑定基线:  AI-3 守卫阻断:  AI-4 只读不受影响:  AI-5 命名兜底:
 横向: 串行纪律 / unknown 处置 / 审计核验
 ```

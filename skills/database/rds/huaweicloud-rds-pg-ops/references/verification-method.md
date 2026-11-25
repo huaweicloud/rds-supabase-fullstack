@@ -12,7 +12,7 @@
 |---|---|---|---|
 | V1.1 | uv 环境可用 | `cd server/mcp_server_rds_pg && uv sync` | 依赖解析成功，无错误 |
 | V1.2 | MCP 服务器可拉起 | `uv run mcp-huaweicloud-rds-pg` | stdio 启动不崩溃；`-t streamable-http` 下 `/health` 返回 200 |
-| V1.3 | 宿主注册生效 | 宿主内 `tools/list` | 返回 71 工具，名称 `huaweicloud-rds-pg` |
+| V1.3 | 宿主注册生效 | 宿主内 `tools/list` | 返回 74 工具，名称 `huaweicloud-rds-pg` |
 | V1.4 | 凭证已配置（带外） | 宿主内调用 `list_pg_instances` | 返回 page_result 信封（非凭证错误）；凭证从未出现在对话中 |
 | V1.5 | 只读护栏 | `HUAWEICLOUD_MCP_READ_ONLY=true` 时调 `reboot_pg_instance` | 返回 `MCP_READ_ONLY` 拦截信封 |
 
@@ -36,7 +36,7 @@
 
 | 规范五连验 | 本技能落地 |
 |---|---|
-| 命令格式验证 | 工具命名 `动词_对象`、71 工具逐一带 `@guard(risk=...)` 声明（对 MCP 型技能替代 hcloud 命令格式检查） |
+| 命令格式验证 | 工具命名 `动词_对象`、74 工具逐一带 `@guard(risk=...)` 声明（对 MCP 型技能替代 hcloud 命令格式检查） |
 | 参数格式验证 | 写工具统一 `confirm: bool` + `plan_id` 契约；密码一律 `password_ref`（request_ref 别名），明文不入参 |
 | 输出格式验证 | 统一 JSON 信封（page_result / confirmation_required / submitted / 错误信封含 request_id + hint） |
 | 错误处理验证 | 凭证缺失、实例不存在（MCP_NOT_FOUND）、实例忙（DBS.201015）、权限不足（403 DBS.280015）、只读拦截均有明确信封与 hint |

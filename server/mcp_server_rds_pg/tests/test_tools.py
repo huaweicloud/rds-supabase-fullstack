@@ -33,6 +33,9 @@ EXPECTED_TOOLS = {
     "change_pg_security_group": ToolRisk.DANGEROUS,
     "list_pg_hba_conf": ToolRisk.READ,
     "change_pg_hba_conf": ToolRisk.WRITE,
+    "show_pg_dns_name": ToolRisk.READ,
+    "create_pg_dns_name": ToolRisk.WRITE,
+    "update_pg_dns_name": ToolRisk.WRITE,
     "show_pg_backup_policy": ToolRisk.READ,
     "set_pg_backup_policy": ToolRisk.WRITE,
     "create_pg_manual_backup": ToolRisk.WRITE,
@@ -106,6 +109,8 @@ def test_mutation_tools_have_confirm_parameter() -> None:
         "create_pg_eip",
         "bind_pg_instance_eip",
         "unbind_pg_instance_eip",
+        "create_pg_dns_name",
+        "update_pg_dns_name",
     ):
         assert tool_supports_confirm(tool_name) is True, tool_name
     assert tool_supports_confirm("list_pg_instances") is False

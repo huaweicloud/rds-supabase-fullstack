@@ -45,6 +45,13 @@ class ConnectionService:
         instance = await InstanceService(client=self._client, plans=self._plans)._find(
             instance_id
         )
+        dns: dict[str, Any] | None = None
+        try:
+            dns = await self._client.show_dns_name(instance_id=instance_id)
+        except Exception:
+            # DNS capability unavailable in this region - degrade to the
+            # IP-only view (the domain is optional connection info).
+            dns = None
         return single_result(
             {
                 "instance_id": instance_id,
@@ -54,12 +61,15 @@ class ConnectionService:
                 "public_ips": instance.get("public_ips") or [],
                 "port": instance.get("port"),
                 "ha": instance.get("ha"),
+                "dns_name": (dns or {}).get("dns_name"),
             },
             hints=[
-                "psql: psql --no-readline -h <private_ip> -p <port> "
+                "psql: psql --no-readline -h <private_ip or dns_name> -p <port> "
                 "dbname=postgres user=root",
                 "Use download_pg_ssl_cert for encrypted connections "
                 "(sslmode=verify-ca).",
+                "If dns_name is set, the intranet domain can replace the"
+                " private IP in connection strings.",
             ],
         )
 
@@ -160,6 +170,101 @@ class ConnectionService:
             client=self._client,
             confirm=confirm,
             plan_id=plan_id,
+        )
+
+    async def create_dns_name(
+        self, *, instance_id: str, dns_type: str = "private", confirm: bool,
+        plan_id: str | None,
+    ) -> dict[str, Any]:
+        if dns_type != "private":
+            raise McpToolError(
+                "MCP_INVALID_ARGS",
+                f"Unsupported dns_type: {dns_type!r}",
+                hint="Only 'private' (intranet domain) is supported.",
+            )
+        return await run_mutation(
+            tool_name="create_pg_dns_name",
+            instance_id=instance_id,
+            operation="create_dns_name",
+            body={"instance_id": instance_id, "dns_type": dns_type},
+            notices={
+                "warnings": [
+                    "Enabling the intranet DNS name takes effect only while the"
+                    " instance is in the same VPC/subnet - applications connect"
+                    " via the domain instead of the private IP afterwards.",
+                    "The domain requires the instance to be ACTIVE with no"
+                    " in-flight actions.",
+                ]
+            },
+            recheck=True,
+            execute=lambda: self._client.create_dns_name(
+                instance_id=instance_id, dns_type=dns_type
+            ),
+            plans=self._plans,
+            client=self._client,
+            confirm=confirm,
+            plan_id=plan_id,
+        )
+
+    async def change_dns_name(
+        self, *, instance_id: str, dns_name: str, confirm: bool, plan_id: str | None
+    ) -> dict[str, Any]:
+        import re
+
+        if not re.fullmatch(r"[a-z0-9]([a-z0-9-]*[a-z0-9])?", dns_name or ""):
+            raise McpToolError(
+                "MCP_INVALID_ARGS",
+                "dns_name must be lowercase letters, digits and hyphens"
+                " (no leading/trailing hyphen)",
+                hint="Example: e2e-test-db",
+            )
+        return await run_mutation(
+            tool_name="update_pg_dns_name",
+            instance_id=instance_id,
+            operation="update_dns_name",
+            body={"instance_id": instance_id, "dns_name": dns_name},
+            notices={
+                "warnings": [
+                    "The OLD domain name stops resolving IMMEDIATELY after the"
+                    " change - any connection string that still uses the old"
+                    " domain will break; notify the application owners before"
+                    " submitting.",
+                    "The new custom name must follow the DNS naming rules"
+                    " (lowercase letters, digits, hyphens).",
+                ]
+            },
+            recheck=True,
+            execute=lambda: self._client.update_dns_name(
+                instance_id=instance_id, dns_name=dns_name
+            ),
+            plans=self._plans,
+            client=self._client,
+            confirm=confirm,
+            plan_id=plan_id,
+        )
+
+    async def show_dns_name(self, *, instance_id: str) -> dict[str, Any]:
+        from mcp_server_rds_pg.service.instance_service import InstanceService
+
+        await InstanceService(client=self._client, plans=self._plans)._require_found(
+            instance_id
+        )
+        response = await self._client.show_dns_name(instance_id=instance_id)
+        return single_result(
+            {
+                "instance_id": instance_id,
+                "dns_name": response.get("dns_name"),
+                "dns_type": response.get("dns_type"),
+                "status": response.get("status"),
+                "ipv6_address": response.get("ipv6_address"),
+                "object_id": response.get("object_id"),
+            },
+            hints=[
+                "Empty dns_name means the intranet DNS name is not enabled"
+                " - create_pg_dns_name enables it.",
+                "After update_pg_dns_name the old domain stops resolving"
+                " immediately.",
+            ],
         )
 
     async def list_hba_conf(self, *, instance_id: str) -> dict[str, Any]:

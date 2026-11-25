@@ -4,7 +4,7 @@
 
 ## 1. 概述
 
-本技能的全部 71 工具经 `mcp-huaweicloud-rds-pg` MCP 服务器调用华为云 OpenAPI（SDK 直连，非 KooCLI）。涉及两个云服务：
+本技能的全部 74 工具经 `mcp-huaweicloud-rds-pg` MCP 服务器调用华为云 OpenAPI（SDK 直连，非 KooCLI）。涉及两个云服务：
 
 - **RDS**（rds:）：实例生命周期、备份、库/账号/参数/插件、日志
 - **CES**（ces:）：监控指标查询与告警规则创建
@@ -20,7 +20,7 @@ Action 名称均来自 SDK 请求类（`_http_info` 级核实），未按命名�
 | 创建实例（DANGEROUS） | plan_pg_instance_creation（只读聚合）/ create_pg_instance | rds:instances:create | rds:instance:create |
 | 生命周期（WRITE） | reboot / stop / start_pg_instance | rds:instances:reboot / rds:instances:stop / rds:instances:start | rds:instance:reboot 等 |
 | 重置管理员密码（DANGEROUS） | reset_pg_admin_password | rds:instances:modifyPwd | rds:instance:resetPassword |
-| 连接管理（READ+WRITE） | show_pg_connection_info / download_pg_ssl_cert / change_pg_instance_port / change_pg_security_group / list_pg_hba_conf / change_pg_hba_conf | rds:instances:get / rds:sslCert:get / rds:instances:modifyPort / rds:instances:modifySecurityGroup / rds:instances:hba:get / rds:instances:hba:modify | rds:instance:update（含安全组端口） |
+| 连接管理（READ+WRITE） | show_pg_connection_info / download_pg_ssl_cert / change_pg_instance_port / change_pg_security_group / list_pg_hba_conf / change_pg_hba_conf / show_pg_dns_name / create_pg_dns_name / update_pg_dns_name | rds:instances:get / rds:sslCert:get / rds:instances:modifyPort / rds:instances:modifySecurityGroup / rds:instances:hba:get / rds:instances:hba:modify / rds:instances:dnsName:get / rds:instances:dnsName:create / rds:instances:dnsName:modify | rds:instance:update（含安全组端口/域名） |
 | 备份（READ+WRITE） | show/list_pg_backup*、list_pg_restore_times / set_pg_backup_policy、create_pg_manual_backup | rds:backups:get / rds:backups:list / rds:restores:list / rds:backupPolicy:get、rds:backupPolicy:modify、rds:backups:create | rds:backup:manage |
 | 库与账号（READ+WRITE） | list_pg_databases/schemas/db_users / create_pg_database、create_pg_schema、create_pg_db_user、set_pg_db_user_password（DANGEROUS）、update_pg_db_user_comment、grant_pg_db_privilege | rds:instances:database:get、rds:instances:database:list / rds:instances:database:create、rds:instances:schema:create、rds:instances:dbUser:create、rds:instances:dbUser:modify、rds:instances:dbUser:grant | rds:database:manage / rds:user:manage |
 | 变配（DANGEROUS/WRITE） | resize_pg_flavor / extend_pg_volume / reduce_pg_volume / set_pg_auto_enlarge_policy / switch_pg_single_to_ha / change_pg_ops_window | rds:instances:resize / rds:instances:volume:extend / rds:instances:volume:reduce / rds:instances:autoEnlargePolicy:modify / rds:instances:single2Ha / rds:instances:opsWindow:modify | rds:instance:update |

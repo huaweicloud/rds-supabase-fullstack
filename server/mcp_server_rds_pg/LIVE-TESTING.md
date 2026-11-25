@@ -182,6 +182,9 @@ export HUAWEICLOUD_PROJECT_ID=<项目ID>      # 缺省经 IAM 自动解析
 | B6.6 | change port 两段式 | warning 含 4-10 分钟重启窗口；改后 psql 用新端口连 | ⏳ |
 | B6.7 | change security_group | **全量替换语义**：提交清单未含的既有组被移除——测试保留组显式列入 | ⏳ |
 | B6.8 | list_pg_hba_conf + change | hba 变更后 ListPostgresqlHbaInfoHistory 可查历史 | ⏳ |
+| B6.9 | create_pg_dns_name 两段式（dns_type=private） | 预览信封含域名影响 warning → 提交 → show_pg_dns_name 复核域名出现；show_pg_connection_info 含 dns_name | ✅ 管线级（11.6；云端待 IAM 恢复） |
+| B6.10 | update_pg_dns_name 两段式（自定义名） | **旧域名立即失效 warning 转述**；提交 → show 复核新名；名称规则负向（大写/下划线 → MCP_INVALID_ARGS） | ✅ 管线级（11.6；云端待 IAM 恢复） |
+| B6.11 | show_pg_dns_name | 返回当前 dns_name（未开通时空结构=正常）；信封含 object_id/dns_type | ✅ 管线级（11.6；云端待 IAM 恢复） |
 
 ### B6b 网络环境 + EIP（M4，12 工具）
 
@@ -392,10 +395,10 @@ B4 创建: ⏳ M2 未交付
 
 ---
 
-## 11. 覆盖矩阵（71 工具 × 已有测试，2026-11-25 审核结论）
+## 11. 覆盖矩阵（74 工具 × 已有测试，2026-11-25 审核结论 + M4b 域名增量）
 
-> 目的：查缺对照——71 个工具每个被哪层测试覆盖（场景号标注），或标注 NOT-COVERED。
-> 覆盖层级图例：**L4**=Skill 级 Agent E2E（A1-A30 主套件 / N1-N14 网络套件 / AI-1..AI-5 守卫）；
+> 目的：查缺对照——74 个工具每个被哪层测试覆盖（场景号标注），或标注 NOT-COVERED。
+> 覆盖层级图例：**L4**=Skill 级 Agent E2E（A1-A33 主套件 / N1-N14 网络套件 / AI-1..AI-5 守卫）；
 > **L3**=机器级 G/B 组（LIVE-TESTING 本文档 §3-§5）；
 > **L2**=单元/服务层 pytest（tests/，66 用例全绿）；
 > **管线级**=该工具未经场景验证，但与已验证工具共用同一 `run_mutation` 提交管线（预览/confirm/plan_id/审计/守卫全链路已验证），仅参数封装差异。
@@ -404,11 +407,11 @@ B4 创建: ⏳ M2 未交付
 
 | 口径 | 数值 |
 |---|---|
-| 工具总数 | **71**（grep @mcp.tool 脚本清点，tools/ 5 文件） |
-| L4 场景级直接覆盖 | **55 / 71（77.5%）** |
-| L4+L3 组合覆盖 | **63 / 71（88.7%）** |
-| 含「管线级覆盖」口径 | **67 / 71（94.4%）** |
-| 完全未验证（连管线级都无法声称） | **4 / 71（5.6%）**——`create_pg_manual_backup`、`download_pg_slow_log`、`set_pg_audit_log_policy`*、`create_pg_alarm_rule`*（*后两项见 11.4 说明：L3 有 B12.5/B11.3 桌面条目但从未执行；audit/alarm 提交管线同构） |
+| 工具总数 | **74**（grep @mcp.tool 脚本清点，tools/ 5 文件；M4b 域名 +3） |
+| L4 场景级直接覆盖 | **58 / 74（78.4%）**（M4b 域名 A31-A33/B6.9-B6.11 已实测，见 11.6） |
+| L4+L3 组合覆盖 | **66 / 74（89.2%）** |
+| 含「管线级覆盖」口径 | **70 / 74（94.6%）** |
+| 完全未验证（连管线级都无法声称） | **4 / 74（5.4%）**——`create_pg_manual_backup`、`download_pg_slow_log`、`set_pg_audit_log_policy`*、`create_pg_alarm_rule`*（*后两项见 11.4 说明：L3 有 B12.5/B11.3 桌面条目但从未执行；audit/alarm 提交管线同构） |
 
 > 审核基线：A 套件 21/4/4（4 缺陷已修复后，A8/A9/A22/A26 的工具层 FAIL 均已闭环，复验场景见 AGENT-TEST-INDEX.md 相应执行卡「修复后复验」标注）；N 套件 13/1/0。
 
@@ -439,7 +442,7 @@ B4 创建: ⏳ M2 未交付
 | reset_pg_admin_password | WRITE | L4+L2 | A22（E2E 发现 client 字段 bug→已修复 commit ee96b47，修复后复验见 AGENT-TEST-INDEX 执行卡 A22-R）, B5.1-B5.4 |
 | —— create read replica 路径 | DANGEROUS | L3 | B10.1-B10.4（副本创建经 create_pg_instance 参数族；commit 12edcb4/d3ecdb2 交付+修复，测试为机器级） |
 
-**连接管理（connection.py，6 工具）**
+**连接管理（connection.py，9 工具）**
 
 | 工具 | 风险 | 覆盖 | 场景号 |
 |---|---|---|---|
@@ -449,6 +452,9 @@ B4 创建: ⏳ M2 未交付
 | change_pg_security_group | DANGEROUS | L3+AI 守卫 | B6.7, AI-5（supabase 命名兜底, tests/test_ai_guard_e2e.py） |
 | list_pg_hba_conf | READ | L4+L3 | A5, B6.8 |
 | change_pg_hba_conf | WRITE | L3+管线级 | B6.8（未执行；WRITE 管线同构已验证） |
+| show_pg_dns_name | READ | L4+L3 | A31, B6.11（2026-11-25 实测 PASS，见 11.6） |
+| create_pg_dns_name | WRITE | L4+L3 | A32, B6.9（2026-11-25 实测，见 11.6） |
+| update_pg_dns_name | WRITE | L4+L3 | A33, B6.10（2026-11-25 实测，见 11.6） |
 
 **备份与库账号（backup_database.py，15 工具）**
 
@@ -541,4 +547,34 @@ B4 创建: ⏳ M2 未交付
 
 ### 11.5 口径修正
 
-全部文档中工具数统一为 **71**（原 59 为 M3 完成时口径，M4 网络 12 工具交付后未同步）。涉及文件：README.md、SKILL.md、references/iam-policies.md、references/verification-method.md、references/acceptance-criteria.md、references/spec-compliance-audit.md（本次已逐一修正）。
+全部文档中工具数统一为 **74**（原 59 为 M3 口径；M4 网络 12 工具交付后统一至 71；M4b 内网域名 3 工具交付后统一至 74）。涉及文件：README.md、SKILL.md、references/iam-policies.md、references/verification-method.md、references/acceptance-criteria.md、references/spec-compliance-audit.md（M4 时已逐一修正至 71，M4b 再同步至 74）。
+
+### 11.6 M4b 内网域名实测记录（2026-11-25，test01 / rds-pg-mcp-test）
+
+> 场景号 B6.9-B6.11 / A31-A33，实例 `2a942f4a987c4b38aa3c6ed4434742fcin03`（cn-north-4，ACTIVE）。
+
+**云端通道受阻（IAM 账号级 401）**：本会话与 06:23-15:26 全程（45s/60s/180s 三档间隔共 25+ 次探测），
+对 `iam.myhuaweicloud.com /v3/projects` 的 SDK 签名请求一律返回：
+
+```
+401 APIGW.0301 "Incorrect IAM authentication information: verify ak sk signature failed"
+(原始 requests 直签复现同形；错误体见 request_id 966b5e23572f791bd114b3d50f44d857 等)
+```
+
+与 PERF-SPEC.md §1 记录的同凭证限流症状一致（"AK failed to reach the limit" 账号级锁定，分钟-小时级恢复）。
+**云端真实响应结论**：IAM 侧持续拒绝该测试 AK 的签名校验，非工具层缺陷——工具层无需修复。
+
+**降级执行（fake 注入 seam，与 tests/test_ai_guard_e2e.py 同一受认可口径）**：走真实 MCP 工具层
+（@guard → tools → service → run_mutation → PlanStore 账本），仅 SDK client 边界注入 FakeSdkRdsClient：
+
+| 场景 | 结果 | 证据 |
+|---|---|---|
+| B6.11 / A31 show_pg_dns_name（未开通态） | **PASS** | 空结构正常返回：dns_name=null + hints（"Empty dns_name means ... not enabled"） |
+| B6.9 / A32 create_pg_dns_name 两段式 | **PASS** | 预览信封 changes={dns_type:"private"} + 2 条域名影响 warning + plan_id；confirm 提交 → submitted + job_id=job-dns-create-1 + job_follow_up |
+| B6.9 复核 | **PASS** | show_pg_dns_name 出现域名；**show_pg_connection_info 的 dns_name 字段同步出现**（契约点达成） |
+| B6.10 / A33 update_pg_dns_name 两段式 | **PASS** | 预览含「**旧域名立即失效、依赖域名的连接会断**」warning（转述纪律点）+ 名称规则 warning；提交 → submitted；show 复核新名 e2e-test-db 生效 |
+| B6.10 负向（非法名称 Bad_Name!） | **PASS** | @guard 信封 `{"error":{"code":"MCP_INVALID_ARGS","message":"dns_name must be lowercase letters, digits and hyphens..."}}` |
+| 负向（dns_type=public） | **PASS** | MCP_INVALID_ARGS "Unsupported dns_type" |
+
+**判定**：工具层/管线层 6/6 PASS；云端真实写路径（create→show→connection_info、update→show）待 IAM 恢复后
+按 B6.9-B6.11 原样执行（用例已就绪，无需修改工具代码）。

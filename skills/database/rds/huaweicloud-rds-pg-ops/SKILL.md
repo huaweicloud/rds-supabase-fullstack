@@ -15,7 +15,7 @@ metadata:
 
 ## 1. Overview
 
-This skill guides an Agent to operate Huawei Cloud RDS for PostgreSQL instances through the `mcp-huaweicloud-rds-pg` MCP server (71 tools). The tool layer enforces two-phase commit, replay protection, read-only guardrails, output redaction and JSONL auditing; this skill governs **which tool to use, in what order, and under what discipline**.
+This skill guides an Agent to operate Huawei Cloud RDS for PostgreSQL instances through the `mcp-huaweicloud-rds-pg` MCP server (74 tools). The tool layer enforces two-phase commit, replay protection, read-only guardrails, output redaction and JSONL auditing; this skill governs **which tool to use, in what order, and under what discipline**.
 
 Position in the skill family: this skill is the guidance layer for PG instance operations — tool execution goes through `mcp_server_rds_pg` (installation: references/install.md); in-database SQL quality rules are out of scope.
 
@@ -68,7 +68,7 @@ Scenario routing:
 | New instance (with sizing) | references/creation.md | plan_pg_instance_creation → write_pg_secret_request → create_pg_instance → show_pg_instance_job |
 | Reboot / stop / start | Lifecycle (this page) | reboot/stop/start_pg_instance |
 | Change root password | Lifecycle (this page) | write_pg_secret_request → reset_pg_admin_password |
-| App needs to connect | references/connection.md | show_pg_connection_info → download_pg_ssl_cert → (security groups) |
+| App needs to connect | references/connection.md | show_pg_connection_info → download_pg_ssl_cert → (security groups) → show_pg_dns_name / create_pg_dns_name / update_pg_dns_name (intranet domain) |
 | Backup policy / manual backup | references/backup.md | show/set_pg_backup_policy → create_pg_manual_backup |
 | Create db / account / grants | references/database.md | create_pg_database → create_pg_schema → create_pg_db_user → grant_pg_db_privilege |
 | Resize / upgrade / single-to-HA | references/resize.md | resize_pg_flavor / extend_pg_volume / switch_pg_single_to_ha |
@@ -85,7 +85,7 @@ MCP-type skill: tools are invoked via the MCP protocol, not `hcloud`. Naming is 
 |---|---|
 | Instance lifecycle | list/show_pg_instance, show_pg_instance_job, reboot/stop/start_pg_instance (WRITE), create_pg_instance (DANGEROUS), reset_pg_admin_password (DANGEROUS) |
 | Sizing / catalog | list_pg_flavors, list_pg_datastores, list_pg_storage_types, show_pg_quotas, plan_pg_instance_creation |
-| Connection | show_pg_connection_info, download_pg_ssl_cert, list_pg_hba_conf; change_pg_instance_port / change_pg_security_group / change_pg_hba_conf (WRITE) |
+| Connection | show_pg_connection_info, download_pg_ssl_cert, list_pg_hba_conf, show_pg_dns_name; change_pg_instance_port / change_pg_security_group / change_pg_hba_conf / create_pg_dns_name / update_pg_dns_name (WRITE) |
 | Backup | show/list_pg_backup*, list_pg_restore_times; set_pg_backup_policy / create_pg_manual_backup (WRITE) |
 | Database / account | list_pg_databases/schemas/db_users; create_pg_database / create_pg_schema / create_pg_db_user / grant_pg_db_privilege (WRITE), set_pg_db_user_password (DANGEROUS) |
 | Resize | list_pg_read_replicas; resize_pg_flavor / extend_pg_volume / reduce_pg_volume / set_pg_auto_enlarge_policy / switch_pg_single_to_ha / change_pg_ops_window (DANGEROUS/WRITE) |

@@ -1,12 +1,15 @@
 # Copyright (c) 2026 Huawei Technologies Co., Ltd.
 # SPDX-License-Identifier: MIT
 
-"""P0-2 client APIs: SSL cert link, port, security group, pg_hba."""
+"""P0-2 client APIs: SSL cert link, port, security group, pg_hba, DNS name."""
 
 from __future__ import annotations
 
 import asyncio
 from typing import Any, cast
+
+from huaweicloud_mcp_core.errors import wrap_sdk_error
+from huaweicloudsdkcore.exceptions.exceptions import SdkException
 
 
 class ConnectionMixin:
@@ -90,6 +93,68 @@ class ConnectionMixin:
                 dict[str, Any],
                 _to_dict(self._client.add_postgresql_hba_conf(request)),
             )
+
+        return await asyncio.to_thread(_call)
+
+    # -- intranet DNS name (M4b; user guide §4.7.2) --------------------------
+
+    async def create_dns_name(
+        self, *, instance_id: str, dns_type: str = "private"
+    ) -> dict[str, Any]:
+        def _call() -> dict[str, Any]:
+            from huaweicloudsdkrds.v3.model.create_dns_name_request import (
+                CreateDnsNameRequest,
+            )
+            from huaweicloudsdkrds.v3.model.create_dns_name_request_body import (
+                CreateDnsNameRequestBody,
+            )
+
+            body = CreateDnsNameRequestBody(dns_type=dns_type)
+            request = CreateDnsNameRequest(instance_id=instance_id, body=body)
+            try:
+                return cast(
+                    dict[str, Any], _to_dict(self._client.create_dns_name(request))
+                )
+            except SdkException as exc:
+                raise wrap_sdk_error(exc) from exc
+
+        return await asyncio.to_thread(_call)
+
+    async def update_dns_name(
+        self, *, instance_id: str, dns_name: str
+    ) -> dict[str, Any]:
+        def _call() -> dict[str, Any]:
+            from huaweicloudsdkrds.v3.model.modify_dns_name_request_body import (
+                ModifyDnsNameRequestBody,
+            )
+            from huaweicloudsdkrds.v3.model.update_dns_name_request import (
+                UpdateDnsNameRequest,
+            )
+
+            body = ModifyDnsNameRequestBody(dns_name=dns_name)
+            request = UpdateDnsNameRequest(instance_id=instance_id, body=body)
+            try:
+                return cast(
+                    dict[str, Any], _to_dict(self._client.update_dns_name(request))
+                )
+            except SdkException as exc:
+                raise wrap_sdk_error(exc) from exc
+
+        return await asyncio.to_thread(_call)
+
+    async def show_dns_name(self, *, instance_id: str) -> dict[str, Any]:
+        def _call() -> dict[str, Any]:
+            from huaweicloudsdkrds.v3.model.show_dns_name_request import (
+                ShowDnsNameRequest,
+            )
+
+            request = ShowDnsNameRequest(instance_id=instance_id)
+            try:
+                return cast(
+                    dict[str, Any], _to_dict(self._client.show_dns_name(request))
+                )
+            except SdkException as exc:
+                raise wrap_sdk_error(exc) from exc
 
         return await asyncio.to_thread(_call)
 

@@ -48,6 +48,7 @@ class FakeSdkRdsClient:
     def __init__(self) -> None:
         self.instances: dict[str, dict[str, Any]] = {}
         self.jobs: dict[str, dict[str, Any]] = {}
+        self.dns: dict[str, dict[str, Any]] = {}
         self.calls: list[tuple[str, dict[str, Any]]] = []
         self.reboot_result: dict[str, Any] = {"job_id": "job-reboot-1"}
 
@@ -113,6 +114,40 @@ class FakeSdkRdsClient:
         self.calls.append(("start_instance", {"instance_id": instance_id}))
         self.instances[instance_id]["status"] = "ACTIVE"
         return {"job_id": "job-start-1"}
+
+    async def show_dns_name(self, *, instance_id: str) -> dict[str, Any]:
+        self.calls.append(("show_dns_name", {"instance_id": instance_id}))
+        return self.dns.get(instance_id) or {
+            "instance_id": instance_id,
+            "dns_name": None,
+            "dns_type": None,
+            "status": None,
+        }
+
+    async def create_dns_name(
+        self, *, instance_id: str, dns_type: str = "private"
+    ) -> dict[str, Any]:
+        self.calls.append(
+            ("create_dns_name", {"instance_id": instance_id, "dns_type": dns_type})
+        )
+        self.dns[instance_id] = {
+            "instance_id": instance_id,
+            "dns_name": f"{instance_id}.internal.pg.rds.huaweicloud.com",
+            "dns_type": dns_type,
+            "status": "ACTIVE",
+        }
+        return {"job_id": "job-dns-create-1"}
+
+    async def update_dns_name(
+        self, *, instance_id: str, dns_name: str
+    ) -> dict[str, Any]:
+        self.calls.append(
+            ("update_dns_name", {"instance_id": instance_id, "dns_name": dns_name})
+        )
+        if instance_id not in self.dns:
+            self.dns[instance_id] = {"instance_id": instance_id, "dns_type": "private"}
+        self.dns[instance_id]["dns_name"] = dns_name
+        return {"job_id": "job-dns-update-1"}
 
 
 @pytest.fixture

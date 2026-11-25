@@ -69,24 +69,6 @@ async def throttle() -> None:
         _last_call_monotonic = time.monotonic()
 
 
-_IAM_COOLDOWN_UNTIL: float = 0.0
-_IAM_COOLDOWN_SECONDS = 300.0  # 401 APIGW.0301 -> whole-process cool-down 5 min
-
-
-def _note_iam_auth_failure(message: str) -> None:
-    """Circuit breaker: an IAM auth/lock error (APIGW.0301) trips a
-    process-wide 5-minute cool-down. While tripped, guarded_call short-circuits
-    with a clear envelope instead of hitting IAM again - the #1 lesson from the
-    overnight lock incident: retrying while locked RENEWS the account lock."""
-    global _IAM_COOLDOWN_UNTIL
-    if "APIGW.0301" in message or "verify ak sk signature failed" in message:
-        _IAM_COOLDOWN_UNTIL = max(_IAM_COOLDOWN_UNTIL, time.monotonic() + _IAM_COOLDOWN_SECONDS)
-
-
-def _iam_cooldown_remaining() -> float:
-    return max(0.0, _IAM_COOLDOWN_UNTIL - time.monotonic())
-
-
 async def guarded_call(
     label: str,
     sync_call: Callable[[], dict[str, Any]],
@@ -102,27 +84,11 @@ async def guarded_call(
     pipeline already classifies (see mutate.py: non-SDK exceptions -> unknown).
     """
     limit = timeout if timeout is not None else DEFAULT_CALL_TIMEOUT
-    cooldown = _iam_cooldown_remaining()
-    if cooldown > 0:
-        raise McpToolError(
-            "MCP_IAM_COOLDOWN",
-            f"IAM authentication previously failed; process in cool-down for"
-            f" another {cooldown:.0f}s to let the account-level lock expire",
-            hint="Do NOT retry immediately - retries renew the IAM lock. Wait"
-            " for the cool-down, then run one read-only probe"
-            " (list_pg_instances) before resuming writes.",
-        )
     await throttle()
     try:
-        result = await asyncio.wait_for(
+        return await asyncio.wait_for(
             asyncio.to_thread(sync_call), timeout=limit
         )
-        return result
-    except McpToolError as exc:
-        # IAM auth failures (APIGW.0301 / signature failed) trip the
-        # process-wide cool-down so no further call renews the account lock.
-        _note_iam_auth_failure(str(exc.message) if hasattr(exc, "message") else str(exc))
-        raise
     except asyncio.TimeoutError:
         raise McpToolError(
             code="MCP_CALL_TIMEOUT",

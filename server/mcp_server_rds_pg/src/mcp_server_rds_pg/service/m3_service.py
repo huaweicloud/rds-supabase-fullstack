@@ -5,16 +5,13 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from huaweicloud_mcp_core.errors import McpToolError
 from huaweicloud_mcp_core.output import clamp_limit, page_result, single_result
 
 from mcp_server_rds_pg.client.m3_apis import CesClient
 from mcp_server_rds_pg.client.shared_client import get_shared_client
-
-if TYPE_CHECKING:
-    from mcp_server_rds_pg.client.sdk_rds import SdkRdsClient
 from mcp_server_rds_pg.service.mutate import run_mutation
 from mcp_server_rds_pg.service.plans import PlanStore
 

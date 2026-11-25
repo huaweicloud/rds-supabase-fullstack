@@ -24,7 +24,7 @@ from typing import Any
 
 from mcp_server_rds_pg.client.sdk_rds import SdkRdsClient
 
-_CLIENT_CACHE: dict[tuple[str, ...], Any] = {}
+_CLIENT_CACHE: dict[tuple[str, ...], SdkRdsClient] = {}
 
 
 def _identity_key(ak: str, sk: str, token: str | None, region: str) -> tuple[str, ...]:
@@ -64,5 +64,5 @@ def get_shared_ces_client() -> Any:
     cached = _CLIENT_CACHE.get(key)
     if cached is None:
         cached = CesClient(settings)
-        _CLIENT_CACHE[key] = cached
+        _CLIENT_CACHE[key] = cached  # type: ignore[assignment]
     return cached

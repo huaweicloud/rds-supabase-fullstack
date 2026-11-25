@@ -5,12 +5,11 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any, cast
 
 from huaweicloud_mcp_core.errors import wrap_sdk_error
 from huaweicloudsdkcore.exceptions.exceptions import SdkException
-
-from mcp_server_rds_pg.client.throttle import guarded_call
 
 
 class ConnectionMixin:
@@ -27,7 +26,7 @@ class ConnectionMixin:
                 dict[str, Any], _to_dict(self._client.list_ssl_cert_download_link(request))
             )
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def update_port(self, *, instance_id: str, port: int) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
@@ -40,7 +39,7 @@ class ConnectionMixin:
             request = UpdatePortRequest(instance_id=instance_id, body=body)
             return cast(dict[str, Any], _to_dict(self._client.update_port(request)))
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def set_security_group(
         self, *, instance_id: str, security_group_id: str
@@ -59,7 +58,7 @@ class ConnectionMixin:
                 dict[str, Any], _to_dict(self._client.set_security_group(request))
             )
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def list_postgresql_hba_info(self, *, instance_id: str) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
@@ -73,7 +72,7 @@ class ConnectionMixin:
                 _to_dict(self._client.list_postgresql_hba_info(request)),
             )
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def add_postgresql_hba_conf(
         self, *, instance_id: str, entries: list[dict[str, Any]]
@@ -95,7 +94,7 @@ class ConnectionMixin:
                 _to_dict(self._client.add_postgresql_hba_conf(request)),
             )
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     # -- intranet DNS name (M4b; user guide §4.7.2) --------------------------
 
@@ -119,7 +118,7 @@ class ConnectionMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def update_dns_name(
         self, *, instance_id: str, dns_name: str
@@ -141,7 +140,7 @@ class ConnectionMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def show_dns_name(self, *, instance_id: str) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
@@ -157,7 +156,7 @@ class ConnectionMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
 
 def _to_dict(obj: Any) -> Any:

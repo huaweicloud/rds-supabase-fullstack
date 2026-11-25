@@ -5,12 +5,11 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any, cast
 
 from huaweicloud_mcp_core.errors import wrap_sdk_error
 from huaweicloudsdkcore.exceptions.exceptions import SdkException
-
-from mcp_server_rds_pg.client.throttle import guarded_call
 
 
 def _to_dict(obj: Any) -> Any:
@@ -43,7 +42,7 @@ class ResizeMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def enlarge_volume(
         self, *, instance_id: str, size: int
@@ -71,7 +70,7 @@ class ResizeMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def reduce_volume(
         self, *, instance_id: str, size: int
@@ -99,7 +98,7 @@ class ResizeMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def set_auto_enlarge_policy(
         self,
@@ -131,7 +130,7 @@ class ResizeMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def switch_single_to_ha(
         self, *, instance_id: str, az_codes: list[str]
@@ -155,7 +154,7 @@ class ResizeMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def change_ops_window(
         self, *, instance_id: str, start_time: str, end_time: str
@@ -175,7 +174,7 @@ class ResizeMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
     async def list_instances_resource_metrics(self, *, engine: str) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
             from huaweicloudsdkrds.v3.model.list_instances_resource_metrics_request import (
@@ -191,7 +190,7 @@ class ResizeMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
 
 class LogMixin:
@@ -222,7 +221,7 @@ class LogMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def list_slow_logs(
         self, *, instance_id: str, start_date: str, end_date: str,
@@ -247,7 +246,7 @@ class LogMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def download_errorlog(self, *, instance_id: str) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
@@ -263,7 +262,7 @@ class LogMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def download_slowlog(
         self, *, instance_id: str, file_name: str
@@ -286,7 +285,7 @@ class LogMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def set_auditlog_policy(
         self, *, instance_id: str, keep_days: int
@@ -308,7 +307,7 @@ class LogMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def list_auditlogs(
         self, *, instance_id: str, limit: int
@@ -326,7 +325,7 @@ class LogMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
 
 class ParamMixin:
@@ -355,7 +354,7 @@ class ParamMixin:
                 params = [p for p in params if p.get("name") == name]
             return {"configurations": params, "total_count": len(params)}
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def update_pg_parameter(
         self, *, instance_id: str, name: str, value: str
@@ -386,7 +385,7 @@ class ParamMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def list_configurations(self, *, engine: str | None) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
@@ -399,7 +398,7 @@ class ParamMixin:
             # engine filter is client-side for v3 API
             return data
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def apply_configuration(
         self, *, config_id: str, instance_ids: list[str]
@@ -422,7 +421,7 @@ class ParamMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def compare_configurations(
         self, *, source_id: str, target_id: str
@@ -445,7 +444,7 @@ class ParamMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
 
 class ExtensionMixin:
@@ -474,7 +473,7 @@ class ExtensionMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def create_pg_extension(
         self, *, instance_id: str, database_name: str, extension_name: str
@@ -499,7 +498,7 @@ class ExtensionMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def delete_pg_extension(
         self, *, instance_id: str, database_name: str, extension_name: str
@@ -524,7 +523,7 @@ class ExtensionMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
 
 class CesClient:
@@ -585,7 +584,7 @@ class CesClient:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def create_alarm(
         self, *, name: str, description: str | None, namespace: str,
@@ -626,4 +625,4 @@ class CesClient:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)

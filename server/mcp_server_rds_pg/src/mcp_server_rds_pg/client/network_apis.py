@@ -20,12 +20,11 @@ installed (service/tools tests inject fakes).
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any, cast
 
 from huaweicloud_mcp_core.errors import wrap_sdk_error
 from huaweicloudsdkcore.exceptions.exceptions import SdkException
-
-from mcp_server_rds_pg.client.throttle import guarded_call
 
 # EPS is a global service whose region list is narrow; pin it like the mgr
 # repo does (instance_catalog.py EPS_REGION).
@@ -68,7 +67,7 @@ class VpcChannel:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def create_vpc(self, *, name: str, cidr: str) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
@@ -85,7 +84,7 @@ class VpcChannel:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def list_subnets(self, *, vpc_id: str, limit: int = 100) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
@@ -99,7 +98,7 @@ class VpcChannel:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def create_subnet(
         self, *, vpc_id: str, name: str, cidr: str, availability_zone: str
@@ -134,7 +133,7 @@ class VpcChannel:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     # -- security groups: VPC v3 -------------------------------------------
 
@@ -152,7 +151,7 @@ class VpcChannel:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def list_security_group_rules(
         self, *, security_group_id: str, limit: int = 200
@@ -173,7 +172,7 @@ class VpcChannel:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def create_security_group(self, *, name: str) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
@@ -200,7 +199,7 @@ class VpcChannel:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def create_security_group_rule(
         self,
@@ -242,7 +241,7 @@ class VpcChannel:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
 
 class EipChannel:
@@ -309,7 +308,7 @@ class EipChannel:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def show_publicip(self, *, publicip_id: str) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
@@ -325,7 +324,7 @@ class EipChannel:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def list_publicips(self, *, limit: int = 200) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
@@ -341,7 +340,7 @@ class EipChannel:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def delete_publicip(self, *, publicip_id: str) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
@@ -357,7 +356,7 @@ class EipChannel:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def tag_publicip(self, *, publicip_id: str, key: str, value: str) -> None:
         def _call() -> None:
@@ -378,11 +377,7 @@ class EipChannel:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        def _gated() -> dict[str, Any]:
-            _call()
-            return {}
-
-        await guarded_call("sdk", _gated)
+        await asyncio.to_thread(_call)
 
 
 class EpsChannel:
@@ -420,7 +415,7 @@ class EpsChannel:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     async def create_enterprise_project(
         self, *, name: str, description: str | None = None
@@ -443,7 +438,7 @@ class EpsChannel:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
 
 class NetworkMixin:
@@ -469,7 +464,7 @@ class NetworkMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
     """RDS-side network APIs: EIP bind/unbind (AttachEip PUT public-ip)."""
 
@@ -498,7 +493,7 @@ class NetworkMixin:
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
 
-        return await guarded_call("sdk", _call)
+        return await asyncio.to_thread(_call)
 
 
 def _project_credentials(settings: Any) -> Any:

@@ -2,8 +2,8 @@
 
 > 目标：**任何地方的任何 Agent**，克隆本仓库后仅凭本文档即可自主执行 rds-pg MCP + Skill 的全部测试，
 > 并产出结构化结果报告。不含任何本机特定路径依赖（本机 ID 只出现在第 6 节清理参考表）。
-> 配套阅读：`LIVE-TESTING.md`（机器级测试矩阵 + §11 覆盖矩阵）、`AGENT-E2E-GUIDE.md`（场景全集原始定义）、
-> `PERF-SPEC.md`（性能口径）。被测组件：`mcp-huaweicloud-rds-pg`（74 工具）+ Skill
+> 本文档自包含：四层测试与 57 张执行卡全部在此。开发期的机器级矩阵/性能规格/并发实测报告等为内部资料（不在仓库交付），
+> 本文档已吸收其关键结论（覆盖矩阵摘要、性能纪律、并发实测 SLO）。被测组件：`mcp-huaweicloud-rds-pg`（74 工具）+ Skill
 > `skills/database/rds/huaweicloud-rds-pg-ops`。
 
 ---
@@ -69,12 +69,12 @@ SK 大小写（401 APIGW.0301 同形）、AK/SK 权限（403 DBS.280015 → refe
 | 层 | 名称 | 入口 | 预计用时 | 判定标准 | 记录模板 |
 |---|---|---|---|---|---|
 | L1 | 单元/服务层 pytest | `uv run pytest -q --no-cov` | 1 分钟 | 66 passed 全绿 | 直接贴 pytest 输出行 |
-| L2 | 机器级 G 组（机制）+ B 组（业务） | LIVE-TESTING.md §3-§5，逐条经 MCP 客户端或 agent 对话执行 | G 组 30 分钟；B 组 2-4 小时（可挑选） | 每条验收栏所述信封/行为 | LIVE-TESTING §8 |
+| L2 | 机器级 G 组（机制）+ B 组（业务） | 见本文档 §2 各层描述与 §3 执行卡（G/B 纪律已内化为执行卡判据） | G 组 30 分钟；B 组 2-4 小时（可挑选） | 每卡所述信封/行为 | 本文档 §5 模板 |
 | L3 | Skill 级 Agent E2E（**本索引第 3 节执行卡**） | 工作项目内 agent 会话，逐卡执行 | 主套件 38 条约 1.5-2h + 网络 14 条约 30-60 分钟 + AI 5 条约 30 分钟 | 每卡「判定标准」栏：PASS/FAIL/GAP | 第 5 节模板 |
 | L4 | AI 应用守卫 5 条 | 卡 AI-1..AI-5（AI-3/AI-5 用 `uv run pytest tests/test_ai_guard_e2e.py`） | 30 分钟 | 阻断信封含应用名 / 只读不误伤 | 第 5 节模板 |
 
 > 执行顺序：L1 → 冒烟 → L3 阶段一（读）→ L3 阶段二（写）→ L3 网络组 → L4 → L2 挑选机器级条目。
-> L2 的 G 组（两段式/双开关/保护规则/审计机制）建议全跑；B 组按覆盖矩阵（LIVE-TESTING §11）查缺挑选。
+> L2 的 G 组（两段式/双开关/保护规则/审计机制）建议全跑；B 组按本文档覆盖摘要查缺挑选。
 
 ---
 
@@ -232,7 +232,7 @@ L4 AI 守卫:             AI-1..5: 逐条结果
 
 ## 7. 覆盖缺口（执行时可选择性补测的 NOT-COVERED 工具）
 
-完全未场景验证的 4 项 + 管线级 7 项（详见 LIVE-TESTING.md §11.4）：
+完全未场景验证的 4 项（create_pg_manual_backup/create_pg_alarm_rule/set_pg_audit_log_policy/download_pg_slow_log，原因：计费/SMN 依赖/需慢日志存量）+ 管线级 7 项（change_port/change_hba/set_db_user_password/update_comment/apply_configuration/uninstall_extension/set_auto_enlarge——run_mutation 同构，建议各补一次 confirm=false 预览即可升级）：
 `create_pg_manual_backup`、`create_pg_alarm_rule`、`set_pg_audit_log_policy`（+`list_pg_audit_logs`）、`download_pg_slow_log`；
 管线级（各补一次 confirm=false 预览即可升级为场景级）：`change_pg_instance_port`、`change_pg_hba_conf`、`set_pg_db_user_password`、`update_pg_db_user_comment`、`apply_pg_configuration`、`uninstall_pg_extension`、`set_pg_auto_enlarge_policy`。
-另有组合链建议场景 N15-N17（AGENT-E2E-GUIDE.md §6）。
+另有组合链建议场景 N15-N17（创建+网络+EIP 端到端、中断清理、反向清理——建议测试环境按 §3 执行卡模式自行设计）。

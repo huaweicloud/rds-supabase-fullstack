@@ -7,7 +7,7 @@
 ```bash
 # 从本仓安装（禁止 PyPI 同名第三方包——凭据安全）
 git clone https://github.com/huaweicloud/rds-supabase-fullstack.git
-cd rds-supabase-fullstack/server/mcp_server_rds_pg
+cd rds-supabase-fullstack/server/mcp_huaweicloud_rds_pg
 uv sync
 uv run pytest -q --no-cov     # 冒烟：38 passed
 ```
@@ -32,7 +32,7 @@ uv run pytest -q --no-cov     # 冒烟：38 passed
   "mcpServers": {
     "rds-pg": {
       "command": "uv",
-      "args": ["run", "--directory", "<绝对路径>/server/mcp_server_rds_pg", "mcp-huaweicloud-rds-pg"],
+      "args": ["run", "--directory", "<绝对路径>/server/mcp_huaweicloud_rds_pg", "mcp-huaweicloud-rds-pg"],
       "env": {
         "HUAWEICLOUD_ACCESS_KEY": "...",
         "HUAWEICLOUD_SECRET_KEY": "...",

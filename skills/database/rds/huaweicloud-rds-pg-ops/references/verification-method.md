@@ -10,7 +10,7 @@
 
 | # | 检查 | 命令/操作 | 成功标准 |
 |---|---|---|---|
-| V1.1 | uv 环境可用 | `cd server/mcp_server_rds_pg && uv sync` | 依赖解析成功，无错误 |
+| V1.1 | uv 环境可用 | `cd server/mcp_huaweicloud_rds_pg && uv sync` | 依赖解析成功，无错误 |
 | V1.2 | MCP 服务器可拉起 | `uv run mcp-huaweicloud-rds-pg` | stdio 启动不崩溃；`-t streamable-http` 下 `/health` 返回 200 |
 | V1.3 | 宿主注册生效 | 宿主内 `tools/list` | 返回 74 工具，名称 `huaweicloud-rds-pg` |
 | V1.4 | 凭证已配置（带外） | 宿主内调用 `list_pg_instances` | 返回 page_result 信封（非凭证错误）；凭证从未出现在对话中 |

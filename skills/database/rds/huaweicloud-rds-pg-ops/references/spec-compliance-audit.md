@@ -1,7 +1,7 @@
-# 规范遵从审核报告：huaweicloud-rds-pg-ops（Skill 包）+ mcp_server_rds_pg（MCP 工程）
+# 规范遵从审核报告：huaweicloud-rds-pg-ops（Skill 包）+ mcp_huaweicloud_rds_pg（MCP 工程）
 
 > 审核依据：《华为云基础云服务 Skill 开发与管理规范 v2.0.0》（全文 13 章，仓内 `.playwright-mcp/huaweicloud-skill-spec-v2.md`）
-> 审核对象：本技能包（SKILL.md + references/ 10 场景文件 + INSTALL.md）与配套 MCP 工程 `server/mcp_server_rds_pg`（74 工具，Python 三层架构）
+> 审核对象：本技能包（SKILL.md + references/ 10 场景文件 + INSTALL.md）与配套 MCP 工程 `server/mcp_huaweicloud_rds_pg`（74 工具，Python 三层架构）
 > 审核日期：2025-11-24 · 审核轮次：第 1 轮（含整改复查）
 
 ---
@@ -11,7 +11,7 @@
 | 对象 | 合规 | 违规 | 豁免（含理由） | 整改后状态 |
 |---|---|---|---|---|
 | Skill 包（skills/database/rds/huaweicloud-rds-pg-ops） | 18 | 6 | 5 | 全部违规项已整改或按豁免口径处理 |
-| MCP 工程（mcp_server_rds_pg，仅审规范符合性，未改代码） | 8 | 1 | 2 | 违规项为文档路径陈旧（非代码），已记遗留 |
+| MCP 工程（mcp_huaweicloud_rds_pg，仅审规范符合性，未改代码） | 8 | 1 | 2 | 违规项为文档路径陈旧（非代码），已记遗留 |
 
 ---
 
@@ -110,7 +110,7 @@
 
 ---
 
-## 3. MCP 工程 mcp_server_rds_pg 规范符合性审核（只审不改）
+## 3. MCP 工程 mcp_huaweicloud_rds_pg 规范符合性审核（只审不改）
 
 | 规范条款 | 结论 | 说明 |
 |---|---|---|
@@ -122,7 +122,7 @@
 | 输出脱敏 + 审计 | 合规 | core build_server 强制脱敏（不可关）+ JSONL 审计（含被拦调用） |
 | scripts/ 规范（§4.4：shebang、错误处理、退出码） | **豁免** | MCP 型技能无 scripts/ 目录——可执行面在 MCP 服务器（工程内 ruff/mypy/pytest 三件套与 LIVE-TESTING 承担同等质量职责）；§4.4 的对象（SKILL 包内脚本）不存在 |
 | 工具参数 ≤10（仓级架构铁律） | 合规 | 抽查 create_pg_instance 等最复杂工具参数在限内 |
-| README 配套技能路径 | **违规（文档，非代码）** | `mcp_server_rds_pg/README.md` 第 3 行仍写 `skills/huaweicloud-rds-pg-ops`（旧一级路径，现为 `skills/database/rds/...`）。因本任务禁改 server/ 目录，记为遗留项 |
+| README 配套技能路径 | **违规（文档，非代码）** | `mcp_huaweicloud_rds_pg/README.md` 第 3 行仍写 `skills/huaweicloud-rds-pg-ops`（旧一级路径，现为 `skills/database/rds/...`）。因本任务禁改 server/ 目录，记为遗留项 |
 | LIVE-TESTING 测试矩阵（§5.4 的 MCP 等价物） | 合规 | G1-G6 + B1-B16 全量矩阵，含验收标准与实测状态 |
 | Quality 上报集成（§10）/ VOD Collector（§11） | **豁免** | 需官方 creator/injector 工具链（huawei-cloud-skill-quality-cli-inject 有条件访问）；当前仓未接入该生态，遥测注入留待上游开源流程时统一处理。非豁免即违规项，因为属「配套工具链可用性」问题而非包内容问题 |
 
@@ -144,11 +144,11 @@
 - frontmatter `yaml.safe_load` 解析成功；name=目录名；description 569 字符；tags 5
 - SKILL.md 133 行（≤500）；包 15 文件（≤40）；扩展名全 `.md`（白名单内）
 - 全包 grep 无 AK/SK/密码明文
-- 旧路径引用 grep：skills/ 下零残留；仅 `server/mcp_server_rds_pg/README.md`（遗留，见下）
+- 旧路径引用 grep：skills/ 下零残留；仅 `server/mcp_huaweicloud_rds_pg/README.md`（遗留，见下）
 
 ## 6. 遗留问题
 
-1. **`server/mcp_server_rds_pg/README.md:3` 旧路径**（`skills/huaweicloud-rds-pg-ops` → 应为 `skills/database/rds/huaweicloud-rds-pg-ops`）——本任务禁改 server/，建议主窗口或下轮提交顺手修正（一行文档改动）
+1. **`server/mcp_huaweicloud_rds_pg/README.md:3` 旧路径**（`skills/huaweicloud-rds-pg-ops` → 应为 `skills/database/rds/huaweicloud-rds-pg-ops`）——本任务禁改 server/，建议主窗口或下轮提交顺手修正（一行文档改动）
 2. **包名前缀**：目录名 `huaweicloud-rds-pg-ops` 不符合规范 §2.3 的 `huawei-cloud-` 命名公式（仓级惯例豁免，见 §2.1）。若技能要单独贡献到 GitCode huaweicloud-skills 开源仓库，需整族统一改名并同步 MCP 工程 `skill/` 镜像目录
 3. **Quality 遥测 / VOD Collector 未接入**（§10/§11）：依赖官方 creator/tester 工具链，属生态接入事项而非包内容缺陷
-4. **MCP 工程内 `skill/huaweicloud-rds-pg-ops` 镜像目录**（mcp_server_rds_pg/skill/）仍是旧版且未随迁移更新——该目录在仓外（`mcp_server_rds_pg` 工程内为独立 git 管理推测），需工程侧自行同步或删除镜像
+4. **MCP 工程内 `skill/huaweicloud-rds-pg-ops` 镜像目录**（mcp_huaweicloud_rds_pg/skill/）仍是旧版且未随迁移更新——该目录在仓外（`mcp_huaweicloud_rds_pg` 工程内为独立 git 管理推测），需工程侧自行同步或删除镜像

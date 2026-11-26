@@ -8,7 +8,7 @@ tags: [huawei-cloud, rds, postgresql, ops, mcp]
 metadata:
   version: "1.1.0"
   author: donel9527
-  server: server/mcp_server_rds_pg
+  server: server/mcp_huaweicloud_rds_pg
 ---
 
 # Huawei Cloud RDS for PostgreSQL Operations
@@ -17,7 +17,7 @@ metadata:
 
 This skill guides an Agent to operate Huawei Cloud RDS for PostgreSQL instances through the `mcp-huaweicloud-rds-pg` MCP server (74 tools). The tool layer enforces two-phase commit, replay protection, read-only guardrails, output redaction and JSONL auditing; this skill governs **which tool to use, in what order, and under what discipline**.
 
-Position in the skill family: this skill is the guidance layer for PG instance operations — tool execution goes through `mcp_server_rds_pg` (installation: references/install.md); in-database SQL quality rules are out of scope.
+Position in the skill family: this skill is the guidance layer for PG instance operations — tool execution goes through `mcp_huaweicloud_rds_pg` (installation: references/install.md); in-database SQL quality rules are out of scope.
 
 Typical use cases:
 

@@ -126,22 +126,29 @@ async def test_read_only_env_blocks_submit(
 async def test_writes_require_enable_writes_env(
     plans: PlanStore, fake_client: FakeSdkRdsClient
 ) -> None:
-    # RDS_PG_ENABLE_WRITES unset -> blocked even without read-only mode.
-    with pytest.raises(McpToolError) as excinfo:
-        await run_mutation(
-            tool_name="reboot_pg_instance",
-            instance_id="inst-1",
-            operation=OPERATION,
-            body={"instance_id": "inst-1"},
-            notices=_notices(),
-            recheck=False,
-            execute=lambda: fake_client.reboot_instance(instance_id="inst-1"),
-            plans=plans,
-            client=fake_client,
-            confirm=True,
-            plan_id="whatever",
-        )
-    assert excinfo.value.code == "MCP_READ_ONLY"
+    """Explicit opt-out: RDS_PG_ENABLE_WRITES=false blocks writes
+    (default is true - out-of-the-box usability)."""
+    import os
+
+    os.environ["RDS_PG_ENABLE_WRITES"] = "false"
+    try:
+        with pytest.raises(McpToolError) as excinfo:
+            await run_mutation(
+                tool_name="reboot_pg_instance",
+                instance_id="inst-1",
+                operation=OPERATION,
+                body={"instance_id": "inst-1"},
+                notices=_notices(),
+                recheck=False,
+                execute=lambda: fake_client.reboot_instance(instance_id="inst-1"),
+                plans=plans,
+                client=fake_client,
+                confirm=True,
+                plan_id="whatever",
+            )
+        assert excinfo.value.code == "MCP_READ_ONLY"
+    finally:
+        os.environ.pop("RDS_PG_ENABLE_WRITES", None)
 
 
 async def test_happy_path_submit(

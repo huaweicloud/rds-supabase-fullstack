@@ -22,7 +22,7 @@ client/   SDK 薄封装（asyncio.to_thread）
 1. **预览**：`confirm=false` → 返回 changes + warnings + plan_id（10 分钟 TTL、单次使用）
 2. **提交**：同参数 + `confirm=true` + `plan_id` → claim（digest 校验：参数变更/跨实例嫁接/重放全部拒绝）→ 提交前回查实例状态（ACTIVE 且无 action 锁）→ 执行 → 错误三分类（明确拒绝→failed 可重试；结果不明→unknown 禁止重放）
 
-环境双开关（写操作默认关闭）：`RDS_PG_ENABLE_WRITES=true` 且 `HUAWEICLOUD_MCP_READ_ONLY` 未设。
+环境双开关（写操作默认开启，开箱即用）：`RDS_PG_ENABLE_WRITES` 缺省 true；设 false 可关闭写。`HUAWEICLOUD_MCP_READ_ONLY=true` 仍是全局只读熔断。
 
 ## 环境变量
 
@@ -32,7 +32,7 @@ client/   SDK 薄封装（asyncio.to_thread）
 | `HUAWEICLOUD_REGION` | 区域，如 `cn-north-4`（必需） |
 | `HUAWEICLOUD_PROJECT_ID` | 可选，缺省经 IAM 自动解析 |
 | `HUAWEICLOUD_MCP_READ_ONLY` | `true` 拦截一切写操作 |
-| `RDS_PG_ENABLE_WRITES` | `true` 才允许写操作提交 |
+| `RDS_PG_ENABLE_WRITES` | 缺省 `true`（开箱即用）；设 `false` 禁写 |
 | `RDS_PG_STATE_FILE` | PlanStore 路径（默认 `~/.local/state/huaweicloud-rds-pg/plans.sqlite3`） |
 | `HUAWEICLOUD_MCP_PROTECTED_IDS/NAMES/TAGS` | 资源保护规则 |
 | `HUAWEICLOUD_MCP_AUDIT_FILE` | 审计 JSONL 文件（stderr 始终输出） |

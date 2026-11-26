@@ -46,7 +46,10 @@ _MUTATION_READY_STATES = {"ACTIVE", "BACKING UP", "BACKUP_KEEPING"}
 
 
 def _writes_disabled() -> bool:
-    return os.getenv("RDS_PG_ENABLE_WRITES") != "true" or os.getenv(
+    # Write-enabled by default (out-of-the-box usability); set
+    # RDS_PG_ENABLE_WRITES=false (or HUAWEICLOUD_MCP_READ_ONLY=true for the
+    # middleware-level kill switch) to lock down.
+    return os.getenv("RDS_PG_ENABLE_WRITES", "true") != "true" or os.getenv(
         "HUAWEICLOUD_MCP_READ_ONLY", "false"
     ).lower() == "true"
 
@@ -180,7 +183,7 @@ async def run_mutation(
         raise McpToolError(
             "MCP_READ_ONLY",
             "Writes are disabled",
-            hint="Set RDS_PG_ENABLE_WRITES=true and HUAWEICLOUD_MCP_READ_ONLY unset, "
+            hint="Unset RDS_PG_ENABLE_WRITES (default true) and HUAWEICLOUD_MCP_READ_ONLY, "
             "then restart the server.",
         )
     if not plan_id:

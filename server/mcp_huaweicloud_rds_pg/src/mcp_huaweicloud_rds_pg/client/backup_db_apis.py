@@ -297,16 +297,17 @@ class PgDatabaseMixin:
         self, *, instance_id: str, name: str, comment: str
     ) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
+            from huaweicloudsdkrds.v3.model.update_db_user_req import UpdateDbUserReq
             from huaweicloudsdkrds.v3.model.update_postgresql_db_user_comment_request import (
                 UpdatePostgresqlDbUserCommentRequest,
             )
-            from huaweicloudsdkrds.v3.model.update_postgresql_db_user_comment_request_body import (
-                UpdatePostgresqlDbUserCommentRequestBody,
-            )
 
-            body = UpdatePostgresqlDbUserCommentRequestBody(comment=comment)
+            # SDK body model is UpdateDbUserReq (the
+            # update_postgresql_db_user_comment_request_body module does
+            # not exist in the SDK distribution).
+            body = UpdateDbUserReq(comment=comment)
             request = UpdatePostgresqlDbUserCommentRequest(
-                instance_id=instance_id, name=name, body=body
+                instance_id=instance_id, user_name=name, body=body
             )
             return cast(
                 dict[str, Any],

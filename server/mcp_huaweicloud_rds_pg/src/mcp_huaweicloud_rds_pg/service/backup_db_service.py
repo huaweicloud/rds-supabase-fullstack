@@ -83,6 +83,19 @@ class BackupService:
         self, *, instance_id: str, name: str, description: str | None,
         confirm: bool, plan_id: str | None,
     ) -> dict[str, Any]:
+        # Param-layer validation (fail before the preview/claim cycle):
+        # RDS backup names must be 4-64 chars of letters/digits/hyphens/
+        # underscores, starting with a letter - reject locally instead of
+        # burning a cloud round-trip on garbage.
+        import re
+
+        if not re.fullmatch(r"[a-zA-Z][a-zA-Z0-9_-]{3,63}", name or ""):
+            raise McpToolError(
+                "MCP_INVALID_ARGS",
+                "Backup name must be 4-64 characters, start with a letter,"
+                " and contain only letters/digits/hyphens/underscores",
+                hint=f"Got: {name!r}",
+            )
         return await run_mutation(
             tool_name="create_pg_manual_backup",
             instance_id=instance_id,
@@ -315,6 +328,9 @@ class PgDatabaseService:
                     "MCP_INVALID_ARGS",
                     "each grant user needs name and readonly (true/false)",
                 )
+            # Auto-fill the target schema (cloud API rejects grant calls
+            # without one); echo the resolved schema in preview and result.
+            user.setdefault("schema_name", "public")
         return await run_mutation(
             tool_name="grant_pg_db_privilege",
             instance_id=instance_id,

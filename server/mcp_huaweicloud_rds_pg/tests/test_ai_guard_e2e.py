@@ -24,14 +24,13 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-
 from huaweicloud_mcp_core.errors import McpToolError
 
+from conftest import FakeSdkRdsClient
 from mcp_huaweicloud_rds_pg.service.connection_service import ConnectionService
 from mcp_huaweicloud_rds_pg.service.instance_service import InstanceService
 from mcp_huaweicloud_rds_pg.service.m3_service import ResizeService
 from mcp_huaweicloud_rds_pg.service.plans import PlanStore
-from conftest import FakeSdkRdsClient
 
 APP_NAME = "my-graphrag-e2e"
 

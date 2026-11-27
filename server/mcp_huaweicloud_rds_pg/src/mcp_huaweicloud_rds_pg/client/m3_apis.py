@@ -18,6 +18,29 @@ def _to_dict(obj: Any) -> Any:
     return sdk_to_dict(obj)
 
 
+def _log_response_error(api: str, exc: Exception) -> Any:
+    """Convert SDK deserialization failures on the RDS log endpoints.
+
+    /v3/{project}/instances/{id}/error-log and /slow-log return a
+    non-standard payload (XML/text for PostgreSQL) that the SDK's model
+    deserializer cannot bind - the failure escapes as non-SdkException
+    (AttributeError/TypeError) and previously crashed the tool. Surface a
+    clear envelope telling the agent to use the download links instead.
+    """
+    from huaweicloud_mcp_core.errors import McpToolError
+
+    return McpToolError(
+        "MCP_SDK_DESERIALIZE",
+        f"{api}: the RDS log endpoint returned a payload the SDK cannot"
+        " deserialize ({type(exc).__name__}: {exc})",
+        hint=(
+            "This endpoint is known to return XML/text for PostgreSQL."
+            " Use download_pg_error_log / download_pg_slow_log (which"
+            " return download links) or the LTS variants instead."
+        ),
+    )
+
+
 class ResizeMixin:
     """P1-5/P1-6: flavor/volume resize, HA conversion, ops window, replicas."""
 
@@ -220,6 +243,13 @@ class LogMixin:
                 )
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
+            except Exception as exc:
+                # The RDS log endpoints (/error-log, /slow-log) return a
+                # different payload format than regular RDS APIs (XML or
+                # text for PG) - the SDK model deserializer can throw
+                # non-SdkException types here. Surface a clean envelope
+                # instead of crashing the tool process.
+                raise _log_response_error("list_error_logs", exc) from exc
 
         return await asyncio.to_thread(_call)
 
@@ -245,6 +275,9 @@ class LogMixin:
                 )
             except SdkException as exc:
                 raise wrap_sdk_error(exc) from exc
+            except Exception as exc:
+                # Same non-standard payload as list_error_logs.
+                raise _log_response_error("list_slow_logs", exc) from exc
 
         return await asyncio.to_thread(_call)
 
@@ -614,9 +647,9 @@ class CesClient:
                     comparison_operator=comparison_operator,
                     count=1,
                     filter="average",
-                    period=str(300),
+                    period=300,
                     unit="%",
-                    value=str(value),
+                    value=float(value),
                 ),
             )
             request = CreateAlarmRequest(body=body)

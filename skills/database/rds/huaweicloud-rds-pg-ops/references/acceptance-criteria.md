@@ -30,6 +30,7 @@
 - [ ] 写操作全部两段式（confirm=false 预览 → 用户明确同意 → confirm=true + plan_id）
 - [ ] 计费类决策（包周期时长、EIP 计费）user-only，Agent 不代选
 - [ ] unknown 结果防重放（先查 job，禁止盲目重试）
+- [ ] digest 冲突处置（Equivalent intent 信封 → 核对历史 → 变更非语义参数重跑，不删账本不循环重试）
 
 ## 5. MCP 工程侧验收（配套服务器）
 

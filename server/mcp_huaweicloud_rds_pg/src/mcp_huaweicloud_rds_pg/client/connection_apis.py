@@ -35,7 +35,7 @@ class ConnectionMixin:
             )
             from huaweicloudsdkrds.v3.model.update_port_request import UpdatePortRequest
 
-            body = UpdateDbPortRequest(port=str(port))
+            body = UpdateDbPortRequest(port=port)
             request = UpdatePortRequest(instance_id=instance_id, body=body)
             return cast(dict[str, Any], _to_dict(self._client.update_port(request)))
 
@@ -142,13 +142,15 @@ class ConnectionMixin:
 
         return await asyncio.to_thread(_call)
 
-    async def show_dns_name(self, *, instance_id: str) -> dict[str, Any]:
+    async def show_dns_name(
+        self, *, instance_id: str, dns_type: str = "private"
+    ) -> dict[str, Any]:
         def _call() -> dict[str, Any]:
             from huaweicloudsdkrds.v3.model.show_dns_name_request import (
                 ShowDnsNameRequest,
             )
 
-            request = ShowDnsNameRequest(instance_id=instance_id)
+            request = ShowDnsNameRequest(instance_id=instance_id, dns_type=dns_type)
             try:
                 return cast(
                     dict[str, Any], _to_dict(self._client.show_dns_name(request))

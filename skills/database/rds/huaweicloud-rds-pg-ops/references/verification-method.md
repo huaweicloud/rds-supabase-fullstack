@@ -29,6 +29,7 @@
 | V2.3 | `show_pg_instance_job` 轮询 | Running → Completed |
 | V2.4 | 复核 | `show_pg_instance` ACTIVE 且无 action 锁 |
 | V2.5 | 重放已消费 plan_id | `MCP_GUARDRAIL_BLOCKED (already used)` —— 防重放生效 |
+| V2.6 | 跨会话重复操作（digest 冲突） | `MCP_GUARDRAIL_BLOCKED (Equivalent intent has an unresolved execution)` —— Agent 应先核对历史结果，再变更非语义参数（如备份名加序号）产生新 digest 重跑；禁止循环原参重试 |
 
 ## 4. 第三级：验收五连验（发版/合入前）
 

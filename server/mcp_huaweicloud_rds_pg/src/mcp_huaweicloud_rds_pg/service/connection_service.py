@@ -49,12 +49,19 @@ class ConnectionService:
             instance_id
         )
         dns: dict[str, Any] | None = None
+        dns_error: str | None = None
         try:
-            dns = await self._client.show_dns_name(instance_id=instance_id)
-        except Exception:
-            # DNS capability unavailable in this region - degrade to the
-            # IP-only view (the domain is optional connection info).
-            dns = None
+            dns = await self._client.show_dns_name(
+                instance_id=instance_id, dns_type="private"
+            )
+        except McpToolError as exc:
+            # Degrade gracefully only for capability/permission gaps; real
+            # failures (network, throttling) must not vanish silently.
+            if exc.code in ("DBS.280001", "DBS.280015", "MCP_NOT_FOUND"):
+                dns = None
+                dns_error = f"DNS query unavailable ({exc.code}) - showing IP only"
+            else:
+                dns_error = f"DNS query failed ({exc.code}) - showing IP only"
         return single_result(
             {
                 "instance_id": instance_id,
@@ -65,6 +72,7 @@ class ConnectionService:
                 "port": instance.get("port"),
                 "ha": instance.get("ha"),
                 "dns_name": (dns or {}).get("dns_name"),
+                "dns_note": dns_error,
             },
             hints=[
                 "psql: psql --no-readline -h <private_ip or dns_name> -p <port> "

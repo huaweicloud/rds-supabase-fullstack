@@ -115,7 +115,7 @@ class FakeSdkRdsClient:
         self.instances[instance_id]["status"] = "ACTIVE"
         return {"job_id": "job-start-1"}
 
-    async def show_dns_name(self, *, instance_id: str) -> dict[str, Any]:
+    async def show_dns_name(self, *, instance_id: str, dns_type: str = "private") -> dict[str, Any]:
         self.calls.append(("show_dns_name", {"instance_id": instance_id}))
         return self.dns.get(instance_id) or {
             "instance_id": instance_id,

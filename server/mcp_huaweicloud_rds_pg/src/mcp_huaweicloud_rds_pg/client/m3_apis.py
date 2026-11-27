@@ -614,9 +614,9 @@ class CesClient:
                     comparison_operator=comparison_operator,
                     count=1,
                     filter="average",
-                    period=str(300),
+                    period=300,
                     unit="%",
-                    value=str(value),
+                    value=float(value),
                 ),
             )
             request = CreateAlarmRequest(body=body)

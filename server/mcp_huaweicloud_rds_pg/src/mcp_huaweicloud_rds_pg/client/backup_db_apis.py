@@ -307,7 +307,7 @@ class PgDatabaseMixin:
             # not exist in the SDK distribution).
             body = UpdateDbUserReq(comment=comment)
             request = UpdatePostgresqlDbUserCommentRequest(
-                instance_id=instance_id, name=name, body=body
+                instance_id=instance_id, user_name=name, body=body
             )
             return cast(
                 dict[str, Any],
